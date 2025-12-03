@@ -9,7 +9,7 @@
 .analyzer-title {
   font-size: 32px;
   font-weight: 700;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   text-align: center;
 }
 
@@ -17,48 +17,161 @@
   text-align: center;
   font-size: 16px;
   color: #cfcfcf;
-  margin-bottom: 25px;
+  margin-bottom: 22px;
 }
 
-/* Upload section */
-.upload-box {
-  border: 2px dashed #00cfff;
-  padding: 40px;
-  border-radius: 12px;
+/* ===== Mode toggle pills ===== */
+.analyzer-mode-toggle-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.mode-pill-group {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 999px;
+  background: #050711;
+  border: 1px solid #1d2335;
+}
+
+.mode-pill {
+  border: none;
+  padding: 8px 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  cursor: pointer;
+  background: transparent;
+  color: #a5afc7;
+  font-weight: 500;
+  transition: all 0.18s ease;
+}
+
+.mode-pill:hover {
+  color: #e5f6ff;
+}
+
+.mode-pill.active {
+  background: #00cfff;
+  color: #000;
+  box-shadow: 0 0 14px rgba(0, 207, 255, 0.6);
+}
+
+/* ===== Measurement card ===== */
+.measurement-card {
+  border-radius: 16px;
+  padding: 24px 28px 26px;
+  background: radial-gradient(circle at top, #182132 0, #0e0f1a 55%);
+  border: 1px solid rgba(0, 207, 255, 0.25);
+  box-shadow: 0 0 18px rgba(0, 207, 255, 0.08);
+}
+
+.measurement-intro {
+  font-size: 14px;
+  color: #d0d7eb;
+  margin-bottom: 18px;
+}
+
+/* Grid layout */
+.measurement-grid {
+  display: grid;
+  /* 4 columns on desktop, auto-wrap on smaller screens */
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 16px 20px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 14px;
+  color: #e0e0e0;
+}
+
+.inline-unit {
+  font-size: 12px;
+  color: #8bdfff;
+  margin-left: 4px;
+}
+
+/* Inputs */
+.field-input {
+  background-color: #121222;
+  border: 1px solid #2e2e2e;
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+  transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-sizing: border-box;
+  min-width: 0;          /* allow shrinking inside grid */
+}
+
+.field-input:focus {
+  border-color: #00cfff;
+  box-shadow: 0 0 0 1px rgba(0, 207, 255, 0.35);
+  background-color: #151527;
+}
+
+/* Height ft/in row */
+.height-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.height-row .field-input {
+  width: 100%;
+}
+
+/* ===== Photo upload card ===== */
+.upload-card {
+  margin-top: 30px;
+  border-radius: 16px;
+  padding: 24px 28px;
+  background: rgba(0, 204, 255, 0.03);
+  border: 1px dashed rgba(0, 207, 255, 0.55);
   text-align: center;
-  background: rgba(0, 204, 255, 0.05);
-  transition: all 0.3s ease;
 }
 
-.upload-box:hover {
-  background: rgba(0, 204, 255, 0.10);
-  border-color: #00e0ff;
+.upload-subtext {
+  font-size: 14px;
+  color: #c6e9ff;
+  margin-bottom: 18px;
 }
 
-.upload-box input[type="file"] {
+.upload-input {
   display: none;
 }
 
 .upload-label {
   cursor: pointer;
-  display: inline-block;
-  padding: 12px 20px;
-  border: 1px solid #00cfff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
   border-radius: 8px;
+  border: 1px solid #00cfff;
   color: #00cfff;
-  background: transparent;
-  transition: all 0.2s ease-in-out;
+  background: rgba(0, 204, 255, 0.07);
+  font-weight: 600;
+  margin-bottom: 18px;
+  transition: all 0.2s ease;
 }
 
 .upload-label:hover {
-  background: rgba(0, 204, 255, 0.1);
+  background: rgba(0, 204, 255, 0.15);
   color: #00e0ff;
   border-color: #00e0ff;
 }
 
-/* Preview Image */
 .image-preview {
-  margin-top: 25px;
+  margin-top: 5px;
+  margin-bottom: 12px;
   text-align: center;
 }
 
@@ -69,11 +182,11 @@
   border: 1px solid #333;
 }
 
-/* Analyze Button */
+/* ===== Buttons ===== */
 .analyze-btn {
   margin-top: 20px;
-  display: inline-block;
-  padding: 12px 20px;
+  display: inline-flex;
+  padding: 12px 22px;
   background: #00cfff;
   border: none;
   border-radius: 8px;
@@ -81,14 +194,57 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
 }
 
-.analyze-btn:hover {
+.analyze-btn:hover:not(:disabled) {
   background: #00e0ff;
   transform: scale(1.03);
 }
 
-/* Results Section */
+.analyze-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.analyze-btn.outline {
+  background: transparent;
+  color: #00cfff;
+  border: 1px solid #00cfff;
+}
+
+.analyze-btn.outline:hover:not(:disabled) {
+  background: rgba(0, 204, 255, 0.12);
+}
+
+/* Button Row */
+.button-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  width: 100%;
+}
+
+/* ===== Error + loading ===== */
+.error-text {
+  margin-top: 14px;
+  color: #ff7676;
+  text-align: center;
+  font-size: 14px;
+}
+
+.loading-spinner {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 15px;
+  color: #00cfff;
+}
+
+/* ===== Results ===== */
 .analysis-results {
   margin-top: 40px;
   padding: 25px;
@@ -126,14 +282,6 @@
   margin-left: 10px;
 }
 
-/* Loading Spinner */
-.loading-spinner {
-  margin-top: 20px;
-  text-align: center;
-  font-size: 16px;
-  color: #00cfff;
-}
-
 /* About Section */
 .about-calculator {
   margin-top: 45px;
@@ -154,52 +302,14 @@
   color: #ccc;
 }
 
-/* Button Row */
-.button-row {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 25px;
-}
+/* Responsive tweaks */
+@media (max-width: 600px) {
+  .analyzer-container {
+    padding: 20px;
+  }
 
-/* Make upload button match analyze button size */
-.upload-label {
-  cursor: pointer;
-  padding: 12px 20px;
-  border-radius: 8px;
-  border: 1px solid #00cfff;
-  color: #00cfff;
-  background: rgba(0, 204, 255, 0.07);
-  font-weight: 600;
-  height: 44px;              /* NEW: matches analyze button */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* When hovered */
-.upload-label:hover {
-  background: rgba(0, 204, 255, 0.15);
-  color: #00e0ff;
-  border-color: #00e0ff;
-}
-
-/* Match analyze button height */
-.analyze-btn {
-  padding: 12px 20px;
-  height: 44px;              /* NEW: consistent height */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  font-weight: 600;
-}
-
-.button-row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;        /* space between buttons */
-  margin-top: 25px;
-  width: 100%;
+  .measurement-card,
+  .upload-card {
+    padding: 18px 16px;
+  }
 }
