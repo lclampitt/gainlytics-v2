@@ -1,0 +1,11 @@
+# Python venvs
+.venv/
+backend/venv/
+
+__pycache__/
+*.pyc
+
+# Node stuff (frontend)
+node_modules/
+dist/
+build/

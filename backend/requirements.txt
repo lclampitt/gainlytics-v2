@@ -1,8 +1,8 @@
 fastapi
-uvicorn
-pydantic
+uvicorn[standard]
 numpy
-pillow
 opencv-python-headless
-python-multipart
+pillow
 joblib
+scikit-learn
+python-multipart
