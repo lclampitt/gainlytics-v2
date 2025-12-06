@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import GoalPlanner from '../components/GoalPlanner/goalplanner';
 import '../styles/dashboard.css';
 
+// Reusable card component used across the dashboard grid
 function Card({ title, cta, children }) {
   return (
     <div className="dashboard-card">
@@ -19,6 +20,7 @@ function Card({ title, cta, children }) {
   );
 }
 
+// Local onboarding checklist with localStorage persistence
 function OnboardingChecklist() {
   const STORAGE_KEY = 'gainlytics_checklist_v1';
 
@@ -31,6 +33,7 @@ function OnboardingChecklist() {
 
   const [completed, setCompleted] = React.useState({});
 
+  // Load previously completed checklist state from localStorage
   React.useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -38,6 +41,7 @@ function OnboardingChecklist() {
     } catch {}
   }, []);
 
+  // Save checklist state whenever it changes
   React.useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(completed));
   }, [completed]);
@@ -52,6 +56,7 @@ function OnboardingChecklist() {
       <ul className="onboarding-list">
         {defaultSteps.map((step) => (
           <li key={step.id} className="onboarding-item">
+            {/* Checkbox button to mark step complete */}
             <button
               className={`onboarding-checkbox ${
                 completed[step.id] ? 'checked' : ''
@@ -61,6 +66,7 @@ function OnboardingChecklist() {
               {completed[step.id] && <span className="checkmark">✓</span>}
             </button>
 
+            {/* Clickable text that navigates to the relevant page */}
             <div
               className="onboarding-text"
               onClick={() => (window.location.href = step.route)}
@@ -89,6 +95,7 @@ function ConsistencyCalendar() {
   const [currentYear, setCurrentYear] = React.useState(today.getFullYear());
   const [offDays, setOffDays] = React.useState({});
 
+  // Load saved calendar state
   React.useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -96,6 +103,7 @@ function ConsistencyCalendar() {
     } catch {}
   }, []);
 
+  // Persist off-day markings when they change
   React.useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(offDays));
   }, [offDays]);
@@ -119,6 +127,7 @@ function ConsistencyCalendar() {
     });
   };
 
+  // Helpers to go to previous/next month
   const goToPrevMonth = () => {
     setCurrentMonth((prev) => {
       if (prev === 0) {
@@ -139,6 +148,7 @@ function ConsistencyCalendar() {
     });
   };
 
+  // Build basic calendar structure
   const firstOfMonth = new Date(currentYear, currentMonth, 1);
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const startWeekday = firstOfMonth.getDay(); // 0 = Sun
@@ -193,6 +203,7 @@ function ConsistencyCalendar() {
         ))}
       </div>
 
+      {/* Day grid where clicking toggles an X for a rest day */}
       <div className="calendar-grid">
         {weeks.map((week, wi) =>
           week.map((day, di) => {
@@ -235,9 +246,11 @@ export default function Dashboard() {
             Welcome back! Your body analysis, goals, and tools in one place.
           </p>
         </div>
+        {/* Checklist on the right side of the hero */}
         <OnboardingChecklist />
       </div>
 
+      {/* Main dashboard grid of cards */}
       <div className="dashboard-grid">
         {/* Row 1: Calendar + Your Plan (both tall, primary) */}
         <Card title="Consistency Calendar">
@@ -245,6 +258,7 @@ export default function Dashboard() {
         </Card>
 
         <Card title="Your Plan" cta={{ href: '/goalplanner', label: 'Open' }}>
+          {/* Compact version of the Goal Planner on the dashboard */}
           <GoalPlanner compact />
         </Card>
 
@@ -267,7 +281,7 @@ export default function Dashboard() {
           </ul>
         </Card>
 
-        {/* Rest of dashboard */}
+        {/* Row 3: progress + smaller cards */}
         <Card title="Progress" cta={{ href: '/progress', label: 'View' }}>
           <p>
             See charts for weight, body fat %, and measurements over time from

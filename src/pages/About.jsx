@@ -7,6 +7,7 @@ export default function About() {
       <div className="about-card">
         <h1 className="about-title">About Gainlytics</h1>
 
+        {/* Short mission / purpose statements */}
         <p className="about-text">
           Gainlytics was built to help bring clarity to fitness. No more guessing.
           Our mission is to combine clean UI, data insights, and practicality to help you reach your goals faster.

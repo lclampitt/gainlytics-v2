@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import '../styles/analyzer.css';
 
-// Use env var in production, fall back to local dev backend
+// Use env var in production, fall back to hosted backend URL
 const API_BASE = process.env.REACT_APP_API_BASE || 'https://gainlytics-1.onrender.com';
 
 export default function Analyzer() {
   // Which mode is active: "measurements" or "photo"
   const [mode, setMode] = useState('measurements');
 
-  // Measurement state
+  // Measurement form state
   const [gender, setGender] = useState('male'); // male/female
   const [age, setAge] = useState('');
   const [heightFt, setHeightFt] = useState('');
@@ -18,11 +18,11 @@ export default function Analyzer() {
   const [hipIn, setHipIn] = useState('');
   const [neckIn, setNeckIn] = useState('');
 
-  // Image state
+  // Image upload state
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
 
-  // Shared result + loading/error
+  // Shared result + loading/error states
   const [result, setResult] = useState(null);
   const [measureError, setMeasureError] = useState('');
   const [imageError, setImageError] = useState('');
@@ -34,6 +34,7 @@ export default function Analyzer() {
     setMeasureError('');
     setResult(null);
 
+    // Basic required-field check
     if (
       !gender ||
       !age ||
@@ -48,6 +49,7 @@ export default function Analyzer() {
       return;
     }
 
+    // Parse inputs as numbers
     const hFtNum = Number(heightFt);
     const hInNum = Number(heightIn);
     const wLbsNum = Number(weightLbs);
@@ -64,9 +66,10 @@ export default function Analyzer() {
       return;
     }
 
+    // Map gender to numeric value expected by the model
     const genderNumeric = gender === 'male' ? 1 : 0;
 
-    // Convert to metric for backend
+    // Convert imperial inputs to metric for backend model
     const totalInches = hFtNum * 12 + hInNum;
     const height_cm = totalInches * 2.54;
     const weight_kg = wLbsNum * 0.453592;
@@ -86,6 +89,7 @@ export default function Analyzer() {
 
     setLoadingMeasure(true);
     try {
+      // Call FastAPI /analyze-measurements
       const res = await fetch(`${API_BASE}/analyze-measurements`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -116,6 +120,7 @@ export default function Analyzer() {
     setImageError('');
     setResult(null);
 
+    // Show a live preview of the uploaded image
     if (f) {
       setPreview(URL.createObjectURL(f));
     } else {
@@ -132,11 +137,13 @@ export default function Analyzer() {
       return;
     }
 
+    // Build multipart/form-data body for the image upload
     const formData = new FormData();
     formData.append('file', file);
 
     setLoadingImage(true);
     try {
+      // Call FastAPI /analyze-image
       const res = await fetch(`${API_BASE}/analyze-image`, {
         method: 'POST',
         body: formData,
@@ -193,6 +200,7 @@ export default function Analyzer() {
             practical calorie targets.
           </p>
 
+          {/* Measurement input grid */}
           <div className="measurement-grid">
             <div className="field-group">
               <label className="field-label">Gender</label>
@@ -284,6 +292,7 @@ export default function Analyzer() {
             </div>
           </div>
 
+          {/* Trigger measurement analysis */}
           <div className="button-row">
             <button
               className="analyze-btn"
@@ -310,6 +319,7 @@ export default function Analyzer() {
             your silhouette. This mode is experimental.
           </p>
 
+          {/* File input with custom label */}
           <label className="upload-label">
             <input
               type="file"
@@ -320,6 +330,7 @@ export default function Analyzer() {
             {file ? 'Change Photo' : 'Choose Photo'}
           </label>
 
+          {/* Live preview of selected image */}
           {preview && (
             <div className="image-preview">
               <img src={preview} alt="Body preview" />
@@ -386,6 +397,7 @@ export default function Analyzer() {
             )}
           </div>
 
+          {/* Explanation of how the calculators work */}
           <div className="about-calculator">
             <h3>How these estimates work</h3>
             <p>

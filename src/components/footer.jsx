@@ -2,13 +2,14 @@ import { Link } from 'react-router-dom';
 import '../styles/footer.css';
 
 export default function Footer() {
+  // Always show the current year dynamically
   const year = new Date().getFullYear();
 
   return (
     <footer className="footer">
       <div className="footer-inner">
 
-        {/* Brand / tagline */}
+        {/* Brand / tagline block on the left */}
         <div className="footer-column footer-brand">
           <div className="footer-logo-dot" />
           <div>
@@ -19,7 +20,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* App links (2 columns) */}
+        {/* App navigation links in the middle */}
         <div className="footer-column footer-links">
           <div className="footer-column-title">App</div>
 
@@ -39,7 +40,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Disclaimer / contact */}
+        {/* Disclaimer + contact information on the right */}
         <div className="footer-column footer-meta">
           <div className="footer-column-title">Info</div>
           <p className="footer-disclaimer">
@@ -53,6 +54,7 @@ export default function Footer() {
 
       </div>
 
+      {/* Bottom row with copyright + credit */}
       <div className="footer-bottom">
         <span>© {year} Gainlytics. All rights reserved.</span>
         <span className="footer-built-by">Built by Logan Clampitt.</span>

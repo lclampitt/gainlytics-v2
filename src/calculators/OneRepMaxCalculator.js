@@ -2,15 +2,19 @@ import React, { useState } from 'react';
 import '../styles/OneRepMaxCalculator.css';
 
 function OneRepMaxCalculator() {
+  // Unit toggle: lets the user view results in lbs or kg
   const [unit, setUnit] = useState('lbs');
+  // Raw input from the user (weight they lifted and how many reps)
   const [weight, setWeight] = useState('');
   const [reps, setReps] = useState('');
 
+  // Percentages of 1RM for reps 1–16 (classic strength training table)
   const repMaxPercentages = [
     1.00, 0.95, 0.93, 0.90, 0.87, 0.85, 0.83, 0.80,
     0.77, 0.75, 0.73, 0.70, 0.65, 0.60, 0.55, 0.50
   ];
 
+  // Core formula: Epley-style 1RM estimate based on weight & reps
   const calculateOneRepMax = () => {
     const w = parseFloat(weight);
     const r = parseInt(reps);
@@ -25,11 +29,13 @@ function OneRepMaxCalculator() {
       <h2>One-Rep Max Calculator</h2>
       <p>Estimate your 1-rep max and training weights for strength programming.</p>
 
+      {/* Unit toggle buttons (visual only, we assume input is entered in the chosen unit) */}
       <div className="unit-toggle">
         <button onClick={() => setUnit('lbs')} className={unit === 'lbs' ? 'active' : ''}>Pounds</button>
         <button onClick={() => setUnit('kg')} className={unit === 'kg' ? 'active' : ''}>Kilograms</button>
       </div>
 
+      {/* Core inputs: weight and reps from the user's last set */}
       <div className="input-group">
         <label>Weight Lifted*</label>
         <input
@@ -50,13 +56,16 @@ function OneRepMaxCalculator() {
         />
       </div>
 
+      {/* Only show results when we have enough data to calculate 1RM */}
       {oneRepMax && (
         <>
+          {/* Highlighted 1RM estimate */}
           <div className="result">
             <h3>1-Rep Max:</h3>
             <p>{oneRepMax} {unit}</p>
           </div>
 
+          {/* Full 1RM table: shows estimated weights at different rep ranges */}
           <h3>1-RM Table</h3>
           <table className="result-table">
             <thead>
@@ -82,7 +91,7 @@ function OneRepMaxCalculator() {
         </>
       )}
 
-      {/* ABOUT SECTION */}
+      {/* ABOUT SECTION – explains purpose and how to use this calculator in programs */}
       <div className="tdee-info-section">
         <h2>💡 About This Calculator</h2>
         <p>

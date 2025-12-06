@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import '../../styles/ExerciseLibrary.css';
 import { Link } from 'react-router-dom';
 
-// Temporary dataset (replace later with Supabase)
+// Temporary hard-coded dataset for the exercise library
+// (Easy to swap to Supabase later)
 const EXERCISES = [
   { id: 1, name: 'Barbell Bench Press', muscle: 'Chest', equipment: 'Barbell', difficulty: 'Intermediate' },
   { id: 2, name: 'Squat', muscle: 'Legs', equipment: 'Barbell', difficulty: 'Intermediate' },
@@ -17,11 +18,13 @@ const EXERCISES = [
 ];
 
 export default function ExerciseLibrary() {
+  // Local filter inputs
   const [search, setSearch] = useState('');
   const [muscle, setMuscle] = useState('');
   const [equipment, setEquipment] = useState('');
   const [difficulty, setDifficulty] = useState('');
 
+  // Apply all active filters to the exercise list
   const filtered = EXERCISES.filter((ex) =>
     ex.name.toLowerCase().includes(search.toLowerCase()) &&
     (muscle ? ex.muscle === muscle : true) &&
@@ -33,6 +36,7 @@ export default function ExerciseLibrary() {
     <div className="exercise-library">
       <h1 className="library-title">Exercise Library</h1>
 
+      {/* Filter bar: text search + dropdown filters */}
       <div className="filter-bar">
         <input
           type="text"
@@ -68,15 +72,17 @@ export default function ExerciseLibrary() {
         </select>
       </div>
 
+      {/* Card grid of filtered exercises */}
       <div className="exercise-grid">
         {filtered.length > 0 ? (
           filtered.map((ex) => (
             <div key={ex.id} className="exercise-card">
-              {/* Image removed */}
+              {/* Thumbnail could go here in the future */}
               <h3>{ex.name}</h3>
               <p><strong>Muscle:</strong> {ex.muscle}</p>
               <p><strong>Equipment:</strong> {ex.equipment}</p>
               <p><strong>Difficulty:</strong> {ex.difficulty}</p>
+              {/* Link to exercise details view */}
               <Link to={`/exercises/${ex.id}`} className="exercise-btn">
                 View Details
               </Link>

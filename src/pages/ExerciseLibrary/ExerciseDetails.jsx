@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import '../../styles/ExerciseLibrary.css';
 
+// Static exercise metadata for now (could be moved to Supabase later)
 const EXERCISE_DETAILS = {
   1: {
     name: 'Barbell Bench Press',
@@ -116,10 +117,12 @@ const EXERCISE_DETAILS = {
 };
 
 export default function ExerciseDetails() {
+  // Read the exercise id from the URL (e.g. /exercises/3)
   const { id } = useParams();
   const numericId = Number(id);
   const exercise = EXERCISE_DETAILS[numericId];
 
+  // If the id does not exist in the map, show a simple "not found" state
   if (!exercise) {
     return (
       <div className="exercise-detail">
@@ -134,6 +137,7 @@ export default function ExerciseDetails() {
     );
   }
 
+  // Main exercise details view
   return (
     <div className="exercise-detail">
       <div className="exercise-detail-inner">

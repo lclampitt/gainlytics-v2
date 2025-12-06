@@ -16,11 +16,11 @@ import {
  *  (we treat weight_kg as pounds, purely as a naming quirk in the DB)
  */
 export default function ProgressCharts({ rows = [] }) {
-  // Normalize + sort ascending for nicer lines
+  // Normalize + sort ascending for nicer lines on the chart
   const data = [...rows]
     .map((r) => ({
       date: r.date,
-      // store as weight_lbs in the chart data
+      // Interpret the weight_kg DB column as pounds in the chart
       weight_lbs:
         r.weight_kg === '' || r.weight_kg === null || r.weight_kg === undefined
           ? null
@@ -34,6 +34,7 @@ export default function ProgressCharts({ rows = [] }) {
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
+  // If there is no data yet, show a friendly message instead of an empty chart
   if (!data.length) {
     return (
       <div style={{ color: '#9aa0a6' }}>
@@ -42,7 +43,7 @@ export default function ProgressCharts({ rows = [] }) {
     );
   }
 
-  // simple custom tooltip so labels say lbs
+  // Simple custom tooltip so labels say "lbs" and "BF%"
   const renderTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) return null;
 
@@ -85,6 +86,7 @@ export default function ProgressCharts({ rows = [] }) {
             yAxisId="left"
             tick={{ fontSize: 12, fill: '#cfd8ff' }}
           />
+          {/* Right axis is used for body fat percentage */}
           <YAxis
             yAxisId="right"
             orientation="right"
@@ -97,6 +99,7 @@ export default function ProgressCharts({ rows = [] }) {
               value === 'weight_lbs' ? 'Weight (lbs)' : 'BF%'
             }
           />
+          {/* Line for weight over time */}
           <Line
             yAxisId="left"
             type="monotone"
@@ -105,6 +108,7 @@ export default function ProgressCharts({ rows = [] }) {
             dot={false}
             connectNulls
           />
+          {/* Line for body fat percentage over time */}
           <Line
             yAxisId="right"
             type="monotone"

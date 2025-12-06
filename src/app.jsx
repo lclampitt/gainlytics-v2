@@ -30,8 +30,9 @@ import ExerciseDetails from './pages/ExerciseLibrary/ExerciseDetails';
 // Workouts
 import WorkoutLogger from './pages/Workouts/WorkoutLogger';
 
-// Protected Route Wrapper
+// Protected Route Wrapper to guard authenticated pages
 function ProtectedRoute({ session, loading, children }) {
+  // While we don't yet know the session, show a simple loading state
   if (loading) {
     return (
       <div
@@ -46,18 +47,21 @@ function ProtectedRoute({ session, loading, children }) {
     );
   }
 
+  // If there is no active session, redirect to /auth
   if (!session) return <Navigate to="/auth" replace />;
 
+  // Otherwise, render the protected content
   return children;
 }
 
 function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [, setIsRegistering] = useState(false); // kept in case you use later
+  // kept for future use if you want to toggle login/register flows
+  const [, setIsRegistering] = useState(false);
   const navigate = useNavigate();
 
-  // Load session once on mount
+  // Load initial session and subscribe to auth changes once on mount
   useEffect(() => {
     const getSession = async () => {
       const { data } = await supabase.auth.getSession();
@@ -66,6 +70,7 @@ function App() {
     };
     getSession();
 
+    // Listen for login/logout events from Supabase
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
@@ -73,9 +78,11 @@ function App() {
       }
     );
 
+    // Clean up the listener on unmount
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  // Log user out and send them back to the home page
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -84,6 +91,7 @@ function App() {
 
   return (
     <div>
+      {/* Header gets the current session to show/hide Sign Out */}
       <Header onLogout={handleLogout} session={session} />
       <main>
         <Routes>
@@ -98,7 +106,7 @@ function App() {
           <Route path="/exercises" element={<ExerciseLibrary />} />
           <Route path="/exercises/:id" element={<ExerciseDetails />} />
 
-          {/* Protected routes */}
+          {/* Protected routes (require Supabase session) */}
           <Route
             path="/"
             element={

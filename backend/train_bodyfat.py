@@ -11,7 +11,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score, mean_absolute_error
 import joblib
 
+# Where the trained model will be saved/read by main.py
 MODEL_PATH = "bodyfat_model.joblib"
+
+# CSV file containing the bodyfat dataset. Can be swapped for any compatible file.
 CSV_PATH = "bodyfat_training.csv"  # <- rename your CSV to this, or change this path.
 
 
@@ -30,6 +33,7 @@ def load_data():
       Density, BodyFat, Age, Weight, Height, Neck, Chest, Abdomen, Hip, ...
     """
     if not os.path.exists(CSV_PATH):
+        # Helpful message if the CSV is missing or not renamed properly
         raise FileNotFoundError(
             f"{CSV_PATH} not found. "
             "Place your body-fat CSV in the backend folder and rename it to 'bodyfat_training.csv', "
@@ -38,7 +42,7 @@ def load_data():
 
     df = pd.read_csv(CSV_PATH)
 
-    # Rename columns to a standardized schema
+    # Rename columns from original dataset headers to a standardized schema
     df = df.rename(
         columns={
             "BodyFat": "bodyfat_pct",
@@ -50,17 +54,18 @@ def load_data():
         }
     )
 
-    # Convert to metric units
+    # Convert to metric units – this matches what the frontend sends
     df["weight_kg"] = df["weight_lb"] * 0.453592
     df["height_cm"] = df["height_in"] * 2.54
 
-    # Dataset is all male → encode as gender=1
+    # Dataset is all male → encode as gender=1 for all rows.
+    # If we had mixed data we'd encode 0/1 based on a 'Sex' column.
     df["gender"] = 1
 
     # Drop rows missing the target to be safe
     df = df.dropna(subset=["bodyfat_pct"])
 
-    # Keep only the columns we care about
+    # Keep only the columns we care about for the model
     df = df[
         [
             "gender",
@@ -77,8 +82,18 @@ def load_data():
 
 
 def train_and_save():
+    """
+    End-to-end training pipeline:
+
+    1. Load + clean dataset.
+    2. Split into train/test.
+    3. Train RandomForestRegressor.
+    4. Print evaluation metrics.
+    5. Save the model to disk for the FastAPI app.
+    """
     df = load_data()
 
+    # Input features (X) and target (y)
     feature_cols = [
         "gender",
         "height_cm",
@@ -92,10 +107,12 @@ def train_and_save():
     X = df[feature_cols]
     y = df[target_col]
 
+    # Hold out 20% of the data for evaluation
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
 
+    # RandomForest works well out-of-the-box for tabular regression
     model = RandomForestRegressor(
         n_estimators=200,
         max_depth=None,
@@ -104,6 +121,7 @@ def train_and_save():
     )
     model.fit(X_train, y_train)
 
+    # Evaluate on the test split
     y_pred = model.predict(X_test)
     r2 = r2_score(y_test, y_pred)
     mae = mean_absolute_error(y_test, y_pred)
@@ -112,9 +130,11 @@ def train_and_save():
     print(f"R^2:  {r2:.3f}")
     print(f"MAE:  {mae:.2f} % body fat")
 
+    # Persist the trained model so the API can load it at startup
     joblib.dump(model, MODEL_PATH)
     print(f"✅ Saved model to {MODEL_PATH}")
 
 
 if __name__ == "__main__":
+    # Running this file directly trains and saves the model.
     train_and_save()

@@ -5,16 +5,19 @@ import '../../styles/goalplanner.css';
 const emptyMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 };
 
 export default function GoalPlanner({ compact = false }) {
+  // Auth / data state
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
+  // Current goal row from the 'goals' table
   const [rowId, setRowId] = useState(null);
   const [goal, setGoal] = useState('');
   const [macros, setMacros] = useState(emptyMacros);
   const [timeframe, setTimeframe] = useState(0);
 
+  // UI state for edit/view/delete
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -31,10 +34,12 @@ export default function GoalPlanner({ compact = false }) {
       setError('');
       setMessage('');
 
+      // 1) Check if the user is logged in via Supabase Auth
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (!mounted) return;
 
       if (userError || !userData?.user) {
+        // No logged-in user → show friendly message and stop
         setError('⚠️ Please log in to manage your goal.');
         setLoading(false);
         return;
@@ -43,6 +48,7 @@ export default function GoalPlanner({ compact = false }) {
       const uid = userData.user.id;
       setUserId(uid);
 
+      // 2) Fetch existing goal for this user (if any)
       const { data, error } = await supabase
         .from('goals')
         .select('*')
@@ -51,10 +57,11 @@ export default function GoalPlanner({ compact = false }) {
 
       if (!mounted) return;
 
+      // PGRST116 = "No rows found", which is fine for a first-time user
       if (error && error.code !== 'PGRST116') {
         setError('Could not fetch your goal.');
       } else if (data) {
-        // Existing goal found → populate + start in view mode
+        // Existing goal found → populate state and start in view mode
         setRowId(data.id ?? null);
         setGoal(data.goal ?? '');
         setMacros({
@@ -66,18 +73,20 @@ export default function GoalPlanner({ compact = false }) {
         setTimeframe(Number(data.timeframe_weeks) || 0);
         setEditing(false);
       } else {
-        // No goal yet → start in editing mode so user sees the form
+        // No goal yet → start in editing mode so user sees the form immediately
         setEditing(true);
       }
 
       setLoading(false);
     })();
 
+    // Cleanup flag to avoid setting state on unmounted component
     return () => {
       mounted = false;
     };
   }, []);
 
+  // Derived flag: do we have enough data to consider this a "complete" goal?
   const hasGoal = useMemo(
     () => !!goal && timeframe > 0 && macros.calories > 0,
     [goal, timeframe, macros]
@@ -90,12 +99,14 @@ export default function GoalPlanner({ compact = false }) {
     setError('');
     setMessage('');
 
+    // Basic validation to prevent saving obviously incomplete rows
     if (!goal) return setError('Please select a goal.');
     if (macros.calories <= 0) return setError('Calories must be greater than 0.');
     if (timeframe <= 0) return setError('Timeframe (weeks) must be greater than 0.');
 
     setSaving(true);
 
+    // Payload mirrors the columns of the 'goals' table
     const payload = {
       user_id: userId,
       goal,
@@ -106,6 +117,7 @@ export default function GoalPlanner({ compact = false }) {
       timeframe_weeks: Number(timeframe) || 0,
     };
 
+    // upsert + onConflict ensures "one goal per user" behavior
     const { data, error } = await supabase
       .from('goals')
       .upsert(payload, { onConflict: ['user_id'] })
@@ -115,9 +127,11 @@ export default function GoalPlanner({ compact = false }) {
     if (error) {
       setError(`❌ Error saving goal: ${error.message}`);
     } else {
+      // Ensure we keep track of the row id after first insert
       setRowId(data?.id ?? rowId);
       setMessage('✅ Goal saved successfully!');
-      setEditing(false); // switch to view mode after save
+      // After saving, switch to read-only view mode
+      setEditing(false);
     }
 
     setSaving(false);
@@ -132,6 +146,7 @@ export default function GoalPlanner({ compact = false }) {
     setError('');
     setMessage('');
 
+    // Delete the user's row from the 'goals' table
     const { error } = await supabase
       .from('goals')
       .delete()
@@ -140,12 +155,14 @@ export default function GoalPlanner({ compact = false }) {
     if (error) {
       setError(`❌ Error deleting goal: ${error.message}`);
     } else {
+      // Reset local state after successful deletion
       setRowId(null);
       setGoal('');
       setMacros(emptyMacros);
       setTimeframe(0);
       setMessage('🗑️ Goal deleted.');
-      setEditing(true); // back to blank form after delete
+      // Show blank form so user can create a new goal
+      setEditing(true);
     }
     setDeleting(false);
     setConfirmDelete(false);
@@ -156,6 +173,7 @@ export default function GoalPlanner({ compact = false }) {
   // --------------------------------------
   return (
     <div className={`goalplanner-container ${compact ? 'compact' : ''}`}>
+      {/* Header is hidden when used in compact mode (e.g., dashboard widget) */}
       {!compact && (
         <div className="goalplanner-header">
           <h2>Goal Planner</h2>
@@ -170,6 +188,7 @@ export default function GoalPlanner({ compact = false }) {
         </div>
       )}
 
+      {/* Status + feedback messages */}
       {loading && <p className="goalplanner-loading">Loading…</p>}
       {!loading && error && <p className="goalplanner-error">{error}</p>}
       {!loading && message && (
@@ -187,6 +206,7 @@ export default function GoalPlanner({ compact = false }) {
         <div className="goalplanner-form">
           <h3>{rowId ? 'Edit Goal' : 'Create Goal'}</h3>
 
+          {/* Goal type shortcut buttons */}
           <div className="goalplanner-goal-options">
             {['Cutting', 'Bulking', 'Maintenance'].map((g) => (
               <button
@@ -201,6 +221,7 @@ export default function GoalPlanner({ compact = false }) {
             ))}
           </div>
 
+          {/* Macronutrient inputs – user can paste values from the calculators or coach */}
           <h4>Macronutrients</h4>
           {['calories', 'protein', 'carbs', 'fat'].map((m) => (
             <div key={m} className="goalplanner-input-group">
@@ -219,6 +240,7 @@ export default function GoalPlanner({ compact = false }) {
             </div>
           ))}
 
+          {/* Timeframe input in weeks – used for planning progress expectations */}
           <h4>Estimated Timeframe (weeks)</h4>
           <input
             type="number"
@@ -229,6 +251,7 @@ export default function GoalPlanner({ compact = false }) {
             className="goalplanner-timeframe"
           />
 
+          {/* Save / delete actions */}
           <div className="goalplanner-actions">
             <button
               onClick={handleSave}
@@ -248,6 +271,7 @@ export default function GoalPlanner({ compact = false }) {
             )}
           </div>
 
+          {/* Extra confirmation layer to prevent accidental deletes */}
           {confirmDelete && (
             <div className="goalplanner-confirm">
               <span>Delete your current goal permanently?</span>
@@ -271,7 +295,7 @@ export default function GoalPlanner({ compact = false }) {
         </div>
       )}
 
-      {/* READ-ONLY VIEW */}
+      {/* READ-ONLY VIEW – shows the user’s saved goal when not editing */}
       {!loading && hasGoal && !editing && (
         <div className="goalplanner-view">
           {!compact && <h3>Your Current Goal</h3>}

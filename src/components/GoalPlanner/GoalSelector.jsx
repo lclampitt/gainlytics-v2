@@ -1,15 +1,21 @@
 import React from 'react';
 
+// Small reusable component for choosing high-level goal type.
+// Used in places where we want more Tailwind-style styling.
 const GoalSelector = ({ goal, setGoal }) => {
   return (
     <div className="mb-6">
-      <label className="block text-sm font-medium text-gray-700 mb-2">Select Your Goal</label>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Select Your Goal
+      </label>
       <div className="flex gap-4">
         {['Cutting', 'Bulking', 'Maintenance'].map((option) => (
           <button
             key={option}
             onClick={() => setGoal(option)}
-            className={`py-2 px-4 rounded border ${goal === option ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+            className={`py-2 px-4 rounded border ${
+              goal === option ? 'bg-blue-600 text-white' : 'bg-gray-200'
+            }`}
           >
             {option}
           </button>

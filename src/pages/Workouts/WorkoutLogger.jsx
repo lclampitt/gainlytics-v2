@@ -3,6 +3,7 @@ import { supabase } from '../../supabaseClient';
 import '../../styles/WorkoutLogger.css';
 
 export default function WorkoutLogger() {
+  // Form state for creating/editing a workout
   const [workoutDate, setWorkoutDate] = useState(new Date().toISOString().split('T')[0]);
   const [workoutName, setWorkoutName] = useState('');
   const [exercises, setExercises] = useState([]);
@@ -11,13 +12,16 @@ export default function WorkoutLogger() {
   const [userId, setUserId] = useState(null);
   const [editingWorkoutId, setEditingWorkoutId] = useState(null);
 
+  // History and UI state
   const [workoutHistory, setWorkoutHistory] = useState([]);
   const [expanded, setExpanded] = useState({});
 
+  // Scroll to top when opening the logger
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
+  // Get the logged-in user from Supabase
   useEffect(() => {
     async function fetchUser() {
       const { data, error } = await supabase.auth.getUser();
@@ -30,11 +34,13 @@ export default function WorkoutLogger() {
     fetchUser();
   }, []);
 
+  // Once we know the user, load their saved workouts
   useEffect(() => {
     if (!userId) return;
     fetchWorkouts();
   }, [userId]);
 
+  // Fetch all workouts for the current user
   const fetchWorkouts = async () => {
     const { data, error } = await supabase
       .from('workouts')
@@ -46,6 +52,7 @@ export default function WorkoutLogger() {
     else setWorkoutHistory(data);
   };
 
+  // Add a new exercise row to the current workout
   const addExercise = () => {
     if (!newExercise.trim()) return;
     setExercises([
@@ -55,23 +62,27 @@ export default function WorkoutLogger() {
     setNewExercise('');
   };
 
+  // Add an additional set to an existing exercise
   const addSet = (i) => {
     const updated = [...exercises];
     updated[i].sets.push({ weight: '', reps: '', notes: '' });
     setExercises(updated);
   };
 
+  // Update a single field of a single set for an exercise
   const handleSetChange = (exerciseIndex, setIndex, field, value) => {
     const updated = [...exercises];
     updated[exerciseIndex].sets[setIndex][field] = value;
     setExercises(updated);
   };
 
+  // Remove an exercise from the current workout
   const deleteExercise = (i) => {
     const updated = exercises.filter((_, idx) => idx !== i);
     setExercises(updated);
   };
 
+  // Save new workout or update an existing one in Supabase
   const saveWorkout = async () => {
     if (!workoutName.trim() || exercises.length === 0) {
       setMessage('⚠️ Please enter a workout name and add at least one exercise.');
@@ -91,6 +102,7 @@ export default function WorkoutLogger() {
 
     let error;
 
+    // If editingWorkoutId exists, update the existing row
     if (editingWorkoutId) {
       ({ error } = await supabase
         .from('workouts')
@@ -101,6 +113,7 @@ export default function WorkoutLogger() {
         setEditingWorkoutId(null);
       }
     } else {
+      // Otherwise insert a new workout
       ({ error } = await supabase.from('workouts').insert([workoutData]));
       if (!error) setMessage('✅ Workout saved successfully!');
     }
@@ -109,6 +122,7 @@ export default function WorkoutLogger() {
       console.error('Save error:', error);
       setMessage(`❌ Error saving workout: ${error.message}`);
     } else {
+      // Reset form and refresh history
       setWorkoutName('');
       setExercises([]);
       fetchWorkouts();
@@ -116,6 +130,7 @@ export default function WorkoutLogger() {
     }
   };
 
+  // Load a workout from history into the editor
   const editWorkout = (workout) => {
     setWorkoutDate(workout.workout_date);
     setWorkoutName(workout.workout_name);
@@ -125,6 +140,7 @@ export default function WorkoutLogger() {
     setMessage('✏️ Editing workout...');
   };
 
+  // Expand/collapse a workout in the history list
   const toggleExpand = (id) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -136,6 +152,7 @@ export default function WorkoutLogger() {
         Track sets, reps, and weight for your training sessions.
       </p>
 
+      {/* Top form: date + workout name */}
       <div className="workout-header">
         <div>
           <label>Date:</label>
@@ -156,6 +173,7 @@ export default function WorkoutLogger() {
         </div>
       </div>
 
+      {/* Add exercise input */}
       <div className="exercise-adder">
         <input
           type="text"
@@ -166,6 +184,7 @@ export default function WorkoutLogger() {
         <button onClick={addExercise}>Add</button>
       </div>
 
+      {/* Exercise blocks with dynamic sets table */}
       {exercises.map((ex, i) => (
         <div key={i} className="exercise-block">
           <div className="exercise-header">
@@ -216,12 +235,14 @@ export default function WorkoutLogger() {
         </div>
       ))}
 
+      {/* Save / update message */}
       {message && <p className="workout-message">{message}</p>}
 
       <button className="save-btn" onClick={saveWorkout}>
         {editingWorkoutId ? 'Update Workout' : 'Save Workout'}
       </button>
 
+      {/* History section */}
       <h2 className="history-title">Workout History</h2>
       {workoutHistory.length === 0 && (
         <p style={{ color: '#999', textAlign: 'center' }}>No workouts logged yet.</p>
@@ -234,6 +255,7 @@ export default function WorkoutLogger() {
               📅 {workout.workout_date} — <strong>{workout.workout_name}</strong>
             </span>
             <div>
+              {/* Edit button inside the history card */}
               <button
                 className="edit-btn"
                 onClick={(e) => {
@@ -247,6 +269,7 @@ export default function WorkoutLogger() {
             </div>
           </div>
 
+          {/* Expandable workout details */}
           {expanded[workout.id] && (
             <div className="history-body">
               {workout.exercises?.map((ex, idx) => (

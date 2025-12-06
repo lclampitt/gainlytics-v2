@@ -4,14 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/auth.css';
 
 function AuthPage() {
+  // Local form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // isLogin controls whether we're in "sign in" or "register" mode
   const [isLogin, setIsLogin] = useState(true);
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState(null); // 'error' | 'success' | null
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
 
+  // Handle both sign in and registration with one handler
   const handleAuth = async (e) => {
     e.preventDefault();       // allows Enter to submit
     setMessage('');
@@ -20,13 +23,16 @@ function AuthPage() {
 
     try {
       if (isLogin) {
+        // Sign in with Supabase email/password
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
 
         setStatus('success');
         setMessage('✅ Logged in successfully.');
+        // On successful login, go to the home/dashboard
         navigate('/', { replace: true });
       } else {
+        // Create a new user account in Supabase
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
 
@@ -34,6 +40,7 @@ function AuthPage() {
         setMessage('✅ Account created! Please check your email to confirm.');
       }
     } catch (err) {
+      // Show Supabase error if something fails
       setStatus('error');
       setMessage(`❌ ${err.message}`);
     } finally {
@@ -41,6 +48,7 @@ function AuthPage() {
     }
   };
 
+  // Switch between login and register modes
   const toggleMode = () => {
     setIsLogin((prev) => !prev);
     setMessage('');
@@ -57,6 +65,7 @@ function AuthPage() {
             : 'Start using Gainlytics to track your body analysis, goals, and workouts.'}
         </p>
 
+        {/* Main auth form */}
         <form className="auth-form" onSubmit={handleAuth}>
           <input
             type="email"
@@ -80,6 +89,7 @@ function AuthPage() {
           </button>
         </form>
 
+        {/* Mode switch text link */}
         <p className="switch-text" onClick={toggleMode}>
           {isLogin ? (
             <>
@@ -92,6 +102,7 @@ function AuthPage() {
           )}
         </p>
 
+        {/* Feedback message below form */}
         {message && (
           <p className={`auth-message ${status === 'error' ? 'error' : 'success'}`}>
             {message}

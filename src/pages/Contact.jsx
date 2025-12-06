@@ -11,6 +11,7 @@ export default function Contact() {
           Have a question, feedback, or request? Send us a message.
         </p>
 
+        {/* Simple contact form – currently just shows an alert */}
         <form
           className="contact-form"
           onSubmit={(e) => {

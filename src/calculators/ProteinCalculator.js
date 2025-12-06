@@ -2,26 +2,36 @@ import React, { useState } from 'react';
 import '../styles/ProteinCalculator.css';
 
 function ProteinCalculator() {
+  // Core input state
   const [weight, setWeight] = useState('');
   const [ageRange, setAgeRange] = useState('<34');
   const [bodyFat, setBodyFat] = useState('');
   const [workoutHours, setWorkoutHours] = useState('0-1');
   const [isPlantBased, setIsPlantBased] = useState('No');
   const [gender, setGender] = useState('Male');
+
+  // Calculated grams per day (min / max / optimal)
   const [results, setResults] = useState(null);
 
+  // Main protein estimation logic
   const calculateProtein = () => {
     const lbWeight = parseFloat(weight);
     if (isNaN(lbWeight)) return;
 
+    // If user provides body fat, estimate lean mass; otherwise assume 0% bf (conservative)
     const bf = parseFloat(bodyFat) || 0;
     const leanMass = lbWeight * (1 - bf / 100);
+
+    // Base range: 0.6–1.0 g per lb of lean body mass
     let min = leanMass * 0.6;
     let max = leanMass * 1.0;
     let optimal = leanMass * 0.88;
 
+    // Adjust optimal target for higher training volume
     if (workoutHours === '4-6') optimal *= 1.1;
     if (workoutHours === '7+') optimal *= 1.2;
+
+    // Plant-based diets often benefit from slightly higher protein for quality
     if (isPlantBased === 'Yes') optimal *= 1.1;
 
     setResults({
@@ -35,6 +45,7 @@ function ProteinCalculator() {
     <div className="calculator-container">
       <h2>Protein Calculator</h2>
 
+      {/* Simple demographic inputs – hooks for future refinements */}
       <label>Gender*</label>
       <select value={gender} onChange={e => setGender(e.target.value)}>
         <option>Male</option>
@@ -51,6 +62,7 @@ function ProteinCalculator() {
         <option value="61+">61+</option>
       </select>
 
+      {/* Optional body fat input helps narrow in on lean mass */}
       <label>Body Fat % (Optional)</label>
       <input type="number" value={bodyFat} onChange={e => setBodyFat(e.target.value)} />
 
@@ -68,8 +80,10 @@ function ProteinCalculator() {
         <option>Yes</option>
       </select>
 
+      {/* Triggers the calculation and updates results state */}
       <button onClick={calculateProtein}>Calculate</button>
 
+      {/* Results card: presents daily protein targets in g/day */}
       {results && (
         <div className="results">
           <p><strong>Minimum:</strong> {results.min} g/day</p>
@@ -78,7 +92,7 @@ function ProteinCalculator() {
         </div>
       )}
 
-      {/* ABOUT SECTION */}
+      {/* ABOUT SECTION – explains how to interpret the protein targets */}
       <div className="tdee-info-section">
         <h2>💡 About This Calculator</h2>
         <p>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import '../styles/TdeeCalculator.css';
 
 function DeficitTimeCalculator() {
+  // Global input state
   const [unit, setUnit] = useState('imperial');
   const [gender, setGender] = useState('male');
   const [weight, setWeight] = useState(170);
@@ -9,36 +10,50 @@ function DeficitTimeCalculator() {
   const [workoutHours, setWorkoutHours] = useState(6);
   const [steps, setSteps] = useState(6000);
   const [ageRange, setAgeRange] = useState('under60');
+
+  // Aggregated output from the calculation
   const [results, setResults] = useState(null);
 
+  // Main TDEE + macros scenario calculator
   const calculate = () => {
+    // 1) Estimate lean mass from body weight and body fat %
     const leanMass = weight * (1 - bodyFat / 100);
     const leanMassKg = unit === 'imperial' ? leanMass / 2.20462 : leanMass;
+
+    // 2) Katch-McArdle style BMR based on lean mass
     const bmr = 370 + (21.6 * leanMassKg);
 
+    // 3) Start with a base activity multiplier from training volume
     let activityMultiplier = 1.3;
     if (workoutHours >= 0 && workoutHours < 3) activityMultiplier = 1.3;
     else if (workoutHours >= 3 && workoutHours < 5) activityMultiplier = 1.4;
     else if (workoutHours >= 5 && workoutHours < 7) activityMultiplier = 1.5;
     else if (workoutHours >= 7) activityMultiplier = 1.55;
 
+    // 4) Layer in additional activity from daily step count
     if (steps >= 5000 && steps < 7000) activityMultiplier += 0.05;
     else if (steps >= 7000 && steps < 9000) activityMultiplier += 0.10;
     else if (steps >= 9000 && steps < 11000) activityMultiplier += 0.15;
     else if (steps >= 11000 && steps < 13000) activityMultiplier += 0.20;
     else if (steps >= 13000) activityMultiplier += 0.25;
 
+    // Cap multiplier so things don’t get unrealistic
     activityMultiplier = Math.min(activityMultiplier, 1.8);
 
+    // 5) TDEE is BMR multiplied by overall activity
     const tdee = bmr * activityMultiplier;
+
+    // 6) Different deficit sizes for slow / moderate / fast fat loss
     const slow = tdee - (tdee * 0.15);
     const moderate = tdee - (tdee * 0.24);
     const fast = tdee - (tdee * 0.32);
 
+    // 7) Surplus ranges for lean / standard / dirty bulk
     const leanBulk = tdee + (tdee * 0.10);
     const standardBulk = tdee + (tdee * 0.20);
     const dirtyBulk = tdee + (tdee * 0.35);
 
+    // 8) Recomposition zone – hover around maintenance with small swings
     const standardRecomp = tdee;
     const fatLossRecomp = tdee - (tdee * 0.08);
     const muscleGainRecomp = tdee + (tdee * 0.08);
@@ -63,7 +78,7 @@ function DeficitTimeCalculator() {
     <div className="deficit-calculator">
       <h1>Deficit Time Calculator</h1>
 
-      {/* INPUT SECTION */}
+      {/* INPUT SECTION – collects all user-specific data for TDEE estimation */}
       <div className="inputs">
         <div>
           <label>Units:</label>
@@ -104,14 +119,16 @@ function DeficitTimeCalculator() {
           <button onClick={() => setAgeRange('60plus')} className={ageRange === '60plus' ? 'active' : ''}>61+</button>
         </div>
 
+        {/* Triggers the calculation and populates the results section */}
         <button onClick={calculate} className="calculate-button">Calculate</button>
       </div>
 
-      {/* RESULTS SECTION */}
+      {/* RESULTS SECTION – presents stats and calorie targets for each goal */}
       {results && (
         <div className="results">
           <h2 className="stats-title">Stats</h2>
 
+          {/* High-level stats grid (LBM, BMR, TDEE) */}
           <div className="stats-grid">
             <div className="stat-card">
               <h3>
@@ -138,6 +155,7 @@ function DeficitTimeCalculator() {
             </div>
           </div>
 
+          {/* Deficit table – what to eat for slow/moderate/fast fat loss */}
           <div className="section-header">
             <h3>❌ Calories for Deficit</h3>
           </div>
@@ -157,6 +175,7 @@ function DeficitTimeCalculator() {
             </tbody>
           </table>
 
+          {/* Surplus table – different bulk strategies */}
           <div className="section-header">
             <h3>💪 Calories to Gain</h3>
           </div>
@@ -176,6 +195,7 @@ function DeficitTimeCalculator() {
             </tbody>
           </table>
 
+          {/* Recomposition table – hover around maintenance */}
           <div className="section-header">
             <h3>⚖️ Recomposition</h3>
           </div>
@@ -196,7 +216,7 @@ function DeficitTimeCalculator() {
         </div>
       )}
 
-      {/* ABOUT SECTION */}
+      {/* ABOUT SECTION – plain-language explanation for users / graders */}
       <div className="tdee-info-section">
         <h2>💡 About This Calculator</h2>
         <p>

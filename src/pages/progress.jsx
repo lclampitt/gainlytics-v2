@@ -12,12 +12,13 @@ export default function ProgressPage() {
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
 
-  // form
+  // Form state
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [date, setDate] = useState(today);
   const [weightLbs, setWeightLbs] = useState('');
   const [bfPct, setBfPct] = useState('');
 
+  // Get the current user session on mount
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -31,6 +32,7 @@ export default function ProgressPage() {
     };
   }, []);
 
+  // Once we know who is logged in, load their progress rows
   useEffect(() => {
     if (!session?.user?.id) return;
     fetchRows();
@@ -51,6 +53,7 @@ export default function ProgressPage() {
     setRows(data ?? []);
   }
 
+  // Add or update a progress entry (one row per date)
   async function handleAdd(e) {
     e.preventDefault();
     setError('');
@@ -64,6 +67,7 @@ export default function ProgressPage() {
 
     setSaving(true);
 
+    // Optimistic UI row while we wait for Supabase
     const tempId = `tmp-${Math.random().toString(36).slice(2)}`;
     const optimisticRow = {
       id: tempId,
@@ -75,6 +79,7 @@ export default function ProgressPage() {
       created_at: new Date().toISOString(),
     };
 
+    // Replace existing row for that date if it exists, otherwise add a new one
     const exists = rows.find((r) => r.date === date);
     if (exists) {
       setRows((prev) => [optimisticRow, ...prev.filter((r) => r.date !== date)]);
@@ -82,13 +87,14 @@ export default function ProgressPage() {
       setRows((prev) => [optimisticRow, ...prev]);
     }
 
+    // Upsert row in Supabase (unique on {user_id, date})
     const { data, error } = await supabase
       .from('progress')
       .upsert(
         {
           user_id: session.user.id,
           date,
-          weight_kg: w,       // column name unchanged
+          weight_kg: w,       // column name unchanged (used as lbs)
           body_fat_pct: b,
         },
         { onConflict: ['user_id', 'date'] }
@@ -97,9 +103,11 @@ export default function ProgressPage() {
       .single();
 
     if (error) {
+      // On error, show message and reload server state
       setError(error.message);
       await fetchRows();
     } else {
+      // Replace optimistic row with real row from server
       setRows((prev) => [
         data,
         ...prev.filter((r) => r.id !== tempId && r.date !== data.date),
@@ -111,16 +119,19 @@ export default function ProgressPage() {
     setSaving(false);
   }
 
+  // Delete a progress entry by id
   async function handleDelete(id) {
     setError('');
     setMsg('');
     setDeletingId(id);
 
     const prev = rows;
+    // Optimistically remove from UI
     setRows(rows.filter((r) => r.id !== id));
 
     const { error } = await supabase.from('progress').delete().eq('id', id);
     if (error) {
+      // If delete fails, roll back UI
       setError(error.message);
       setRows(prev);
     } else {
@@ -138,6 +149,7 @@ export default function ProgressPage() {
     );
   }
 
+  // If not logged in, show a friendly guest message
   if (!session) {
     return (
       <div className="progress-guest">
@@ -151,7 +163,7 @@ export default function ProgressPage() {
     <div className="progress-page">
       <h2 className="progress-title">Progress</h2>
 
-      {/* Alerts */}
+      {/* Alerts for error/success */}
       {error && (
         <div className="progress-alert progress-alert--error">❌ {error}</div>
       )}
@@ -159,12 +171,12 @@ export default function ProgressPage() {
         <div className="progress-alert progress-alert--success">{msg}</div>
       )}
 
-      {/* Chart */}
+      {/* Chart card */}
       <div className="progress-card progress-card--chart">
         <ProgressCharts rows={rows} />
       </div>
 
-      {/* Add Entry */}
+      {/* Add Entry card */}
       <div className="progress-card">
         <h3 className="progress-section-title">Add Entry</h3>
         <form className="progress-form" onSubmit={handleAdd}>
@@ -215,7 +227,7 @@ export default function ProgressPage() {
         </p>
       </div>
 
-      {/* History table */}
+      {/* History table card */}
       <div className="progress-card">
         <div className="progress-card--table-header">
           <span className="progress-section-title">History</span>

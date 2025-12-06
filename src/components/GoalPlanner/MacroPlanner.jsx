@@ -1,5 +1,7 @@
 import React from 'react';
 
+// Simple macro planning form as a reusable component.
+// Parents pass in `macros` state and `setMacros` updater.
 const MacroPlanner = ({ macros, setMacros }) => {
   const handleChange = (e) => {
     setMacros({
@@ -14,7 +16,9 @@ const MacroPlanner = ({ macros, setMacros }) => {
       <div className="grid grid-cols-2 gap-4">
         {['calories', 'protein', 'carbs', 'fat'].map((key) => (
           <div key={key}>
-            <label className="block text-sm font-medium text-gray-700 capitalize">{key}</label>
+            <label className="block text-sm font-medium text-gray-700 capitalize">
+              {key}
+            </label>
             <input
               type="number"
               name={key}

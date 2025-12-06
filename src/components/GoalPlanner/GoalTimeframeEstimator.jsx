@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
+// Displays a friendly "expected duration" based on the selected goal.
+// Keeps both a local view of the timeframe and pushes it up via setTimeframe.
 const GoalTimeframeEstimator = ({ goal, setTimeframe }) => {
   const [localTimeframe, setLocalTimeframe] = useState('');
 
@@ -17,7 +19,13 @@ const GoalTimeframeEstimator = ({ goal, setTimeframe }) => {
     <div className="mb-6">
       <h2 className="text-lg font-semibold mb-2">Estimated Timeframe</h2>
       <p className="text-gray-700">
-        {goal ? `Expected duration: ${goal === 'Maintenance' ? 'Ongoing lifestyle focus' : localTimeframe}` : 'Select a goal to see timeframe.'}
+        {goal
+          ? `Expected duration: ${
+              goal === 'Maintenance'
+                ? 'Ongoing lifestyle focus'
+                : localTimeframe
+            }`
+          : 'Select a goal to see timeframe.'}
       </p>
     </div>
   );

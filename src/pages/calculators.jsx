@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom';
 import '../styles/CalculatorsPage.css';
 
+// Config array to render each calculator card
 const calculators = [
   {
     title: 'TDEE Calculator',
@@ -34,6 +35,7 @@ function CalculatorsPage() {
     <div className="calculators-container">
       <h1 className="calculators-title">Fitness Calculators</h1>
 
+      {/* Grid of calculator cards built from the array above */}
       <div className="calculator-grid">
         {calculators.map((calc, index) => (
           <Link to={calc.path} key={index} className="calculator-card">
@@ -49,7 +51,7 @@ function CalculatorsPage() {
             <h2 className="calculator-card-title">
               {calc.title}
 
-              {/* Tooltip if fullName exists */}
+              {/* Tooltip shows the expanded name when available */}
               {calc.fullName && (
                 <>
                   <span className="tooltip-icon">?</span>
