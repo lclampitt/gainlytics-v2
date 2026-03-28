@@ -15,6 +15,9 @@ from PIL import Image
 import io
 import joblib
 import os
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import stripe
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -27,6 +30,11 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 STRIPE_PRICE_ID_PRO   = os.environ.get("STRIPE_PRICE_ID_PRO", "")
 FRONTEND_URL          = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+
+# Contact email config (Outlook SMTP)
+CONTACT_SMTP_USER     = os.environ.get("CONTACT_SMTP_USER", "")
+CONTACT_SMTP_PASSWORD = os.environ.get("CONTACT_SMTP_PASSWORD", "")
+CONTACT_RECIPIENT     = "lclampitt44@outlook.com"
 
 # Supabase admin client (service role — never expose this key to the browser)
 _supabase_url = os.environ.get("SUPABASE_URL", "")
@@ -85,6 +93,12 @@ class AnalysisResponse(BaseModel):
     notes: list[str]
 
 
+class ContactRequest(BaseModel):
+    name: str
+    email: str
+    message: str
+
+
 class MeasurementRequest(BaseModel):
     """
     Measurement-based analysis request.
@@ -100,6 +114,41 @@ class MeasurementRequest(BaseModel):
     hip_cm: float
     neck_cm: float
     user_id: Optional[str] = None  # Used for usage tracking
+
+
+# -------------------------------------------------
+# Contact form endpoint
+# -------------------------------------------------
+
+@app.post("/contact")
+async def contact(req: ContactRequest):
+    if not CONTACT_SMTP_USER or not CONTACT_SMTP_PASSWORD:
+        raise HTTPException(status_code=503, detail="Email service not configured.")
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"Gainlytics Contact: {req.name}"
+        msg["From"]    = CONTACT_SMTP_USER
+        msg["To"]      = CONTACT_RECIPIENT
+        msg["Reply-To"] = req.email
+
+        body = (
+            f"Name: {req.name}\n"
+            f"Email: {req.email}\n\n"
+            f"Message:\n{req.message}"
+        )
+        msg.attach(MIMEText(body, "plain"))
+
+        with smtplib.SMTP("smtp-mail.outlook.com", 587) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(CONTACT_SMTP_USER, CONTACT_SMTP_PASSWORD)
+            server.sendmail(CONTACT_SMTP_USER, CONTACT_RECIPIENT, msg.as_string())
+
+        return {"ok": True}
+    except Exception as e:
+        print(f"Contact email error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send message. Please try again.")
 
 
 # -------------------------------------------------
