@@ -34,6 +34,9 @@ import WorkoutLogger from './pages/Workouts/WorkoutLogger';
 // Upgrade context
 import { UpgradeProvider } from './context/UpgradeContext';
 
+// Onboarding
+import OnboardingWizard from './components/ui/OnboardingWizard';
+
 // Global theme
 import './styles/theme.css';
 
@@ -60,17 +63,19 @@ function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isPro, setIsPro] = useState(false);
+  const [onboardingDone, setOnboardingDone] = useState(true); // default true avoids flash
   const navigate = useNavigate();
 
-  // Fetch subscription tier from profiles table
+  // Fetch profile: subscription tier + onboarding status
   async function fetchTier(userId) {
-    if (!userId) { setIsPro(false); return; }
+    if (!userId) { setIsPro(false); setOnboardingDone(true); return; }
     const { data } = await supabase
       .from('profiles')
-      .select('subscription_tier')
+      .select('subscription_tier, onboarding_completed')
       .eq('id', userId)
       .maybeSingle();
     setIsPro(data?.subscription_tier === 'pro');
+    setOnboardingDone(data?.onboarding_completed ?? false);
   }
 
   useEffect(() => {
@@ -118,6 +123,13 @@ function App() {
 
   return (
     <UpgradeProvider>
+    {/* Onboarding wizard — shown to newly signed-up users */}
+    {session && !onboardingDone && !loading && (
+      <OnboardingWizard
+        session={session}
+        onComplete={() => setOnboardingDone(true)}
+      />
+    )}
     <Routes>
       {/* Marketing landing — public only, redirect auth'd users to /home */}
       <Route
