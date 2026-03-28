@@ -13,6 +13,7 @@ import ProgressPage from './pages/progress';
 import AuthPage     from './pages/auth';
 import Contact      from './pages/Contact';
 import About        from './pages/About';
+import BillingPage  from './pages/billing';
 
 // Features
 import GoalPlanner from './components/GoalPlanner/goalplanner';
@@ -63,18 +64,24 @@ function App() {
 
   useEffect(() => {
     const getSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      const sess = data?.session ?? null;
-      setSession(sess);
-      await fetchTier(sess?.user?.id);
-      setLoading(false);
+      const fallback = setTimeout(() => setLoading(false), 5000);
+      try {
+        const { data } = await supabase.auth.getSession();
+        const sess = data?.session ?? null;
+        setSession(sess);
+        await fetchTier(sess?.user?.id);
+      } catch (err) {
+        console.error('Session error:', err);
+      } finally {
+        clearTimeout(fallback);
+        setLoading(false);
+      }
     };
     getSession();
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, sess) => {
       setSession(sess);
-      await fetchTier(sess?.user?.id);
-      setLoading(false);
+      fetchTier(sess?.user?.id).catch(() => {}).finally(() => setLoading(false));
     });
 
     return () => listener.subscription.unsubscribe();
@@ -115,6 +122,7 @@ function App() {
       <Route path="/goalplanner"         element={protect(<GoalPlanner />)} />
       <Route path="/progress"            element={protect(<ProgressPage />)} />
       <Route path="/workouts"            element={protect(<WorkoutLogger />)} />
+      <Route path="/billing"             element={protect(<BillingPage />)} />
       <Route path="/exercises"           element={protect(<ExerciseLibrary />)} />
       <Route path="/exercises/:id"       element={protect(<ExerciseDetails />)} />
     </Routes>

@@ -5,7 +5,7 @@
 # - /analyze-image: experimental, heuristic-only (no model blending)
 # - /: simple health check
 
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import numpy as np
@@ -14,6 +14,22 @@ from PIL import Image
 import io
 import joblib
 import os
+import stripe
+from supabase import create_client, Client
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Stripe config
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+STRIPE_PRICE_ID_PRO   = os.environ.get("STRIPE_PRICE_ID_PRO", "")
+FRONTEND_URL          = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+
+# Supabase admin client (service role — never expose this key to the browser)
+_supabase_url = os.environ.get("SUPABASE_URL", "")
+_supabase_service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+supabase_admin: Client = create_client(_supabase_url, _supabase_service_key) if _supabase_url and _supabase_service_key else None
 
 # FastAPI app instance used by uvicorn / deployment
 app = FastAPI(title="AI Body Analyzer")
@@ -386,6 +402,96 @@ async def analyze_image(file: UploadFile = File(...)):
         suggested_calories=int(cals),
         notes=notes,
     )
+
+
+# -------------------------------------------------
+# Stripe: create Checkout session (Pro plan)
+# -------------------------------------------------
+class CheckoutRequest(BaseModel):
+    user_id: str
+    email: str | None = None
+
+@app.post("/stripe/checkout")
+async def create_checkout_session(body: CheckoutRequest):
+    if not stripe.api_key:
+        raise HTTPException(status_code=500, detail="Stripe is not configured.")
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{"price": STRIPE_PRICE_ID_PRO, "quantity": 1}],
+            mode="subscription",
+            success_url=f"{FRONTEND_URL}/billing?success=true",
+            cancel_url=f"{FRONTEND_URL}/billing?canceled=true",
+            client_reference_id=body.user_id,
+            customer_email=body.email or None,
+        )
+        return {"url": session.url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# -------------------------------------------------
+# Stripe: webhook handler
+# -------------------------------------------------
+@app.post("/stripe/webhook")
+async def stripe_webhook(request: Request):
+    payload   = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    except stripe.error.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    if not supabase_admin:
+        raise HTTPException(status_code=500, detail="Supabase admin client not configured.")
+
+    event_type = event["type"]
+    obj = event["data"]["object"]
+
+    if event_type == "checkout.session.completed":
+        user_id         = obj.get("client_reference_id")
+        customer_id     = obj.get("customer")
+        subscription_id = obj.get("subscription")
+        if user_id:
+            supabase_admin.table("profiles").upsert({
+                "id": user_id,
+                "subscription_tier": "pro",
+                "stripe_customer_id": customer_id,
+                "stripe_subscription_id": subscription_id,
+            }).execute()
+
+    elif event_type == "customer.subscription.deleted":
+        customer_id = obj.get("customer")
+        if customer_id:
+            supabase_admin.table("profiles").update({
+                "subscription_tier": "free",
+                "stripe_subscription_id": None,
+            }).eq("stripe_customer_id", customer_id).execute()
+
+    return {"status": "ok"}
+
+
+# -------------------------------------------------
+# Stripe: customer portal session
+# -------------------------------------------------
+class PortalRequest(BaseModel):
+    stripe_customer_id: str
+
+@app.post("/stripe/portal")
+async def create_portal_session(body: PortalRequest):
+    if not stripe.api_key:
+        raise HTTPException(status_code=500, detail="Stripe is not configured.")
+    try:
+        session = stripe.billing_portal.Session.create(
+            customer=body.stripe_customer_id,
+            return_url=f"{FRONTEND_URL}/billing",
+        )
+        return {"url": session.url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # -------------------------------------------------

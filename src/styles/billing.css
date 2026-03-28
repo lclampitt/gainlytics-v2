@@ -1,0 +1,130 @@
+.billing {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.billing__card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 12px);
+  padding: 32px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.billing__plan-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.billing__plan-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.billing__plan-badge {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.billing__plan-badge--pro {
+  background: var(--pro-bg, rgba(29,158,117,0.15));
+  color: var(--pro-text, #1D9E75);
+}
+
+.billing__plan-badge--free {
+  background: var(--bg-hover);
+  color: var(--text-muted);
+}
+
+.billing__alert {
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 8px;
+}
+
+.billing__alert--success {
+  background: rgba(29, 158, 117, 0.12);
+  color: #1D9E75;
+}
+
+.billing__alert--warn {
+  background: rgba(234, 179, 8, 0.12);
+  color: #ca8a04;
+}
+
+.billing__alert--error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.billing__perks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.billing__perks-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.billing__perks ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+}
+
+.billing__perks li {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+}
+
+.billing__muted {
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+
+.billing__btn {
+  padding: 11px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.billing__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.billing__btn--upgrade {
+  background: var(--accent, #1D9E75);
+  color: #fff;
+}
+
+.billing__btn--upgrade:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.billing__btn--manage {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.billing__btn--manage:hover:not(:disabled) {
+  background: var(--border);
+}

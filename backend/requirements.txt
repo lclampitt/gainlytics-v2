@@ -6,3 +6,6 @@ pillow
 joblib
 scikit-learn
 python-multipart
+stripe
+supabase
+python-dotenv
