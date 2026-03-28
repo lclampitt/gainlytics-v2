@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import * as Sentry from '@sentry/react';
 import { supabase } from './supabaseClient';
 
 // Layout
@@ -71,8 +72,9 @@ function App() {
   const navigate = useNavigate();
 
   // Fetch profile: subscription tier + onboarding status
-  async function fetchTier(userId) {
+  async function fetchTier(userId, userEmail) {
     if (!userId) { setIsPro(false); setOnboardingDone(true); return; }
+    Sentry.setUser({ id: userId, email: userEmail });
     const { data } = await supabase
       .from('profiles')
       .select('subscription_tier, onboarding_completed')
@@ -91,7 +93,7 @@ function App() {
         const { data } = await supabase.auth.getSession();
         const sess = data?.session ?? null;
         setSession(sess);
-        await fetchTier(sess?.user?.id);
+        await fetchTier(sess?.user?.id, sess?.user?.email);
       } catch (err) {
         console.error('Session error:', err);
       } finally {
@@ -103,7 +105,7 @@ function App() {
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, sess) => {
       setSession(sess);
-      fetchTier(sess?.user?.id).catch(() => {}).finally(() => setLoading(false));
+      fetchTier(sess?.user?.id, sess?.user?.email).catch(() => {}).finally(() => setLoading(false));
     });
 
     return () => listener.subscription.unsubscribe();
@@ -111,6 +113,7 @@ function App() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    Sentry.setUser(null);
     setSession(null);
     navigate('/');
   };
