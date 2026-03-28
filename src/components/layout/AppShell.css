@@ -21,7 +21,10 @@
 .app-shell__main::before {
   content: '';
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: var(--sidebar-width);
   background-image:
     linear-gradient(rgba(29, 158, 117, 0.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(29, 158, 117, 0.035) 1px, transparent 1px);
@@ -121,7 +124,11 @@
     padding-left: 60px;
   }
 
-  /* Glow doesn't account for sidebar on mobile */
+  /* Grid and glow start at screen edge on mobile (no sidebar) */
+  .app-shell__main::before {
+    left: 0;
+  }
+
   .app-shell__main::after {
     left: 50%;
   }
