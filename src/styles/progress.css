@@ -163,9 +163,9 @@
 
 /* Recharts tooltip */
 .recharts-default-tooltip {
-  background-color: #0f1117 !important;
+  background-color: var(--bg-surface) !important;
   border-radius: 8px !important;
-  border: 1px solid #1e2536 !important;
+  border: 1px solid var(--border) !important;
   padding: 8px 10px !important;
 }
 .recharts-tooltip-label { font-size: 11px; color: #8892a4 !important; margin-bottom: 4px; }

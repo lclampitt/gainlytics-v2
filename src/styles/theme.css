@@ -53,6 +53,94 @@
 }
 
 /* ============================================================
+   LIGHT MODE — overrides :root dark defaults
+   ============================================================ */
+
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg-base:       #f4f6fb;
+  --bg-surface:    #ffffff;
+  --bg-surface-2:  #edf0f8;
+  --bg-hover:      #e4e9f5;
+
+  /* Borders */
+  --border:        #dde1ee;
+  --border-light:  #c9cedf;
+
+  /* Accent — same hue, slightly darker for light-bg contrast */
+  --accent-light:  #13886a;
+  --accent-muted:  rgba(29, 158, 117, 0.1);
+  --accent-glow:   rgba(29, 158, 117, 0.18);
+
+  /* Text */
+  --text-primary:   #111827;
+  --text-secondary: #4b5563;
+  --text-muted:     #9ca3af;
+
+  /* Pro badge */
+  --pro-bg:   rgba(29, 158, 117, 0.1);
+  --pro-text: #0d7a5f;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+}
+
+/* ── Light mode overrides for hardcoded dark rgba values ── */
+
+/* AppShell topbar */
+[data-theme="light"] .app-shell__topbar {
+  background: rgba(244, 246, 251, 0.88);
+  border-bottom-color: var(--border);
+}
+
+/* AppShell grid pattern — slightly stronger on light bg */
+[data-theme="light"] .app-shell__main::before {
+  background-image:
+    linear-gradient(rgba(29, 158, 117, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29, 158, 117, 0.07) 1px, transparent 1px);
+}
+
+[data-theme="light"] .app-shell__main::after {
+  background: radial-gradient(ellipse at 50% 0%, rgba(29, 158, 117, 0.07) 0%, transparent 70%);
+}
+
+/* Landing navbar scrolled */
+[data-theme="light"] .lp-nav--scrolled {
+  background: rgba(244, 246, 251, 0.9);
+  border-bottom-color: var(--border);
+}
+
+/* Landing hero grid */
+[data-theme="light"] .lp-hero::before {
+  background-image:
+    linear-gradient(rgba(29, 158, 117, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29, 158, 117, 0.07) 1px, transparent 1px);
+}
+
+/* Auth page grid */
+[data-theme="light"] .auth-grid {
+  background-image:
+    linear-gradient(rgba(29, 158, 117, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29, 158, 117, 0.07) 1px, transparent 1px);
+}
+
+/* Onboarding wizard backdrop */
+[data-theme="light"] .ob-backdrop {
+  background: rgba(200, 210, 230, 0.75);
+}
+
+/* Settings delete modal backdrop */
+[data-theme="light"] .settings-modal-backdrop {
+  background: rgba(200, 210, 230, 0.75);
+}
+
+/* Progress chart hardcoded bg */
+[data-theme="light"] .recharts-wrapper,
+[data-theme="light"] .recharts-surface {
+  background: transparent !important;
+}
+
+/* ============================================================
    RESET & BASE
    ============================================================ */
 *, *::before, *::after {

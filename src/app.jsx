@@ -35,6 +35,9 @@ import WorkoutLogger from './pages/Workouts/WorkoutLogger';
 // Upgrade context
 import { UpgradeProvider } from './context/UpgradeContext';
 
+// Theme
+import { useTheme } from './context/ThemeContext';
+
 // Toast
 import { Toaster } from 'sonner';
 
@@ -64,24 +67,29 @@ function PublicRoute({ session, loading, children }) {
 }
 
 function App() {
+  const { setThemeValue } = useTheme();
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isPro, setIsPro] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(true); // default true avoids flash
   const navigate = useNavigate();
 
-  // Fetch profile: subscription tier + onboarding status
-  async function fetchTier(userId) {
+  // Fetch profile: subscription tier + onboarding status + saved theme
+  async function fetchTier(userId, applyTheme) {
     if (!userId) { setIsPro(false); setOnboardingDone(true); return; }
     const { data } = await supabase
       .from('profiles')
-      .select('subscription_tier, onboarding_completed')
+      .select('subscription_tier, onboarding_completed, theme_preference')
       .eq('id', userId)
       .maybeSingle();
     setIsPro(data?.subscription_tier === 'pro');
     // Only show wizard when column explicitly equals false (after migration + new signup).
     // If column is missing (migration not yet run), default to true so wizard stays hidden.
     setOnboardingDone(data?.onboarding_completed !== false);
+    // Apply saved theme preference if it exists
+    if (data?.theme_preference && applyTheme) {
+      applyTheme(data.theme_preference);
+    }
   }
 
   useEffect(() => {
@@ -91,7 +99,7 @@ function App() {
         const { data } = await supabase.auth.getSession();
         const sess = data?.session ?? null;
         setSession(sess);
-        await fetchTier(sess?.user?.id);
+        await fetchTier(sess?.user?.id, setThemeValue);
       } catch (err) {
         console.error('Session error:', err);
       } finally {
@@ -103,11 +111,11 @@ function App() {
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, sess) => {
       setSession(sess);
-      fetchTier(sess?.user?.id).catch(() => {}).finally(() => setLoading(false));
+      fetchTier(sess?.user?.id, setThemeValue).catch(() => {}).finally(() => setLoading(false));
     });
 
     return () => listener.subscription.unsubscribe();
-  }, []);
+  }, [setThemeValue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
