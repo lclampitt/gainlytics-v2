@@ -79,7 +79,9 @@ function App() {
       .eq('id', userId)
       .maybeSingle();
     setIsPro(data?.subscription_tier === 'pro');
-    setOnboardingDone(data?.onboarding_completed ?? false);
+    // Only show wizard when column explicitly equals false (after migration + new signup).
+    // If column is missing (migration not yet run), default to true so wizard stays hidden.
+    setOnboardingDone(data?.onboarding_completed !== false);
   }
 
   useEffect(() => {
