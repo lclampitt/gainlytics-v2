@@ -13,6 +13,7 @@ import {
   LogOut,
   User,
   Crown,
+  Lock,
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -90,7 +91,10 @@ export default function Sidebar({ session, onLogout, isPro, usage }) {
             </NavLink>
             {/* Usage hint below Analyzer for free users */}
             {to === '/analyzer' && !isPro && !collapsed && usage && (
-              <div className="sidebar__usage-hint">
+              <div className={`sidebar__usage-hint${usage.analyzerUsed >= usage.analyzerLimit ? ' sidebar__usage-hint--locked' : ''}`}>
+                {usage.analyzerUsed >= usage.analyzerLimit && (
+                  <Lock size={10} className="sidebar__usage-lock" />
+                )}
                 {usage.analyzerUsed} / {usage.analyzerLimit} analyses used
               </div>
             )}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
+import { useUpgrade } from '../../context/UpgradeContext';
 import '../../styles/WorkoutLogger.css';
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'https://gainlytics-1.onrender.com';
@@ -30,6 +31,8 @@ const fadeUp = {
 };
 
 export default function WorkoutLogger() {
+  const { triggerUpgrade } = useUpgrade();
+
   // Form state for creating/editing a workout
   const [workoutDate, setWorkoutDate] = useState(new Date().toISOString().split('T')[0]);
   const [workoutName, setWorkoutName] = useState('');
@@ -150,7 +153,7 @@ export default function WorkoutLogger() {
           body: JSON.stringify(workoutData),
         });
         if (res.status === 403) {
-          setMessage("You've reached the 10-workout limit on the Free plan. Upgrade to Pro for unlimited logs.");
+          triggerUpgrade('workouts');
           return;
         }
         if (!res.ok) {

@@ -30,6 +30,9 @@ import ExerciseDetails from './pages/ExerciseLibrary/ExerciseDetails';
 // Workouts
 import WorkoutLogger from './pages/Workouts/WorkoutLogger';
 
+// Upgrade context
+import { UpgradeProvider } from './context/UpgradeContext';
+
 // Global theme
 import './styles/theme.css';
 
@@ -106,6 +109,7 @@ function App() {
   );
 
   return (
+    <UpgradeProvider>
     <Routes>
       {/* Public */}
       <Route path="/auth"  element={<AuthPage />} />
@@ -126,6 +130,7 @@ function App() {
       <Route path="/exercises"           element={protect(<ExerciseLibrary />)} />
       <Route path="/exercises/:id"       element={protect(<ExerciseDetails />)} />
     </Routes>
+    </UpgradeProvider>
   );
 }
 

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import '../styles/analyzer.css';
-import UpgradeModal from '../components/ui/UpgradeModal';
 import ProBadge from '../components/ui/ProBadge';
 import { supabase } from '../supabaseClient';
+import { useUpgrade } from '../context/UpgradeContext';
 
 // Use env var in production, fall back to hosted backend URL
 const API_BASE = process.env.REACT_APP_API_BASE || 'https://gainlytics-1.onrender.com';
 
-function AnalyzerGate({ onUpgrade }) {
-  const [showUpgrade, setShowUpgrade] = useState(false);
+function AnalyzerGate() {
+  const { triggerUpgrade } = useUpgrade();
   return (
     <div className="analyzer-container">
       <div className="pro-gate">
@@ -17,11 +17,10 @@ function AnalyzerGate({ onUpgrade }) {
           <h2>AI Body Analyzer</h2>
           <p>The AI Body Analyzer is a Pro feature. Upgrade to unlock instant body fat estimates using measurements or photos.</p>
         </div>
-        <button className="pro-gate__cta" onClick={() => setShowUpgrade(true)}>
-          Upgrade to Pro — $4.99/mo
+        <button className="pro-gate__cta" onClick={() => triggerUpgrade('analyzer')}>
+          Upgrade to Pro — $9/mo
         </button>
       </div>
-      <UpgradeModal isOpen={showUpgrade} onClose={() => setShowUpgrade(false)} />
     </div>
   );
 }
@@ -32,6 +31,7 @@ export default function Analyzer({ isPro }) {
 }
 
 function AnalyzerContent() {
+  const { triggerUpgrade } = useUpgrade();
   // Which mode is active: "measurements" or "photo"
   const [mode, setMode] = useState('measurements');
 
@@ -135,7 +135,7 @@ function AnalyzerContent() {
       if (res.status === 403) {
         const json = await res.json();
         if (json.detail?.error === 'limit_reached') {
-          setMeasureError('You\'ve used all 3 free analyses this month. Upgrade to Pro for unlimited access.');
+          triggerUpgrade('analyzer');
           return;
         }
       }
@@ -205,7 +205,7 @@ function AnalyzerContent() {
       if (res.status === 403) {
         const json = await res.json();
         if (json.detail?.error === 'limit_reached') {
-          setImageError('You\'ve used all 3 free analyses this month. Upgrade to Pro for unlimited access.');
+          triggerUpgrade('analyzer');
           return;
         }
       }

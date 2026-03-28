@@ -276,4 +276,15 @@
   color: #6b7280;
   padding: 2px 12px 6px 44px;
   margin-top: -4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sidebar__usage-hint--locked {
+  color: #f87171;
+}
+
+.sidebar__usage-lock {
+  flex-shrink: 0;
 }
