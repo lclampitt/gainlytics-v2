@@ -137,6 +137,16 @@
   color: var(--text-muted);
 }
 
+/* Hide number input spinners */
+.ob-input[type='number']::-webkit-inner-spin-button,
+.ob-input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.ob-input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 .ob-input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.15);
