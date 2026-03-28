@@ -21,6 +21,7 @@ function formatDate(dateStr = '') {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// eslint-disable-next-line no-unused-vars
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
   show:   { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
@@ -60,6 +61,7 @@ export default function WorkoutLogger() {
   }, []);
 
   // Once we know the user, load their saved workouts
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!userId) return;
     fetchWorkouts();

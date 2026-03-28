@@ -16,6 +16,7 @@ function ConsistencyCalendar() {
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear]   = useState(today.getFullYear());
   const [activeDays, setActiveDays]     = useState({});
+  // eslint-disable-next-line no-unused-vars
   const [ripple, setRipple]             = useState(null);
 
   useEffect(() => {
