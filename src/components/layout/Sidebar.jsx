@@ -15,10 +15,7 @@ import {
   Crown,
   Lock,
   Settings,
-  Sun,
-  Moon,
 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
@@ -34,7 +31,6 @@ export default function Sidebar({ session, onLogout, isPro, usage }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
-  const { theme, toggle: toggleTheme } = useTheme();
 
   const userEmail = session?.user?.email ?? '';
   const displayName = userEmail.split('@')[0] || 'User';
@@ -163,47 +159,27 @@ export default function Sidebar({ session, onLogout, isPro, usage }) {
         </AnimatePresence>
         <AnimatePresence>
           {!collapsed && (
-            <motion.div
-              style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+            <motion.button
+              className="sidebar__logout"
+              onClick={handleLogout}
+              title="Sign out"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
             >
-              <button
-                className="sidebar__logout"
-                onClick={toggleTheme}
-                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-              </button>
-              <button
-                className="sidebar__logout"
-                onClick={handleLogout}
-                title="Sign out"
-              >
-                <LogOut size={15} />
-              </button>
-            </motion.div>
+              <LogOut size={15} />
+            </motion.button>
           )}
         </AnimatePresence>
         {collapsed && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <button
-              className="sidebar__logout sidebar__logout--collapsed"
-              onClick={toggleTheme}
-              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-            >
-              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
-            <button
-              className="sidebar__logout sidebar__logout--collapsed"
-              onClick={handleLogout}
-              title="Sign out"
-            >
-              <LogOut size={15} />
-            </button>
-          </div>
+          <button
+            className="sidebar__logout sidebar__logout--collapsed"
+            onClick={handleLogout}
+            title="Sign out"
+          >
+            <LogOut size={15} />
+          </button>
         )}
       </div>
 

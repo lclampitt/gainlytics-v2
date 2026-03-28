@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ChevronRight, Sun, Moon } from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
-import { useTheme } from '../../context/ThemeContext';
 import '../../styles/OnboardingWizard.css';
 
 const TOTAL_STEPS = 4;
@@ -205,7 +204,6 @@ export default function OnboardingWizard({ session, onComplete }) {
   const [step, setStep]       = useState(0);
   const [direction, setDir]   = useState(1);
   const [saving, setSaving]   = useState(false);
-  const { theme, toggle: toggleTheme } = useTheme();
 
   const emailName = session?.user?.email?.split('@')[0] ?? '';
 
@@ -234,14 +232,13 @@ export default function OnboardingWizard({ session, onComplete }) {
     const today = new Date().toISOString().slice(0, 10);
 
     try {
-      // 1 — update profile (including current theme preference)
+      // 1 — update profile
       await supabase.from('profiles').upsert({
         id:                   uid,
         onboarding_completed: true,
         display_name:         data.displayName.trim() || null,
         units_preference:     data.units,
         height_in:            data.height !== '' ? Number(data.height) : null,
-        theme_preference:     theme,
       }, { onConflict: 'id' });
 
       // 2 — save goal type (only if selected)
@@ -309,16 +306,9 @@ export default function OnboardingWizard({ session, onComplete }) {
           exit={{ opacity: 0, scale: 0.96,    y: 24 }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
         >
-          {/* Header with dots + theme toggle */}
+          {/* Header with dots */}
           <div className="ob-header">
             <Dots step={step} />
-            <button
-              className="ob-theme-toggle"
-              onClick={toggleTheme}
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
           </div>
 
           {/* Sliding step content */}
