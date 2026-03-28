@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import '../styles/analyzer.css';
 import ProBadge from '../components/ui/ProBadge';
+import posthog from '../lib/posthog';
 import { supabase } from '../supabaseClient';
 import { useUpgrade } from '../context/UpgradeContext';
 
@@ -149,6 +150,7 @@ function AnalyzerContent() {
 
       /* ============ FUNCTIONAL REQUIREMENT: FR-7 ============ */
       /* System shall render body fat %, category, and calorie guidance returned by the API. */
+      posthog.capture('analyzer_used', { type: 'measurements' });
       setResult(data);
     } catch (err) {
       console.error(err);
@@ -216,6 +218,7 @@ function AnalyzerContent() {
       }
 
       const data = await res.json();
+      posthog.capture('analyzer_used', { type: 'image' });
       setResult(data);
     } catch (err) {
       console.error(err);

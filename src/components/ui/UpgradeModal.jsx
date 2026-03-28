@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Crown, Lock, Loader } from 'lucide-react';
+import posthog from '../../lib/posthog';
 import { supabase } from '../../supabaseClient';
 import './UpgradeModal.css';
 
@@ -56,6 +57,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = null }) {
       }
 
       const { url } = await res.json();
+      posthog.capture('upgrade_clicked', { feature });
       window.location.href = url;  // redirect to Stripe Checkout
     } catch (err) {
       setCheckoutError(err.message);

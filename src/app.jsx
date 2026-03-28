@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
+import posthog from './lib/posthog';
 import { supabase } from './supabaseClient';
 
 // Layout
@@ -75,6 +76,7 @@ function App() {
   async function fetchTier(userId, userEmail) {
     if (!userId) { setIsPro(false); setOnboardingDone(true); return; }
     Sentry.setUser({ id: userId, email: userEmail });
+    posthog.identify(userId, { email: userEmail });
     const { data } = await supabase
       .from('profiles')
       .select('subscription_tier, onboarding_completed')
@@ -114,6 +116,7 @@ function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     Sentry.setUser(null);
+    posthog.reset();
     setSession(null);
     navigate('/');
   };

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
+import posthog from '../lib/posthog';
 import UpgradeModal from '../components/ui/UpgradeModal';
 
 /**
@@ -20,6 +21,7 @@ export function UpgradeProvider({ children }) {
   const triggerUpgrade = (feat = null) => {
     setFeature(feat);
     setOpen(true);
+    posthog.capture('upgrade_modal_viewed', { feature: feat });
   };
 
   return (

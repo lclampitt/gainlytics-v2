@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import posthog from '../../lib/posthog';
 import { supabase } from '../../supabaseClient';
 import { useUpgrade } from '../../context/UpgradeContext';
 import '../../styles/WorkoutLogger.css';
@@ -160,6 +161,7 @@ export default function WorkoutLogger() {
           const txt = await res.text();
           throw new Error(txt);
         }
+        posthog.capture('workout_logged', { exercise_count: exercises.length });
         setMessage('Workout saved successfully!');
       } catch (err) {
         console.error('Save error:', err);

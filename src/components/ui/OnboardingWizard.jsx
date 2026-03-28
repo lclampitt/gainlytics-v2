@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronRight } from 'lucide-react';
+import posthog from '../../lib/posthog';
 import { supabase } from '../../supabaseClient';
 import '../../styles/OnboardingWizard.css';
 
@@ -276,6 +277,10 @@ export default function OnboardingWizard({ session, onComplete }) {
     } catch (err) {
       console.error('Onboarding save error:', err);
     } finally {
+      posthog.capture('onboarding_completed', {
+        goal_type: data.goalType || null,
+        units: data.units,
+      });
       setSaving(false);
       onComplete();
     }

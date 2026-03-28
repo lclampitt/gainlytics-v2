@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import posthog from '../../lib/posthog';
 import { supabase } from '../../supabaseClient';
 import '../../styles/goalplanner.css';
 
@@ -180,6 +181,7 @@ export default function GoalPlanner({ compact = false }) {
     } else {
       // Ensure we keep track of the row id after first insert
       setRowId(data?.id ?? rowId);
+      posthog.capture('goal_created');
       setMessage('Goal saved successfully!');
       // After saving, switch to read-only view mode
       setEditing(false);

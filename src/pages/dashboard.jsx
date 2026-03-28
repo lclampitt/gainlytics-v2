@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ScanLine, BarChart2, Dumbbell, BookOpen, Flame } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import posthog from '../lib/posthog';
 import BentoCard from '../components/ui/BentoCard';
 import '../styles/dashboard.css';
 
@@ -270,6 +271,10 @@ export default function Dashboard() {
   const hour     = new Date().getHours();
   const today    = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  // Feature flag — reserved for future dashboard redesign
+  // eslint-disable-next-line no-unused-vars
+  const showNewDashboard = posthog.isFeatureEnabled('new_dashboard');
 
   // Placeholder values — wire to Supabase once new DB is set up
   const caloriesLogged = 1840;
