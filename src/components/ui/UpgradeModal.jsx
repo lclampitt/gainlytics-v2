@@ -31,6 +31,8 @@ export default function UpgradeModal({ isOpen, onClose }) {
             onClick={onClose}
           />
 
+          {/* Centering positioner — flex centres the modal without transform conflicts */}
+          <div className="upgrade-modal-positioner">
           {/* Modal */}
           <motion.div
             className="upgrade-modal"
@@ -95,6 +97,7 @@ export default function UpgradeModal({ isOpen, onClose }) {
             </button>
             <p className="upgrade-modal__cancel-note">Cancel anytime. No commitment.</p>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

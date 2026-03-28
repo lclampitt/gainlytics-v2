@@ -6,12 +6,18 @@
   backdrop-filter: blur(2px);
 }
 
-.upgrade-modal {
+.upgrade-modal-positioner {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
   z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.upgrade-modal {
+  pointer-events: all;
   width: 90%;
   max-width: 520px;
   background: var(--bg-surface);
@@ -19,6 +25,7 @@
   border-radius: var(--radius-lg);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
   padding: 32px;
+  position: relative;
 }
 
 .upgrade-modal__close {
