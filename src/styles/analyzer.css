@@ -4,6 +4,7 @@
 
 .analyzer-container {
   max-width: 860px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -334,6 +335,8 @@
   text-align: center;
   max-width: 480px;
   margin: 40px auto;
+  align-self: center;
+  width: 100%;
 }
 
 .pro-gate__header {
