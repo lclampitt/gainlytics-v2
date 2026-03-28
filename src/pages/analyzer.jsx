@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import '../styles/analyzer.css';
 import UpgradeModal from '../components/ui/UpgradeModal';
 import ProBadge from '../components/ui/ProBadge';
+import { supabase } from '../supabaseClient';
 
 // Use env var in production, fall back to hosted backend URL
 const API_BASE = process.env.REACT_APP_API_BASE || 'https://gainlytics-1.onrender.com';
@@ -107,6 +108,10 @@ function AnalyzerContent() {
     const hip_cm = hipNum * 2.54;
     const neck_cm = neckNum * 2.54;
 
+    // Get the current user's ID for usage tracking
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    const userId = currentSession?.user?.id ?? null;
+
     const payload = {
       gender: genderNumeric,
       height_cm,
@@ -114,6 +119,7 @@ function AnalyzerContent() {
       waist_cm,
       hip_cm,
       neck_cm,
+      user_id: userId,
       // age is collected for UX but not used by the current model
     };
 
@@ -125,6 +131,14 @@ function AnalyzerContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+
+      if (res.status === 403) {
+        const json = await res.json();
+        if (json.detail?.error === 'limit_reached') {
+          setMeasureError('You\'ve used all 3 free analyses this month. Upgrade to Pro for unlimited access.');
+          return;
+        }
+      }
 
       if (!res.ok) {
         const text = await res.text();
@@ -171,9 +185,14 @@ function AnalyzerContent() {
       return;
     }
 
+    // Get the current user's ID for usage tracking
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    const userId = currentSession?.user?.id ?? null;
+
     // Build multipart/form-data body for the image upload
     const formData = new FormData();
     formData.append('file', file);
+    if (userId) formData.append('user_id', userId);
 
     setLoadingImage(true);
     try {
@@ -182,6 +201,14 @@ function AnalyzerContent() {
         method: 'POST',
         body: formData,
       });
+
+      if (res.status === 403) {
+        const json = await res.json();
+        if (json.detail?.error === 'limit_reached') {
+          setImageError('You\'ve used all 3 free analyses this month. Upgrade to Pro for unlimited access.');
+          return;
+        }
+      }
 
       if (!res.ok) {
         const text = await res.text();

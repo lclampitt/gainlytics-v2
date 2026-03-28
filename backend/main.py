@@ -5,9 +5,10 @@
 # - /analyze-image: experimental, heuristic-only (no model blending)
 # - /: simple health check
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Request
+from fastapi import FastAPI, File, Form, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Any, List, Optional
 import numpy as np
 import cv2
 from PIL import Image
@@ -17,6 +18,7 @@ import os
 import stripe
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -97,6 +99,92 @@ class MeasurementRequest(BaseModel):
     waist_cm: float
     hip_cm: float
     neck_cm: float
+    user_id: Optional[str] = None  # Used for usage tracking
+
+
+# -------------------------------------------------
+# Usage tracking helpers
+# -------------------------------------------------
+
+def _current_month() -> str:
+    return datetime.utcnow().strftime("%Y-%m")
+
+def _get_plan(user_id: str) -> str:
+    """Return 'pro' or 'free' for a given user."""
+    if not supabase_admin:
+        return "free"
+    result = supabase_admin.table("profiles").select("subscription_tier").eq("id", user_id).maybeSingle().execute()
+    return (result.data or {}).get("subscription_tier", "free")
+
+def can_use_analyzer(user_id: str) -> bool:
+    """Return True if the user is allowed to run an analysis."""
+    if not supabase_admin:
+        return True
+    result = supabase_admin.table("profiles") \
+        .select("subscription_tier,analyzer_uses_this_month,analyzer_month") \
+        .eq("id", user_id).maybeSingle().execute()
+    profile = result.data or {}
+    if profile.get("subscription_tier") == "pro":
+        return True
+    month = _current_month()
+    # Reset counter if we're in a new month
+    if profile.get("analyzer_month", "") != month:
+        supabase_admin.table("profiles").update({
+            "analyzer_uses_this_month": 0,
+            "analyzer_month": month,
+        }).eq("id", user_id).execute()
+        return True
+    return (profile.get("analyzer_uses_this_month") or 0) < 3
+
+def increment_analyzer_use(user_id: str) -> None:
+    """Increment the monthly analyzer counter for a user."""
+    if not supabase_admin:
+        return
+    month = _current_month()
+    result = supabase_admin.table("profiles") \
+        .select("analyzer_uses_this_month,analyzer_month") \
+        .eq("id", user_id).maybeSingle().execute()
+    profile = result.data or {}
+    if profile.get("analyzer_month", "") != month:
+        new_count = 1
+    else:
+        new_count = (profile.get("analyzer_uses_this_month") or 0) + 1
+    supabase_admin.table("profiles").update({
+        "analyzer_uses_this_month": new_count,
+        "analyzer_month": month,
+    }).eq("id", user_id).execute()
+
+def can_log_workout(user_id: str) -> bool:
+    """Return True if the user is under their workout log limit."""
+    if not supabase_admin:
+        return True
+    if _get_plan(user_id) == "pro":
+        return True
+    result = supabase_admin.table("workouts").select("id").eq("user_id", user_id).execute()
+    count = len(result.data) if result.data else 0
+    return count < 10
+
+def get_usage_summary(user_id: str) -> dict:
+    """Return a full usage summary for the given user."""
+    if not supabase_admin:
+        return {"analyzerUsed": 0, "analyzerLimit": 3, "workoutCount": 0, "workoutLimit": 10, "plan": "free"}
+    profile_res = supabase_admin.table("profiles") \
+        .select("subscription_tier,analyzer_uses_this_month,analyzer_month") \
+        .eq("id", user_id).maybeSingle().execute()
+    profile = profile_res.data or {}
+    plan = profile.get("subscription_tier", "free")
+    month = _current_month()
+    analyzer_used = 0 if profile.get("analyzer_month", "") != month \
+        else (profile.get("analyzer_uses_this_month") or 0)
+    workout_res = supabase_admin.table("workouts").select("id").eq("user_id", user_id).execute()
+    workout_count = len(workout_res.data) if workout_res.data else 0
+    return {
+        "analyzerUsed":  analyzer_used,
+        "analyzerLimit": None if plan == "pro" else 3,
+        "workoutCount":  workout_count,
+        "workoutLimit":  None if plan == "pro" else 10,
+        "plan":          plan,
+    }
 
 # -------------------------------------------------
 # Helper: extract numeric features + shape metrics from image
@@ -310,6 +398,13 @@ async def analyze_measurements(data: MeasurementRequest):
     3. Calls the RandomForest model for prediction.
     4. Interprets the bodyfat % into a plan.
     """
+    # Enforce monthly usage limit for free users
+    if data.user_id and not can_use_analyzer(data.user_id):
+        raise HTTPException(
+            status_code=403,
+            detail={"error": "limit_reached", "feature": "analyzer"},
+        )
+
     if bodyfat_model is None:
         # If the model hasn't been trained / loaded yet, fail fast
         raise HTTPException(
@@ -348,8 +443,15 @@ async def analyze_measurements(data: MeasurementRequest):
 
     category, goal, cals, notes = interpretation_and_plan(bodyfat)
 
+    # Increment usage counter after a successful analysis
+    if data.user_id:
+        try:
+            increment_analyzer_use(data.user_id)
+        except Exception:
+            pass  # Never fail the request because of a tracking error
+
     # The response model standardizes the shape sent back to the React app
-    
+
     # ============ FUNCTIONAL REQUIREMENT: FR-7 ============
     # System shall return body fat %, category, and calorie guidance to the frontend.
     return AnalysisResponse(
@@ -368,7 +470,7 @@ async def analyze_measurements(data: MeasurementRequest):
 # ============ FUNCTIONAL REQUIREMENT: FR-8 / FR-9 ============
 # System shall process an uploaded image in-memory and not permanently store it.
 @app.post("/analyze-image", response_model=AnalysisResponse)
-async def analyze_image(file: UploadFile = File(...)):
+async def analyze_image(file: UploadFile = File(...), user_id: Optional[str] = Form(None)):
     """
     Experimental endpoint that:
       - accepts a JPG/PNG upload,
@@ -378,6 +480,13 @@ async def analyze_image(file: UploadFile = File(...)):
     This is intentionally separate from the dataset-trained model so we
     can clearly state its limitations in the writeup.
     """
+    # Enforce monthly usage limit for free users
+    if user_id and not can_use_analyzer(user_id):
+        raise HTTPException(
+            status_code=403,
+            detail={"error": "limit_reached", "feature": "analyzer"},
+        )
+
     if file.content_type not in ("image/jpeg", "image/png", "image/jpg"):
         raise HTTPException(
             status_code=400, detail="Please upload a JPG or PNG image."
@@ -394,6 +503,13 @@ async def analyze_image(file: UploadFile = File(...)):
     # 3) Clamp + interpret results into a plan
     bodyfat = max(4.0, min(45.0, bodyfat))
     category, goal, cals, notes = interpretation_and_plan(bodyfat)
+
+    # Increment usage counter after a successful analysis
+    if user_id:
+        try:
+            increment_analyzer_use(user_id)
+        except Exception:
+            pass
 
     return AnalysisResponse(
         bodyfat=round(bodyfat, 1),
@@ -490,6 +606,51 @@ async def create_portal_session(body: PortalRequest):
             return_url=f"{FRONTEND_URL}/billing",
         )
         return {"url": session.url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# -------------------------------------------------
+# Usage summary endpoint
+# -------------------------------------------------
+@app.get("/usage/{user_id}")
+async def usage_summary(user_id: str):
+    """Return usage counts and limits for the given user."""
+    return get_usage_summary(user_id)
+
+
+# -------------------------------------------------
+# Workout save endpoint (enforces free-tier limit)
+# -------------------------------------------------
+class WorkoutSaveRequest(BaseModel):
+    user_id: str
+    workout_date: str
+    workout_name: str
+    exercises: List[Any]
+
+@app.post("/workouts/save")
+async def save_workout(body: WorkoutSaveRequest):
+    """
+    Save a new workout for a user.
+    Returns 403 if a free user has reached the 10-workout limit.
+    """
+    if not supabase_admin:
+        raise HTTPException(status_code=500, detail="Database not configured.")
+
+    if not can_log_workout(body.user_id):
+        raise HTTPException(
+            status_code=403,
+            detail={"error": "limit_reached", "feature": "workout_logger"},
+        )
+
+    try:
+        result = supabase_admin.table("workouts").insert({
+            "user_id":       body.user_id,
+            "workout_date":  body.workout_date,
+            "workout_name":  body.workout_name,
+            "exercises":     body.exercises,
+        }).execute()
+        return result.data[0] if result.data else {}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

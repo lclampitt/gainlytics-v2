@@ -25,7 +25,7 @@ const NAV_ITEMS = [
   { to: '/progress',   label: 'Progress',    icon: BarChart2   },
 ];
 
-export default function Sidebar({ session, onLogout, isPro }) {
+export default function Sidebar({ session, onLogout, isPro, usage }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
@@ -61,33 +61,40 @@ export default function Sidebar({ session, onLogout, isPro }) {
       {/* Nav */}
       <nav className="sidebar__nav">
         {NAV_ITEMS.map(({ to, label, icon: Icon, pro }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
-            className={({ isActive }) =>
-              `sidebar__nav-item ${isActive ? 'sidebar__nav-item--active' : ''}`
-            }
-            title={collapsed ? label : undefined}
-          >
-            <Icon size={18} className="sidebar__nav-icon" />
-            <AnimatePresence>
-              {!collapsed && (
-                <motion.span
-                  className="sidebar__nav-label"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  {label}
-                </motion.span>
+          <React.Fragment key={to}>
+            <NavLink
+              to={to}
+              end={to === '/'}
+              className={({ isActive }) =>
+                `sidebar__nav-item ${isActive ? 'sidebar__nav-item--active' : ''}`
+              }
+              title={collapsed ? label : undefined}
+            >
+              <Icon size={18} className="sidebar__nav-icon" />
+              <AnimatePresence>
+                {!collapsed && (
+                  <motion.span
+                    className="sidebar__nav-label"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    {label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+              {!isPro && pro && !collapsed && (
+                <span className="sidebar__pro-dot" title="Pro feature" />
               )}
-            </AnimatePresence>
-            {!isPro && pro && !collapsed && (
-              <span className="sidebar__pro-dot" title="Pro feature" />
+            </NavLink>
+            {/* Usage hint below Analyzer for free users */}
+            {to === '/analyzer' && !isPro && !collapsed && usage && (
+              <div className="sidebar__usage-hint">
+                {usage.analyzerUsed} / {usage.analyzerLimit} analyses used
+              </div>
             )}
-          </NavLink>
+          </React.Fragment>
         ))}
       </nav>
 

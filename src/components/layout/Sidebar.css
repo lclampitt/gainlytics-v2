@@ -270,3 +270,10 @@
     height: 100vh;
   }
 }
+
+.sidebar__usage-hint {
+  font-size: 11px;
+  color: #6b7280;
+  padding: 2px 12px 6px 44px;
+  margin-top: -4px;
+}

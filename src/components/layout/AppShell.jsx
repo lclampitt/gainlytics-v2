@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
+import { useUsage } from '../../hooks/useUsage';
 import './AppShell.css';
 
 /* Map routes to page titles and optional quick-action buttons */
@@ -23,10 +24,12 @@ const pageVariants = {
 export default function AppShell({ session, onLogout, isPro, children }) {
   const location = useLocation();
   const meta = PAGE_META[location.pathname] ?? { title: 'Gainlytics' };
+  const userId = session?.user?.id ?? null;
+  const { usage } = useUsage(userId);
 
   return (
     <div className="app-shell">
-      <Sidebar session={session} onLogout={onLogout} isPro={isPro} />
+      <Sidebar session={session} onLogout={onLogout} isPro={isPro} usage={usage} />
 
       <div className="app-shell__main">
         {/* Top bar */}

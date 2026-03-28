@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
 import '../../styles/WorkoutLogger.css';
 
+const API_BASE = process.env.REACT_APP_API_BASE || 'https://gainlytics-1.onrender.com';
+
 /* Infer a muscle group tag from the workout name */
 function inferMuscleGroup(name = '') {
   const n = name.toLowerCase();
@@ -129,7 +131,7 @@ export default function WorkoutLogger() {
 
     let error;
 
-    // If editingWorkoutId exists, update the existing row
+    // If editingWorkoutId exists, update the existing row (no limit check needed for edits)
     if (editingWorkoutId) {
       ({ error } = await supabase
         .from('workouts')
@@ -140,9 +142,27 @@ export default function WorkoutLogger() {
         setEditingWorkoutId(null);
       }
     } else {
-      // Otherwise insert a new workout
-      ({ error } = await supabase.from('workouts').insert([workoutData]));
-      if (!error) setMessage('Workout saved successfully!');
+      // New workout — route through backend to enforce free-tier limit
+      try {
+        const res = await fetch(`${API_BASE}/workouts/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(workoutData),
+        });
+        if (res.status === 403) {
+          setMessage("You've reached the 10-workout limit on the Free plan. Upgrade to Pro for unlimited logs.");
+          return;
+        }
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(txt);
+        }
+        setMessage('Workout saved successfully!');
+      } catch (err) {
+        console.error('Save error:', err);
+        setMessage(`Error saving workout: ${err.message}`);
+        return;
+      }
     }
 
     if (error) {
