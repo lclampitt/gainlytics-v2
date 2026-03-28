@@ -6,6 +6,7 @@ import { supabase } from './supabaseClient';
 import AppShell from './components/layout/AppShell';
 
 // Pages
+import LandingPage  from './pages/LandingPage';
 import Dashboard    from './pages/dashboard';
 import Analyzer     from './pages/analyzer';
 import Calculators  from './pages/calculators';
@@ -36,7 +37,7 @@ import { UpgradeProvider } from './context/UpgradeContext';
 // Global theme
 import './styles/theme.css';
 
-function ProtectedRoute({ session, loading, children }) {
+function ProtectedRoute({ session, loading, children, redirectTo = '/auth' }) {
   if (loading) {
     return (
       <div style={{ color: '#9aa0a6', textAlign: 'center', marginTop: '100px' }}>
@@ -44,7 +45,14 @@ function ProtectedRoute({ session, loading, children }) {
       </div>
     );
   }
-  if (!session) return <Navigate to="/auth" replace />;
+  if (!session) return <Navigate to={redirectTo} replace />;
+  return children;
+}
+
+// Redirects authenticated users away from public-only pages (e.g. landing)
+function PublicRoute({ session, loading, children }) {
+  if (loading) return null;
+  if (session) return <Navigate to="/home" replace />;
   return children;
 }
 
@@ -93,7 +101,7 @@ function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
-    navigate('/auth');
+    navigate('/');
   };
 
   const shell = (child) => (
@@ -111,13 +119,23 @@ function App() {
   return (
     <UpgradeProvider>
     <Routes>
+      {/* Marketing landing — public only, redirect auth'd users to /home */}
+      <Route
+        path="/"
+        element={
+          <PublicRoute session={session} loading={loading}>
+            <LandingPage />
+          </PublicRoute>
+        }
+      />
+
       {/* Public */}
       <Route path="/auth"  element={<AuthPage />} />
       <Route path="/about" element={<About />} />
       <Route path="/help"  element={<Contact />} />
 
       {/* Protected — all inside AppShell */}
-      <Route path="/"                    element={protect(<Dashboard />)} />
+      <Route path="/home"                element={protect(<Dashboard />)} />
       <Route path="/analyzer"            element={protect(<Analyzer isPro={isPro} />)} />
       <Route path="/calculators"         element={protect(<Calculators isPro={isPro} />)} />
       <Route path="/calculators/tdee"    element={protect(<TdeeCalculator />)} />

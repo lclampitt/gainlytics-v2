@@ -18,7 +18,7 @@ import {
 import './Sidebar.css';
 
 const NAV_ITEMS = [
-  { to: '/',            label: 'Home',        icon: Home       },
+  { to: '/home',        label: 'Home',        icon: Home       },
   { to: '/analyzer',   label: 'Analyzer',    icon: ScanLine,  pro: true },
   { to: '/calculators',label: 'Calculators', icon: Calculator, pro: true },
   { to: '/goalplanner',label: 'Goal Planner',icon: Target      },
