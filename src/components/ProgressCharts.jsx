@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  AreaChart,
   Area,
   Line,
   XAxis,
@@ -10,9 +9,6 @@ import {
   CartesianGrid,
   Legend,
   ComposedChart,
-  defs,
-  linearGradient,
-  stop,
 } from 'recharts';
 
 /**

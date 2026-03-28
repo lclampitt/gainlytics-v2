@@ -57,7 +57,7 @@ function App() {
       .from('profiles')
       .select('subscription_tier')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
     setIsPro(data?.subscription_tier === 'pro');
   }
 
