@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, CheckCircle, AlertCircle } from 'lucide-react';
 import '../styles/contact.css';
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'https://gainlytics.onrender.com';
+const FORMSPREE_URL = 'https://formspree.io/f/xreopzjn';
 
 export default function Contact() {
   const [form, setForm]     = useState({ name: '', email: '', message: '' });
@@ -18,15 +18,14 @@ export default function Contact() {
     setErrorMsg('');
 
     try {
-      const res = await fetch(`${API_BASE}/contact`, {
+      const res = await fetch(FORMSPREE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
 
       if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error(json.detail || 'Something went wrong. Please try again.');
+        throw new Error('Something went wrong. Please try again.');
       }
 
       setStatus('success');
