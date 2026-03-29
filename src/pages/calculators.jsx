@@ -1,6 +1,6 @@
 // src/pages/calculators.jsx
 import React, { useState, useEffect } from 'react';
-import { ChartPie, Trophy, Flame, Zap } from 'lucide-react';
+import { ChartPie, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import '../styles/CalculatorsPage.css';
 import CalculatorCard from '../components/ui/CalculatorCard';
