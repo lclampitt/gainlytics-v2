@@ -135,7 +135,7 @@ function Hero() {
         transition={{ duration: 0.5, delay: 0.1 }}
       >
         <Zap size={12} />
-        Now with AI Body Analysis
+        Track smarter. Train harder.
       </motion.div>
 
       <motion.h1
@@ -156,8 +156,7 @@ function Hero() {
         animate="show"
         transition={{ duration: 0.55, delay: 0.32 }}
       >
-        Track workouts, analyze your body, hit your goals —
-        all in one place.
+        Track workouts, measure your body and hit your goals all in one place.
       </motion.p>
 
       <motion.div
