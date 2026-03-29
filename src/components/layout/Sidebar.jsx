@@ -22,7 +22,7 @@ import './Sidebar.css';
 
 const NAV_ITEMS = [
   { to: '/home',        label: 'Home',         icon: Home       },
-  { to: '/analyzer',   label: 'Analyzer',     icon: ScanLine   },
+  { to: '/analyzer',   label: 'Measurements', icon: ScanLine   },
   { to: '/calculators',label: 'Calculators',  icon: Calculator  },
   { to: '/goalplanner',label: 'Goal Planner', icon: Target,     locked: true },
   { to: '/workouts',   label: 'Workouts',     icon: Dumbbell    },

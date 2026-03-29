@@ -113,7 +113,7 @@ function AnalyzerContent() {
 
   return (
     <div className="analyzer-container">
-      <h1 className="analyzer-title">Body Analyzer</h1>
+      <h1 className="analyzer-title">Measurements</h1>
       <p className="analyzer-subtext">
         Enter your measurements to estimate body fat % and get calorie targets.
       </p>
