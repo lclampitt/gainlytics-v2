@@ -8,7 +8,7 @@ import './AppShell.css';
 /* Map routes to page titles and optional quick-action buttons */
 const PAGE_META = {
   '/home':        { title: 'Home' },
-  '/analyzer':    { title: 'AI Analyzer' },
+  '/analyzer':    { title: 'Body Analyzer' },
   '/calculators': { title: 'Calculators' },
   '/goalplanner': { title: 'Goal Planner' },
   '/workouts':    { title: 'Workouts' },
