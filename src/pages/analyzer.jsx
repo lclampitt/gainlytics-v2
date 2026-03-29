@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import Dropdown from '../components/ui/Dropdown';
 import '../styles/analyzer.css';
 import posthog from '../lib/posthog';
 import { supabase } from '../supabaseClient';
@@ -248,20 +248,15 @@ function AnalyzerContent() {
           {/* Measurement input grid */}
           <div className="measurement-grid">
             <div className="field-group">
-              <label className="field-label">Gender</label>
-              <div className="field-select-wrapper">
-                <select
-                  className="field-input"
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-                <span className="field-select-chevron">
-                  <ChevronDown size={14} />
-                </span>
-              </div>
+              <Dropdown
+                label="Gender"
+                value={gender}
+                onChange={setGender}
+                options={[
+                  { label: 'Male',   value: 'male' },
+                  { label: 'Female', value: 'female' },
+                ]}
+              />
             </div>
 
             <div className="field-group">

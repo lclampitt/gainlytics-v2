@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../styles/ProteinCalculator.css';
+import Dropdown from '../components/ui/Dropdown';
 
 function ProteinCalculator() {
   // Core input state
@@ -46,39 +47,55 @@ function ProteinCalculator() {
       <h2>Protein Calculator</h2>
 
       {/* Simple demographic inputs – hooks for future refinements */}
-      <label>Gender*</label>
-      <select value={gender} onChange={e => setGender(e.target.value)}>
-        <option>Male</option>
-        <option>Female</option>
-      </select>
+      <Dropdown
+        label="Gender*"
+        value={gender}
+        onChange={setGender}
+        options={[
+          { label: 'Male',   value: 'Male' },
+          { label: 'Female', value: 'Female' },
+        ]}
+      />
 
       <label>Weight (lbs)*</label>
       <input type="number" value={weight} onChange={e => setWeight(e.target.value)} />
 
-      <label>Age Range*</label>
-      <select value={ageRange} onChange={e => setAgeRange(e.target.value)}>
-        <option value="<34">&lt;34</option>
-        <option value="35-60">35–60</option>
-        <option value="61+">61+</option>
-      </select>
+      <Dropdown
+        label="Age Range*"
+        value={ageRange}
+        onChange={setAgeRange}
+        options={[
+          { label: '<34',   value: '<34' },
+          { label: '35–60', value: '35-60' },
+          { label: '61+',   value: '61+' },
+        ]}
+      />
 
       {/* Optional body fat input helps narrow in on lean mass */}
       <label>Body Fat % (Optional)</label>
       <input type="number" value={bodyFat} onChange={e => setBodyFat(e.target.value)} />
 
-      <label>Workout Hours Per Week*</label>
-      <select value={workoutHours} onChange={e => setWorkoutHours(e.target.value)}>
-        <option>0-1</option>
-        <option>1-3</option>
-        <option>4-6</option>
-        <option>7+</option>
-      </select>
+      <Dropdown
+        label="Workout Hours Per Week*"
+        value={workoutHours}
+        onChange={setWorkoutHours}
+        options={[
+          { label: '0–1 hrs/week', value: '0-1' },
+          { label: '1–3 hrs/week', value: '1-3' },
+          { label: '4–6 hrs/week', value: '4-6' },
+          { label: '7+ hrs/week',  value: '7+' },
+        ]}
+      />
 
-      <label>Mostly Plant-Based Diet?*</label>
-      <select value={isPlantBased} onChange={e => setIsPlantBased(e.target.value)}>
-        <option>No</option>
-        <option>Yes</option>
-      </select>
+      <Dropdown
+        label="Mostly Plant-Based Diet?*"
+        value={isPlantBased}
+        onChange={setIsPlantBased}
+        options={[
+          { label: 'No',  value: 'No' },
+          { label: 'Yes', value: 'Yes' },
+        ]}
+      />
 
       {/* Triggers the calculation and updates results state */}
       <button onClick={calculateProtein}>Calculate</button>

@@ -131,40 +131,6 @@
   -moz-appearance: textfield;
 }
 
-/* ── Gender select wrapper ───────────────────────────────────── */
-.field-select-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.field-select-wrapper .field-input {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 100%;
-  padding-right: 32px;
-  cursor: pointer;
-}
-
-.field-select-wrapper .field-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(29, 158, 117, 0.2);
-}
-
-.field-select-chevron {
-  position: absolute;
-  right: 10px;
-  pointer-events: none;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  transition: transform 0.2s ease, color 0.2s ease;
-}
-
-.field-select-wrapper:focus-within .field-select-chevron {
-  transform: rotate(180deg);
-  color: var(--accent-light);
-}
 
 /* Height ft/in row */
 .height-row {
