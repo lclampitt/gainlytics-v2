@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ScanLine,
+  Ruler,
   Target,
   Dumbbell,
   BarChart2,
@@ -28,7 +28,7 @@ const stagger = {
 /* ── Feature data ── */
 const FEATURES = [
   {
-    icon: ScanLine,
+    icon: Ruler,
     title: 'Measurements',
     desc: 'Enter your measurements to estimate body fat % and get personalized calorie targets.',
   },
