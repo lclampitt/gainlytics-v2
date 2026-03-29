@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
 import {
   Home,
-  ScanLine,
+  Ruler,
   Calculator,
   Target,
   Dumbbell,
@@ -22,7 +22,7 @@ import './Sidebar.css';
 
 const NAV_ITEMS = [
   { to: '/home',        label: 'Home',         icon: Home       },
-  { to: '/analyzer',   label: 'Measurements', icon: ScanLine   },
+  { to: '/analyzer',   label: 'Measurements', icon: Ruler      },
   { to: '/calculators',label: 'Calculators',  icon: Calculator  },
   { to: '/goalplanner',label: 'Goal Planner', icon: Target,     locked: true },
   { to: '/workouts',   label: 'Workouts',     icon: Dumbbell    },
@@ -32,7 +32,7 @@ const NAV_ITEMS = [
 
 const BOTTOM_NAV_ITEMS = [
   { to: '/home',      icon: Home      },
-  { to: '/analyzer',  icon: ScanLine  },
+  { to: '/analyzer',  icon: Ruler     },
   { to: '/workouts',  icon: Dumbbell  },
   { to: '/exercises', icon: BookOpen  },
   { to: '/settings',  icon: Settings  },
