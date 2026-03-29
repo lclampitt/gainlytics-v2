@@ -4,7 +4,7 @@ numpy
 opencv-python-headless
 pillow
 joblib
-scikit-learn
+scikit-learn==1.8.0
 python-multipart
 stripe
 supabase
