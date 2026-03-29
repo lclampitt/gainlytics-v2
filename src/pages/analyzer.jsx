@@ -4,6 +4,7 @@ import '../styles/analyzer.css';
 import posthog from '../lib/posthog';
 import { supabase } from '../supabaseClient';
 import { useUpgrade } from '../context/UpgradeContext';
+import { Info } from 'lucide-react';
 
 // Use env var in production, fall back to hosted backend URL
 const API_BASE = process.env.REACT_APP_API_BASE || 'https://gainlytics-1.onrender.com';
@@ -429,7 +430,44 @@ function AnalyzerContent() {
               {typeof result.bodyfat === 'number'
                 ? `${result.bodyfat.toFixed(1)}%`
                 : `${result.bodyfat}%`}
+              {mode === 'photo' && (
+                <span style={{
+                  background: '#412402',
+                  color: '#EF9F27',
+                  borderRadius: 99,
+                  fontSize: 10,
+                  padding: '2px 8px',
+                  marginLeft: 8,
+                  fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                }}>
+                  Photo estimate
+                </span>
+              )}
             </div>
+
+            {/* Disclaimer shown only for photo-based results */}
+            {mode === 'photo' && (
+              <div style={{
+                background: '#1a1a0a',
+                border: '1px solid #854F0B',
+                borderRadius: 8,
+                padding: '10px 14px',
+                display: 'flex',
+                gap: 10,
+                alignItems: 'flex-start',
+              }}>
+                <Info size={14} style={{ color: '#EF9F27', flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: '#EF9F27', marginBottom: 3 }}>
+                    Estimate only
+                  </div>
+                  <div style={{ fontSize: 11, color: '#888', lineHeight: 1.5 }}>
+                    Photo analysis uses body silhouette proportions and is approximate (±5–8%). For best accuracy, use the measurements method instead.
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="result-item">
               <strong>Body Type:</strong>

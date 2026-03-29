@@ -70,66 +70,78 @@ function ProteinCalculator() {
       optimal: Math.round(optimal * 10) / 10,
       notes,
     });
+
+    localStorage.setItem('gainlytics_protein_results', JSON.stringify({
+      optimal: Math.round(optimal * 10) / 10,
+      updatedAt: new Date().toISOString(),
+    }));
   };
 
   return (
     <div className="calculator-container">
       <h2>Protein Calculator</h2>
 
-      {/* Simple demographic inputs – hooks for future refinements */}
-      <Dropdown
-        label="Gender*"
-        value={gender}
-        onChange={setGender}
-        options={[
-          { label: 'Male',   value: 'Male' },
-          { label: 'Female', value: 'Female' },
-        ]}
-      />
+      {/* Input card */}
+      <div className="protein-form">
+        {/* Simple demographic inputs – hooks for future refinements */}
+        <Dropdown
+          label="Gender*"
+          value={gender}
+          onChange={setGender}
+          options={[
+            { label: 'Male',   value: 'Male' },
+            { label: 'Female', value: 'Female' },
+          ]}
+        />
 
-      <label>Weight (lbs)*</label>
-      <input type="number" value={weight} onChange={e => setWeight(e.target.value)} />
+        <div className="protein-field">
+          <label className="protein-label">Weight (lbs)*</label>
+          <input className="protein-input" type="number" value={weight} onChange={e => setWeight(e.target.value)} />
+        </div>
 
-      <Dropdown
-        label="Age Range*"
-        value={ageRange}
-        onChange={setAgeRange}
-        options={[
-          { label: '18–39', value: '18-39' },
-          { label: '40–49', value: '40-49' },
-          { label: '50–59', value: '50-59' },
-          { label: '60+',   value: '60+' },
-        ]}
-      />
+        <Dropdown
+          label="Age Range*"
+          value={ageRange}
+          onChange={setAgeRange}
+          options={[
+            { label: '18–39', value: '18-39' },
+            { label: '40–49', value: '40-49' },
+            { label: '50–59', value: '50-59' },
+            { label: '60+',   value: '60+' },
+          ]}
+        />
 
-      {/* Optional body fat input helps narrow in on lean mass */}
-      <label>Body Fat % (Optional)</label>
-      <input type="number" value={bodyFat} onChange={e => setBodyFat(e.target.value)} />
+        {/* Optional body fat input helps narrow in on lean mass */}
+        <div className="protein-field">
+          <label className="protein-label">Body Fat % (Optional)</label>
+          <input className="protein-input" type="number" value={bodyFat} onChange={e => setBodyFat(e.target.value)} />
+        </div>
 
-      <Dropdown
-        label="Workout Hours Per Week*"
-        value={workoutHours}
-        onChange={setWorkoutHours}
-        options={[
-          { label: '0–1 hrs/week', value: '0-1' },
-          { label: '1–3 hrs/week', value: '1-3' },
-          { label: '4–6 hrs/week', value: '4-6' },
-          { label: '7+ hrs/week',  value: '7+' },
-        ]}
-      />
+        <Dropdown
+          label="Workout Hours Per Week*"
+          value={workoutHours}
+          onChange={setWorkoutHours}
+          options={[
+            { label: '0–1 hrs/week', value: '0-1' },
+            { label: '1–3 hrs/week', value: '1-3' },
+            { label: '4–6 hrs/week', value: '4-6' },
+            { label: '7+ hrs/week',  value: '7+' },
+          ]}
+        />
 
-      <Dropdown
-        label="Mostly Plant-Based Diet?*"
-        value={isPlantBased}
-        onChange={setIsPlantBased}
-        options={[
-          { label: 'No',  value: 'No' },
-          { label: 'Yes', value: 'Yes' },
-        ]}
-      />
+        <Dropdown
+          label="Mostly Plant-Based Diet?*"
+          value={isPlantBased}
+          onChange={setIsPlantBased}
+          options={[
+            { label: 'No',  value: 'No' },
+            { label: 'Yes', value: 'Yes' },
+          ]}
+        />
 
-      {/* Triggers the calculation and updates results state */}
-      <button onClick={calculateProtein}>Calculate</button>
+        {/* Triggers the calculation and updates results state */}
+        <button onClick={calculateProtein}>Calculate</button>
+      </div>
 
       {/* Results card: presents daily protein targets in g/day */}
       {results && (

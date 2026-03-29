@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/OneRepMaxCalculator.css';
 
 function OneRepMaxCalculator() {
@@ -23,6 +23,16 @@ function OneRepMaxCalculator() {
   };
 
   const oneRepMax = calculateOneRepMax();
+
+  useEffect(() => {
+    if (oneRepMax) {
+      localStorage.setItem('gainlytics_1rm_results', JSON.stringify({
+        oneRepMax,
+        unit,
+        updatedAt: new Date().toISOString(),
+      }));
+    }
+  }, [oneRepMax, unit]);
 
   return (
     <div className="calculator-container">

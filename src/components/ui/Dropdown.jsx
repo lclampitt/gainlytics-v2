@@ -95,7 +95,7 @@ export default function Dropdown({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, width }}>
       {label && (
-        <span style={{ fontSize: 12, color: '#888', fontWeight: 400 }}>
+        <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400 }}>
           {label}
         </span>
       )}

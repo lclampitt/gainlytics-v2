@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  max-width: 560px;
 }
 
 .deficit-calculator h1 {
@@ -17,88 +18,56 @@
 }
 
 /* ── Input card ─────────────────────────────────────────────── */
-.inputs {
+.tdee-form {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 22px 24px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
-.inputs div {
+.tdee-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
-.inputs label,
-.inputs div label {
+.tdee-label {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-weight: 400;
-  display: block;
   margin: 0;
 }
 
-/* Toggle button groups */
-.inputs div:has(button) {
-  flex-direction: column;
-  gap: 6px;
-}
-
-.inputs .btn-group {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.inputs button {
-  padding: 7px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-family: inherit;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.inputs button.active,
-.inputs button:hover {
-  border-color: var(--accent);
-  color: var(--accent-light);
-  background: rgba(29, 158, 117, 0.08);
-}
-
-/* Range slider */
-.inputs input[type='range'] {
-  width: 100%;
-  accent-color: var(--accent);
-  margin-top: 2px;
-}
-
-/* Number inputs */
-.inputs input[type='number'] {
+.tdee-input {
   width: 100%;
   box-sizing: border-box;
-  padding: 9px 12px;
+  padding: 9px 11px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--bg-base);
   color: var(--text-primary);
   font-size: 13px;
   font-family: inherit;
+  outline: none;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.inputs input[type='number']:focus {
+.tdee-input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(29, 158, 117, 0.2);
-  outline: none;
+}
+
+/* Hide browser spinner arrows on number inputs */
+.tdee-input[type='number']::-webkit-inner-spin-button,
+.tdee-input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.tdee-input[type='number'] {
+  -moz-appearance: textfield;
 }
 
 /* Calculate button */

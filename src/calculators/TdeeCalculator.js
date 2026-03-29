@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/TdeeCalculator.css';
+import Dropdown from '../components/ui/Dropdown';
+import { supabase } from '../supabaseClient';
 
 function DeficitTimeCalculator() {
   // Global input state
@@ -13,6 +15,22 @@ function DeficitTimeCalculator() {
 
   // Aggregated output from the calculation
   const [results, setResults] = useState(null);
+
+  // Pre-populate unit from the user's saved preference
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      supabase
+        .from('profiles')
+        .select('units_preference')
+        .eq('id', session.user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.units_preference === 'kg') setUnit('metric');
+          else if (data?.units_preference === 'lbs') setUnit('imperial');
+        });
+    });
+  }, []);
 
   // Main TDEE + macros scenario calculator
   const calculate = () => {
@@ -72,6 +90,12 @@ function DeficitTimeCalculator() {
       fatLossRecomp: Math.round(fatLossRecomp),
       muscleGainRecomp: Math.round(muscleGainRecomp),
     });
+
+    localStorage.setItem('gainlytics_tdee_results', JSON.stringify({
+      tdee: Math.round(tdee),
+      cutting: Math.round(moderate),
+      updatedAt: new Date().toISOString(),
+    }));
   };
 
   return (
@@ -79,50 +103,56 @@ function DeficitTimeCalculator() {
       <h1>Deficit Time Calculator</h1>
 
       {/* INPUT SECTION */}
-      <div className="inputs">
-        <div>
-          <label>Units</label>
-          <div className="btn-group">
-            <button onClick={() => setUnit('imperial')} className={unit === 'imperial' ? 'active' : ''}>Imperial</button>
-            <button onClick={() => setUnit('metric')} className={unit === 'metric' ? 'active' : ''}>Metric</button>
-          </div>
+      <div className="tdee-form">
+        <Dropdown
+          label="Units*"
+          value={unit}
+          onChange={setUnit}
+          options={[
+            { label: 'Imperial (lbs)', value: 'imperial' },
+            { label: 'Metric (kg)',    value: 'metric' },
+          ]}
+        />
+
+        <Dropdown
+          label="Gender*"
+          value={gender}
+          onChange={setGender}
+          options={[
+            { label: 'Male',   value: 'male' },
+            { label: 'Female', value: 'female' },
+          ]}
+        />
+
+        <div className="tdee-field">
+          <label className="tdee-label">Weight ({unit === 'imperial' ? 'lbs' : 'kg'})*</label>
+          <input className="tdee-input" type="number" value={weight} onChange={e => setWeight(+e.target.value)} />
         </div>
 
-        <div>
-          <label>Gender</label>
-          <div className="btn-group">
-            <button onClick={() => setGender('male')} className={gender === 'male' ? 'active' : ''}>Male</button>
-            <button onClick={() => setGender('female')} className={gender === 'female' ? 'active' : ''}>Female</button>
-          </div>
+        <div className="tdee-field">
+          <label className="tdee-label">Body Fat %*</label>
+          <input className="tdee-input" type="number" min="5" max="60" placeholder="e.g. 18" value={bodyFat} onChange={e => setBodyFat(+e.target.value)} />
         </div>
 
-        <div>
-          <label>Weight ({unit === 'imperial' ? 'lbs' : 'kg'})</label>
-          <input type="number" value={weight} onChange={e => setWeight(+e.target.value)} />
+        <div className="tdee-field">
+          <label className="tdee-label">Workout Hours/Week*</label>
+          <input className="tdee-input" type="number" value={workoutHours} onChange={e => setWorkoutHours(+e.target.value)} />
         </div>
 
-        <div>
-          <label>Body Fat % — {bodyFat}%</label>
-          <input type="range" min="5" max="60" value={bodyFat} onChange={e => setBodyFat(+e.target.value)} />
+        <div className="tdee-field">
+          <label className="tdee-label">Steps/Day*</label>
+          <input className="tdee-input" type="number" value={steps} onChange={e => setSteps(+e.target.value)} />
         </div>
 
-        <div>
-          <label>Workout Hours/Week</label>
-          <input type="number" value={workoutHours} onChange={e => setWorkoutHours(+e.target.value)} />
-        </div>
-
-        <div>
-          <label>Steps/Day</label>
-          <input type="number" value={steps} onChange={e => setSteps(+e.target.value)} />
-        </div>
-
-        <div>
-          <label>Age Range</label>
-          <div className="btn-group">
-            <button onClick={() => setAgeRange('under60')} className={ageRange === 'under60' ? 'active' : ''}>Under 60</button>
-            <button onClick={() => setAgeRange('60plus')} className={ageRange === '60plus' ? 'active' : ''}>61+</button>
-          </div>
-        </div>
+        <Dropdown
+          label="Age Range*"
+          value={ageRange}
+          onChange={setAgeRange}
+          options={[
+            { label: 'Under 60', value: 'under60' },
+            { label: '61+',      value: '60plus' },
+          ]}
+        />
 
         <button onClick={calculate} className="calculate-button">Calculate</button>
       </div>
