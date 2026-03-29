@@ -102,6 +102,9 @@ class AnalysisResponse(BaseModel):
     goal_suggestion: str
     suggested_calories: int
     notes: list[str]
+    bmr: Optional[int] = None
+    tdee: Optional[int] = None
+    deficit_or_surplus: Optional[int] = None
 
 
 class ContactRequest(BaseModel):
@@ -128,8 +131,10 @@ class MeasurementRequest(BaseModel):
     weight_kg: float
     waist_cm: float
     hip_cm: float
-    neck_cm: Optional[float] = None  # accepted for API compatibility, not used in model
-    user_id: Optional[str] = None    # used for usage tracking
+    neck_cm: Optional[float] = None        # accepted for API compatibility, not used in model
+    activity_level: str = "moderate"       # sedentary | light | moderate | active | extra
+    goal: str = "maintain"                 # cut | aggressive_cut | maintain | bulk | aggressive_bulk
+    user_id: Optional[str] = None          # used for usage tracking
 
 
 # -------------------------------------------------
@@ -395,6 +400,49 @@ def heuristic_bodyfat_from_shape(metrics: dict) -> float:
 
 
 # -------------------------------------------------
+# TDEE calculation (Mifflin-St Jeor)
+# -------------------------------------------------
+_ACTIVITY_MULTIPLIERS = {
+    "sedentary": 1.2,
+    "light":     1.375,
+    "moderate":  1.55,
+    "active":    1.725,
+    "extra":     1.9,
+}
+
+_GOAL_ADJUSTMENTS = {
+    "cut":            -500,
+    "aggressive_cut": -750,
+    "maintain":          0,
+    "bulk":            300,
+    "aggressive_bulk": 500,
+}
+
+def calculate_tdee(
+    weight_kg: float,
+    height_cm: float,
+    age: float,
+    gender: int,
+    activity_level: str,
+    goal: str,
+) -> tuple[int, int, int, int]:
+    """
+    Returns (bmr, tdee, suggested_calories, deficit_or_surplus).
+
+    BMR via Mifflin-St Jeor:
+      Male   (gender=0): 10w + 6.25h - 5a + 5
+      Female (gender=1): 10w + 6.25h - 5a - 161
+    """
+    gender_offset = 5 if gender == 0 else -161
+    bmr  = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) + gender_offset
+    mult = _ACTIVITY_MULTIPLIERS.get(activity_level, 1.55)
+    tdee = bmr * mult
+    adj  = _GOAL_ADJUSTMENTS.get(goal, 0)
+    suggested = tdee + adj
+    return round(bmr), round(tdee), round(suggested), round(adj)
+
+
+# -------------------------------------------------
 # Helper: map bodyfat to category + recommendations
 # -------------------------------------------------
 def interpretation_and_plan(bodyfat: float) -> tuple[str, str, int, list[str]]:
@@ -501,7 +549,17 @@ async def analyze_measurements(data: MeasurementRequest):
     # Clamp prediction to a realistic range
     bodyfat = max(4.0, min(45.0, bodyfat))
 
-    category, goal, cals, notes = interpretation_and_plan(bodyfat)
+    category, goal_suggestion, _cals_unused, notes = interpretation_and_plan(bodyfat)
+
+    # Replace hardcoded calorie bucket with proper TDEE (Mifflin-St Jeor)
+    bmr, tdee, suggested_calories, deficit_or_surplus = calculate_tdee(
+        weight_kg=data.weight_kg,
+        height_cm=data.height_cm,
+        age=data.age,
+        gender=data.gender,
+        activity_level=data.activity_level,
+        goal=data.goal,
+    )
 
     # Track analysis event
     if posthog_client:
@@ -518,16 +576,17 @@ async def analyze_measurements(data: MeasurementRequest):
         except Exception:
             pass
 
-    # The response model standardizes the shape sent back to the React app
-
     # ============ FUNCTIONAL REQUIREMENT: FR-7 ============
     # System shall return body fat %, category, and calorie guidance to the frontend.
     return AnalysisResponse(
         bodyfat=round(bodyfat, 1),
         category=category,
-        goal_suggestion=goal,
-        suggested_calories=int(cals),
+        goal_suggestion=goal_suggestion,
+        suggested_calories=suggested_calories,
         notes=notes,
+        bmr=bmr,
+        tdee=tdee,
+        deficit_or_surplus=deficit_or_surplus,
     )
 
 

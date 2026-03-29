@@ -18,13 +18,15 @@ function AnalyzerContent() {
   const [mode, setMode] = useState('measurements');
 
   // Measurement form state
-  const [gender, setGender] = useState('male'); // male/female
+  const [gender, setGender] = useState('male');
   const [age, setAge] = useState('');
   const [heightFt, setHeightFt] = useState('');
   const [heightIn, setHeightIn] = useState('');
   const [weightLbs, setWeightLbs] = useState('');
   const [waistIn, setWaistIn] = useState('');
   const [hipIn, setHipIn] = useState('');
+  const [activityLevel, setActivityLevel] = useState('moderate');
+  const [goal, setGoal] = useState('maintain');
 
   // Image upload state
   const [file, setFile] = useState(null);
@@ -97,6 +99,8 @@ function AnalyzerContent() {
       weight_kg,
       waist_cm,
       hip_cm,
+      activity_level: activityLevel,
+      goal,
       user_id: userId,
     };
 
@@ -320,6 +324,36 @@ function AnalyzerContent() {
               />
             </div>
 
+            <div className="field-group">
+              <Dropdown
+                label="Activity Level"
+                value={activityLevel}
+                onChange={setActivityLevel}
+                options={[
+                  { label: 'Sedentary (little/no exercise)',     value: 'sedentary' },
+                  { label: 'Lightly active (1–3 days/week)',     value: 'light' },
+                  { label: 'Moderately active (3–5 days/week)',  value: 'moderate' },
+                  { label: 'Very active (6–7 days/week)',        value: 'active' },
+                  { label: 'Extra active (physical job / 2×/day)', value: 'extra' },
+                ]}
+              />
+            </div>
+
+            <div className="field-group">
+              <Dropdown
+                label="Goal"
+                value={goal}
+                onChange={setGoal}
+                options={[
+                  { label: 'Aggressive cut (−750 kcal/day)',  value: 'aggressive_cut' },
+                  { label: 'Cut – lose fat (−500 kcal/day)',  value: 'cut' },
+                  { label: 'Maintenance',                      value: 'maintain' },
+                  { label: 'Lean bulk (+300 kcal/day)',        value: 'bulk' },
+                  { label: 'Aggressive bulk (+500 kcal/day)', value: 'aggressive_bulk' },
+                ]}
+              />
+            </div>
+
           </div>
 
           {/* Trigger measurement analysis */}
@@ -402,12 +436,39 @@ function AnalyzerContent() {
               <span className="bodytype-badge">{result.category}</span>
             </div>
 
-            <div className="result-item">
-              <strong>Suggested Calories:</strong>{' '}
-              {result.suggested_calories?.toLocaleString?.() ??
-                result.suggested_calories}{' '}
-              kcal/day
-            </div>
+            {/* TDEE stat chip grid — only shown for measurement-based results */}
+            {result.tdee != null && (
+              <div className="tdee-chips">
+                <div className="tdee-chip">
+                  <span className="tdee-chip__value">{result.bmr?.toLocaleString()}</span>
+                  <span className="tdee-chip__label">BMR (kcal at rest)</span>
+                </div>
+                <div className="tdee-chip">
+                  <span className="tdee-chip__value">{result.tdee?.toLocaleString()}</span>
+                  <span className="tdee-chip__label">TDEE (kcal/day)</span>
+                </div>
+                <div className="tdee-chip">
+                  <span className="tdee-chip__value">{result.suggested_calories?.toLocaleString()}</span>
+                  <span className="tdee-chip__label">Target (kcal/day)</span>
+                </div>
+                <div className="tdee-chip">
+                  <span className="tdee-chip__value" style={{
+                    color: result.deficit_or_surplus < 0 ? '#f87171' : result.deficit_or_surplus > 0 ? '#5DCAA5' : 'var(--accent)',
+                  }}>
+                    {result.deficit_or_surplus > 0 ? '+' : ''}{result.deficit_or_surplus?.toLocaleString()}
+                  </span>
+                  <span className="tdee-chip__label">{result.deficit_or_surplus <= 0 ? 'Deficit' : 'Surplus'} (kcal/day)</span>
+                </div>
+              </div>
+            )}
+
+            {/* Fallback single-line for image path which has no TDEE */}
+            {result.tdee == null && (
+              <div className="result-item">
+                <strong>Suggested Calories:</strong>{' '}
+                {result.suggested_calories?.toLocaleString()} kcal/day
+              </div>
+            )}
 
             {result.goal_suggestion && (
               <div className="result-item">

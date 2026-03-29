@@ -256,6 +256,39 @@
   font-style: italic;
 }
 
+/* ── TDEE stat chips ────────────────────────────────────────── */
+.tdee-chips {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.tdee-chip {
+  background: #161b27;
+  border: 1px solid #1e2536;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tdee-chip__value {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.tdee-chip__label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 600px) {
+  .tdee-chips { grid-template-columns: 1fr 1fr; }
+}
+
 /* ── Results ────────────────────────────────────────────────── */
 .analysis-results {
   background: var(--bg-surface);
