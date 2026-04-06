@@ -10,3 +10,4 @@ stripe
 supabase
 python-dotenv
 posthog
+anthropic

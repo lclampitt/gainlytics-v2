@@ -21,6 +21,7 @@ import SettingsPage  from './pages/settings';
 
 // Features
 import GoalPlanner from './components/GoalPlanner/goalplanner';
+import MealPlanner from './pages/MealPlanner/MealPlanner';
 
 // Calculators
 import MacroCalculator     from './calculators/MacroCalculator';
@@ -176,6 +177,7 @@ function App() {
       <Route path="/calculators/macros"   element={protect(<MacroCalculator />)} />
       <Route path="/calculators/1rm"     element={protect(<OneRepMaxCalculator />)} />
       <Route path="/goalplanner"         element={protect(<GoalPlanner isPro={isPro} />)} />
+      <Route path="/meal-planner"        element={protect(<MealPlanner isPro={isPro} />)} />
       <Route path="/progress"            element={protect(<ProgressPage isPro={isPro} />)} />
       <Route path="/workouts"            element={protect(<WorkoutLogger />)} />
       <Route path="/billing"             element={protect(<BillingPage />)} />

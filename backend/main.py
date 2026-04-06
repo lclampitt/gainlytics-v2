@@ -22,6 +22,13 @@ import stripe
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from datetime import datetime
+import json
+try:
+    import anthropic as _anthropic_mod
+    _anthropic_available = True
+except ImportError:
+    _anthropic_mod = None
+    _anthropic_available = False
 try:
     from posthog import Posthog as _Posthog
     _posthog_available = True
@@ -51,6 +58,10 @@ CONTACT_RECIPIENT     = "lclampitt44@outlook.com"
 _supabase_url = os.environ.get("SUPABASE_URL", "")
 _supabase_service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 supabase_admin: Client = create_client(_supabase_url, _supabase_service_key) if _supabase_url and _supabase_service_key else None
+
+# Anthropic (Claude) client for AI meal suggestions
+_anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
+anthropic_client = _anthropic_mod.Anthropic(api_key=_anthropic_key) if _anthropic_available and _anthropic_key else None
 
 # FastAPI app instance used by uvicorn / deployment
 app = FastAPI(title="AI Body Analyzer")
@@ -809,3 +820,93 @@ def root():
     Simple health-check endpoint that confirms the backend is running.
     """
     return {"message": "AI Body Analyzer backend is running"}
+
+
+# -------------------------------------------------
+# Meal Planner: AI meal suggestions
+# -------------------------------------------------
+class MealSuggestRequest(BaseModel):
+    user_id: str
+    day: str
+    meal_type: str  # 'breakfast' | 'lunch' | 'dinner'
+    remaining_calories: int = 600
+    remaining_protein: float = 40
+    remaining_carbs: float = 60
+    remaining_fat: float = 20
+    goal: str = "maintenance"
+    diet_preference: str = "standard"
+
+@app.post("/meal-planner/suggest")
+async def suggest_meal(body: MealSuggestRequest):
+    """Generate 3 AI meal suggestions using Claude."""
+    # Pro check
+    plan = _get_plan(body.user_id)
+    if plan != "pro":
+        raise HTTPException(status_code=403, detail="Pro subscription required.")
+
+    if not anthropic_client:
+        raise HTTPException(status_code=500, detail="AI service not configured.")
+
+    try:
+        message = anthropic_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1200,
+            system="You are a nutrition expert helping someone hit their daily macro targets. Return ONLY valid JSON, no markdown, no explanation.",
+            messages=[{
+                "role": "user",
+                "content": f"""Suggest 3 realistic {body.meal_type} options for someone on a {body.goal} goal with a {body.diet_preference} diet preference.
+
+Remaining macros for today:
+- Calories: {body.remaining_calories} kcal
+- Protein: {body.remaining_protein}g
+- Carbs: {body.remaining_carbs}g
+- Fat: {body.remaining_fat}g
+
+For each meal return:
+- meal_name: specific and descriptive
+- ingredients: array of strings with quantities (e.g. '150g grilled chicken breast' not just 'chicken')
+- calories: integer
+- protein_g: number
+- carbs_g: number
+- fat_g: number
+
+Make suggestions realistic and specific. Quantities should be precise. Each meal should fit within the remaining macros without going significantly over.
+
+Return a JSON array of 3 objects only."""
+            }]
+        )
+
+        text = message.content[0].text.strip()
+        # Strip markdown fences if present
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+            if text.endswith("```"):
+                text = text[:-3]
+            text = text.strip()
+
+        meals = json.loads(text)
+        return {"suggestions": meals}
+
+    except json.JSONDecodeError:
+        # Return fallback suggestions if Claude doesn't return valid JSON
+        fallbacks = {
+            "breakfast": [
+                {"meal_name": "Greek Yogurt Parfait", "ingredients": ["200g Greek yogurt", "30g granola", "100g mixed berries", "10g honey"], "calories": 350, "protein_g": 25, "carbs_g": 45, "fat_g": 8},
+                {"meal_name": "Egg White Omelette", "ingredients": ["4 egg whites", "30g spinach", "30g feta cheese", "1 slice whole wheat toast"], "calories": 280, "protein_g": 28, "carbs_g": 20, "fat_g": 8},
+                {"meal_name": "Overnight Oats", "ingredients": ["60g rolled oats", "200ml almond milk", "1 scoop protein powder", "1 banana"], "calories": 420, "protein_g": 30, "carbs_g": 55, "fat_g": 10},
+            ],
+            "lunch": [
+                {"meal_name": "Grilled Chicken Salad", "ingredients": ["150g grilled chicken breast", "100g mixed greens", "50g cherry tomatoes", "30g feta", "15ml olive oil dressing"], "calories": 450, "protein_g": 42, "carbs_g": 15, "fat_g": 22},
+                {"meal_name": "Turkey Wrap", "ingredients": ["120g sliced turkey breast", "1 whole wheat tortilla", "30g hummus", "50g mixed greens", "30g avocado"], "calories": 420, "protein_g": 35, "carbs_g": 35, "fat_g": 15},
+                {"meal_name": "Tuna Rice Bowl", "ingredients": ["150g canned tuna", "150g brown rice", "50g edamame", "30g cucumber", "10ml soy sauce"], "calories": 480, "protein_g": 40, "carbs_g": 50, "fat_g": 10},
+            ],
+            "dinner": [
+                {"meal_name": "Salmon with Vegetables", "ingredients": ["180g Atlantic salmon fillet", "150g roasted broccoli", "150g sweet potato", "10ml olive oil"], "calories": 520, "protein_g": 40, "carbs_g": 35, "fat_g": 22},
+                {"meal_name": "Lean Beef Stir Fry", "ingredients": ["150g lean beef strips", "100g bell peppers", "80g snap peas", "150g jasmine rice", "15ml teriyaki sauce"], "calories": 550, "protein_g": 38, "carbs_g": 55, "fat_g": 15},
+                {"meal_name": "Chicken Pasta", "ingredients": ["130g grilled chicken breast", "80g whole wheat penne", "100g marinara sauce", "20g parmesan", "50g spinach"], "calories": 500, "protein_g": 42, "carbs_g": 48, "fat_g": 12},
+            ],
+        }
+        return {"suggestions": fallbacks.get(body.meal_type, fallbacks["lunch"])}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI suggestion error: {str(e)}")

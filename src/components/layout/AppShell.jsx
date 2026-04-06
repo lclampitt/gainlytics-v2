@@ -11,6 +11,7 @@ const PAGE_META = {
   '/measurements':    { title: 'Measurements' },
   '/calculators': { title: 'Calculators' },
   '/goalplanner': { title: 'Goal Planner' },
+  '/meal-planner': { title: 'Meal Planner' },
   '/workouts':    { title: 'Workouts' },
   '/progress':    { title: 'Progress' },
   '/billing':     { title: 'Billing' },

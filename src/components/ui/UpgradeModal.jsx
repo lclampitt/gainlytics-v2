@@ -11,6 +11,7 @@ const PRO_FEATURES = [
   'Everything in Free',
   'Unlimited workout logs',
   'Goal Planner',
+  'AI Meal Planner',
   'Progress Charts',
   'Daily nutrition tracking',
 ];
@@ -27,6 +28,7 @@ const FREE_FEATURES = [
 const FEATURE_HEADLINES = {
   workouts: "You've reached 10 workout logs on the free plan",
   goals:    "Goal Planner is a Pro feature",
+  meals:    "Meal Planner is a Pro feature",
   progress: "Progress Charts is a Pro feature",
   default:  "Unlock everything with Gainlytics Pro",
 };
