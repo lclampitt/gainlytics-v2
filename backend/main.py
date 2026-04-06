@@ -685,39 +685,43 @@ async def stripe_webhook(request: Request):
         event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid payload")
-    except stripe.error.SignatureVerificationError:
-        raise HTTPException(status_code=400, detail="Invalid signature")
+    except Exception as sig_err:
+        raise HTTPException(status_code=400, detail=f"Signature error: {sig_err}")
 
     if not supabase_admin:
         raise HTTPException(status_code=500, detail="Supabase admin client not configured.")
 
-    event_type = event["type"]
-    obj = event["data"]["object"]
+    try:
+        event_type = event["type"] if isinstance(event, dict) else event.type
+        obj = event["data"]["object"] if isinstance(event, dict) else event.data.object
 
-    if event_type == "checkout.session.completed":
-        user_id         = obj.get("client_reference_id")
-        customer_id     = obj.get("customer")
-        subscription_id = obj.get("subscription")
-        if user_id:
-            supabase_admin.table("profiles").upsert({
-                "id": user_id,
-                "subscription_tier": "pro",
-                "stripe_customer_id": customer_id,
-                "stripe_subscription_id": subscription_id,
-            }).execute()
-            if posthog_client:
-                try:
-                    posthog_client.capture(user_id, "subscription_started", {"plan": "pro"})
-                except Exception:
-                    pass
+        if event_type == "checkout.session.completed":
+            user_id         = obj.get("client_reference_id") if isinstance(obj, dict) else getattr(obj, "client_reference_id", None)
+            customer_id     = obj.get("customer") if isinstance(obj, dict) else getattr(obj, "customer", None)
+            subscription_id = obj.get("subscription") if isinstance(obj, dict) else getattr(obj, "subscription", None)
+            if user_id:
+                supabase_admin.table("profiles").upsert({
+                    "id": user_id,
+                    "subscription_tier": "pro",
+                    "stripe_customer_id": customer_id,
+                    "stripe_subscription_id": subscription_id,
+                }).execute()
+                if posthog_client:
+                    try:
+                        posthog_client.capture(user_id, "subscription_started", {"plan": "pro"})
+                    except Exception:
+                        pass
 
-    elif event_type == "customer.subscription.deleted":
-        customer_id = obj.get("customer")
-        if customer_id:
-            supabase_admin.table("profiles").update({
-                "subscription_tier": "free",
-                "stripe_subscription_id": None,
-            }).eq("stripe_customer_id", customer_id).execute()
+        elif event_type == "customer.subscription.deleted":
+            customer_id = obj.get("customer") if isinstance(obj, dict) else getattr(obj, "customer", None)
+            if customer_id:
+                supabase_admin.table("profiles").update({
+                    "subscription_tier": "free",
+                    "stripe_subscription_id": None,
+                }).eq("stripe_customer_id", customer_id).execute()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Webhook handler error: {str(e)}")
 
     return {"status": "ok"}
 
