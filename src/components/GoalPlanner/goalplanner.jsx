@@ -74,7 +74,10 @@ function TotalsRow({ totals }) {
 
 /* ── NUTRITION LOGGER ─────────────────────────────────── */
 function NutritionLogger({ userId }) {
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const today = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
 
   const [entries,     setEntries]     = useState([]);
   const [form,        setForm]        = useState({ calories: '', protein: '', carbs: '', fat: '', meal_name: '' });

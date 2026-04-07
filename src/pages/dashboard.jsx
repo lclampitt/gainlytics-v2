@@ -307,7 +307,8 @@ function DailyChecklist({ userId }) {
 
   useEffect(() => {
     if (!userId) return;
-    const today = new Date().toISOString().slice(0, 10);
+    const _td = new Date();
+    const today = `${_td.getFullYear()}-${String(_td.getMonth() + 1).padStart(2, '0')}-${String(_td.getDate()).padStart(2, '0')}`;
 
     (async () => {
       const [{ data: workouts }, { data: foodLogs }, { data: progressRows }] = await Promise.all([
@@ -536,7 +537,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (!session?.user?.id || !isPro) return;
     const uid       = session.user.id;
-    const todayDate = new Date().toISOString().slice(0, 10);
+    const _d = new Date();
+    const todayDate = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}-${String(_d.getDate()).padStart(2, '0')}`;
 
     async function loadNutrition() {
       const [{ data: goal }, { data: logs }] = await Promise.all([
