@@ -10,7 +10,10 @@ import {
   BookOpen,
   Check,
   Zap,
+  Sun,
+  Moon,
 } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
 import { supabase } from '../supabaseClient';
 import '../styles/landing.css';
 
@@ -87,6 +90,7 @@ const PRO_PLUS_FEATURES = [
 /* ── Navbar ── */
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const { isDark, toggle } = useTheme();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -120,6 +124,14 @@ function Navbar() {
 
       {/* Actions */}
       <div className="lp-nav__actions">
+        <button
+          className="lp-theme-toggle"
+          onClick={toggle}
+          title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+          aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+        >
+          {isDark ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
         <Link to="/auth" className="lp-btn lp-btn--ghost">Sign in</Link>
         <Link to="/auth" className="lp-btn lp-btn--teal">Get started</Link>
       </div>
