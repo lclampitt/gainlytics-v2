@@ -50,7 +50,7 @@ function Navbar() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
       <Link to="/" className="lp-nav__logo">
-        <div className="lp-nav__logo-icon">G</div>
+        <img src="/images/gainlyticslogo.png" alt="Gainlytics" className="lp-nav__logo-icon" />
         <span className="lp-nav__logo-name">Gainlytics</span>
       </Link>
 
@@ -213,7 +213,7 @@ export default function About() {
           <div className="lp-footer__top">
             <div className="lp-footer__brand">
               <Link to="/" className="lp-footer__logo">
-                <div className="lp-footer__logo-icon">G</div>
+                <img src="/images/gainlyticslogo.png" alt="Gainlytics" className="lp-footer__logo-icon" />
                 <span className="lp-footer__logo-name">Gainlytics</span>
               </Link>
               <p className="lp-footer__tagline">

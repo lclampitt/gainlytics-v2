@@ -34,14 +34,8 @@
 .sidebar__logo-icon {
   width: 32px;
   height: 32px;
-  background: var(--accent);
-  color: #fff;
   border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 16px;
+  object-fit: cover;
   flex-shrink: 0;
 }
 
@@ -338,14 +332,8 @@
   .mob-topbar__logo-icon {
     width: 30px;
     height: 30px;
-    background: var(--accent);
-    color: #fff;
     border-radius: var(--radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 15px;
+    object-fit: cover;
     flex-shrink: 0;
   }
 

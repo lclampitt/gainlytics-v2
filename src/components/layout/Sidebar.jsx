@@ -88,11 +88,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
     <div className={`sidebar ${collapsed ? 'sidebar--collapsed' : ''}`}>
       {/* Logo */}
       <div className="sidebar__logo">
-        <div className="sidebar__logo-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-            <path d="M6 20V10M12 20V4M18 20v-6" />
-          </svg>
-        </div>
+        <img src="/images/gainlyticslogo.png" alt="Gainlytics" className="sidebar__logo-icon" />
         <AnimatePresence>
           {!collapsed && (
             <motion.span
@@ -317,11 +313,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
       {/* ── Mobile top bar ── */}
       <div className="mob-topbar">
         <Link to="/home" className="mob-topbar__logo">
-          <div className="mob-topbar__logo-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-              <path d="M6 20V10M12 20V4M18 20v-6" />
-            </svg>
-          </div>
+          <img src="/images/gainlyticslogo.png" alt="Gainlytics" className="mob-topbar__logo-icon" />
           <span className="mob-topbar__logo-name">Gainlytics</span>
         </Link>
         <button

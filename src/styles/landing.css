@@ -35,14 +35,8 @@
 .lp-nav__logo-icon {
   width: 32px;
   height: 32px;
-  background: var(--accent);
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 15px;
-  color: #fff;
+  object-fit: cover;
   flex-shrink: 0;
 }
 
@@ -543,14 +537,9 @@
 .lp-footer__logo-icon {
   width: 30px;
   height: 30px;
-  background: var(--accent);
   border-radius: 7px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
-  color: #fff;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .lp-footer__logo-name {
