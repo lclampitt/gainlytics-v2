@@ -13,9 +13,10 @@ import Dashboard    from './pages/dashboard';
 import Analyzer     from './pages/analyzer';
 import Calculators  from './pages/calculators';
 import ProgressPage from './pages/progress';
-import AuthPage     from './pages/auth';
-import Contact      from './pages/Contact';
-import About        from './pages/About';
+import AuthPage        from './pages/auth';
+import ResetPassword   from './pages/ResetPassword';
+import Contact         from './pages/Contact';
+import About           from './pages/About';
 import BillingPage   from './pages/billing';
 import SettingsPage  from './pages/settings';
 
@@ -108,8 +109,13 @@ function App() {
     };
     getSession();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, sess) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, sess) => {
       setSession(sess);
+      // Redirect to reset password page when user clicks the email recovery link
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/reset-password', { replace: true });
+        return;
+      }
       fetchTier(sess?.user?.id, sess?.user?.email).catch(() => {}).finally(() => setLoading(false));
     });
 
@@ -169,9 +175,10 @@ function App() {
       />
 
       {/* Public */}
-      <Route path="/auth"  element={<AuthPage />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/help"  element={<Contact />} />
+      <Route path="/auth"            element={<AuthPage />} />
+      <Route path="/reset-password"  element={<ResetPassword />} />
+      <Route path="/about"           element={<About />} />
+      <Route path="/help"            element={<Contact />} />
 
       {/* Protected — all inside AppShell */}
       <Route path="/home"                element={protect(<Dashboard />)} />
