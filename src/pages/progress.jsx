@@ -30,6 +30,19 @@ function ProgressGate() {
       >
         Upgrade to Pro — $4.99/mo
       </button>
+      <button
+        onClick={() => triggerUpgrade('progress')}
+        style={{
+          color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer',
+          background: 'none', border: 'none', fontFamily: 'inherit',
+          textDecoration: 'underline', textUnderlineOffset: 2,
+          transition: 'color 0.15s ease', padding: 0,
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+      >
+        See what's included
+      </button>
     </div>
   );
 }
