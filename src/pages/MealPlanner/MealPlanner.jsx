@@ -17,7 +17,7 @@ import { supabase } from '../../supabaseClient';
 import { useUpgrade } from '../../context/UpgradeContext';
 import '../../styles/mealplanner.css';
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://127.0.0.1:8000';
+const API_BASE = process.env.REACT_APP_API_BASE || 'https://gainlytics-1.onrender.com';
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner'];
