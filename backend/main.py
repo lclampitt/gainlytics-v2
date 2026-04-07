@@ -1019,6 +1019,7 @@ Return a JSON array of 3 objects only."""
 # -------------------------------------------------
 class WeekSuggestRequest(BaseModel):
     user_id: str
+    plan_id: Optional[str] = None       # sent by frontend, unused by backend
     goal: str = "maintenance"
     diet_preference: str = "standard"
     daily_targets: Optional[dict] = None  # {calories, protein, carbs, fat}
