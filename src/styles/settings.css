@@ -602,3 +602,77 @@
   height: 14px;
   border-radius: 4px;
 }
+
+/* ── Retro section divider ── */
+.settings-retro-divider {
+  grid-column: 1 / -1;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 12px 0 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Retro theme cards ── */
+.settings-retro-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+  background: var(--bg-surface);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+  font-family: inherit;
+  color: var(--text-secondary);
+}
+
+.settings-retro-card:hover {
+  border-color: var(--border-hover);
+}
+
+.settings-retro-card--active {
+  border-color: var(--retro-border);
+}
+
+.settings-retro-card__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 12px;
+  height: 80px;
+  justify-content: center;
+}
+
+.settings-retro-card__bar {
+  height: 6px;
+  border-radius: 99px;
+}
+
+.settings-retro-card__info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.settings-retro-card__name {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.settings-retro-card__swatches {
+  display: flex;
+  gap: 4px;
+}
+
+.settings-retro-card__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}

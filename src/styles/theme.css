@@ -237,6 +237,252 @@
   --pro-text: #991B1B;
 }
 
+/* ── Retro accent themes ──────────────────────────────────────── */
+
+[data-accent="xp-aqua"] {
+  /* Deep navy backgrounds */
+  --bg-base:       #060d18;
+  --bg-surface:    #0a1524;
+  --bg-surface-2:  #0d1e30;
+  --bg-hover:      #122840;
+  --bg-page:       #060d18;
+  --bg-sidebar:    #0a1524;
+  --bg-card:       #0d1e30;
+  --border:        #0e3055;
+  --border-light:  #133a66;
+  --border-hover:  #00BFFF;
+  --bar-track:     #0a1a2a;
+  --topbar-bg:     rgba(6, 13, 24, 0.92);
+
+  --accent:           #00BFFF;
+  --accent-light:     #66D9FF;
+  --accent-dark:      #0088BB;
+  --accent-muted:     rgba(0, 191, 255, 0.12);
+  --accent-glow:      rgba(0, 191, 255, 0.25);
+  --accent-bg:        #0a1a2a;
+  --accent-bg-hover:  #0d2035;
+  --accent-border:    #00BFFF;
+  --border-focus:     #00BFFF;
+  --pro-bg:           rgba(0, 191, 255, 0.15);
+  --pro-text:         #66D9FF;
+  --success:          #00BFFF;
+  --accent-rgb:       0, 191, 255;
+
+  --color-protein:       #39FF14;
+  --color-protein-light: #88FF66;
+  --color-protein-bg:    #0a1a0a;
+  --color-protein-track: #0a1a0a;
+  --color-carbs:         #00BFFF;
+  --color-carbs-light:   #66D9FF;
+  --color-carbs-bg:      #0a1a3a;
+  --color-carbs-track:   #1a2a4a;
+  --color-fat:           #FF69B4;
+  --color-fat-light:     #FF69B4;
+  --color-fat-bg:        #2a0a1a;
+  --color-fat-track:     #2a0a1a;
+  --color-calories:      #00BFFF;
+  --color-calories-light:#66D9FF;
+  --color-calories-bg:   #0a1a3a;
+  --color-calories-track:#1a2a4a;
+  --color-workouts:      #00BFFF;
+  --color-workouts-light:#66D9FF;
+  --color-workouts-bg:   #0a1a2a;
+  --color-progress-chart:#00BFFF;
+  --color-progress-light:#66D9FF;
+  --color-progress-bg:   #0a1a2a;
+  --color-streak:        #39FF14;
+}
+
+[data-theme="light"][data-accent="xp-aqua"] {
+  --accent:           #0088BB;
+  --accent-light:     #00BFFF;
+  --accent-dark:      #006688;
+  --accent-muted:     rgba(0, 191, 255, 0.08);
+  --accent-glow:      rgba(0, 191, 255, 0.15);
+  --accent-bg:        #E0F7FF;
+  --accent-bg-hover:  #B3EEFF;
+  --accent-border:    #00BFFF;
+  --pro-bg:           #B3EEFF;
+  --pro-text:         #005577;
+}
+
+[data-accent="myspace"] {
+  /* Deep purple-black backgrounds */
+  --bg-base:       #080008;
+  --bg-surface:    #120012;
+  --bg-surface-2:  #1a001a;
+  --bg-hover:      #240024;
+  --bg-page:       #080008;
+  --bg-sidebar:    #120012;
+  --bg-card:       #1a001a;
+  --border:        #3a003a;
+  --border-light:  #4d004d;
+  --border-hover:  #FF00FF;
+  --bar-track:     #2a002a;
+  --topbar-bg:     rgba(8, 0, 8, 0.92);
+
+  --accent:           #FF00FF;
+  --accent-light:     #FF66FF;
+  --accent-dark:      #CC00CC;
+  --accent-muted:     rgba(255, 0, 255, 0.12);
+  --accent-glow:      rgba(255, 0, 255, 0.25);
+  --accent-bg:        #2a002a;
+  --accent-bg-hover:  #340034;
+  --accent-border:    #FF00FF;
+  --border-focus:     #FF00FF;
+  --pro-bg:           rgba(255, 0, 255, 0.15);
+  --pro-text:         #FF66FF;
+  --success:          #FF00FF;
+  --accent-rgb:       255, 0, 255;
+
+  --color-protein:       #8800FF;
+  --color-protein-light: #CC88FF;
+  --color-protein-bg:    #1a0030;
+  --color-protein-track: #1a0030;
+  --color-carbs:         #FF00FF;
+  --color-carbs-light:   #FF88FF;
+  --color-carbs-bg:      #2a002a;
+  --color-carbs-track:   #2a002a;
+  --color-fat:           #FF4488;
+  --color-fat-light:     #FF88AA;
+  --color-fat-bg:        #2a0018;
+  --color-fat-track:     #2a0018;
+  --color-calories:      #FF00FF;
+  --color-calories-light:#FF00FF;
+  --color-calories-bg:   #2a002a;
+  --color-calories-track:#2a002a;
+  --color-workouts:      #FF00FF;
+  --color-workouts-light:#FF66FF;
+  --color-workouts-bg:   #2a002a;
+  --color-progress-chart:#FF00FF;
+  --color-progress-light:#FF66FF;
+  --color-progress-bg:   #2a002a;
+  --color-streak:        #FF00FF;
+}
+
+[data-theme="light"][data-accent="myspace"] {
+  --accent:           #CC00CC;
+  --accent-light:     #FF00FF;
+  --accent-dark:      #880088;
+  --accent-muted:     rgba(255, 0, 255, 0.08);
+  --accent-glow:      rgba(255, 0, 255, 0.15);
+  --accent-bg:        #FFE0FF;
+  --accent-bg-hover:  #FFB3FF;
+  --accent-border:    #FF00FF;
+  --pro-bg:           #FFB3FF;
+  --pro-text:         #770077;
+}
+
+[data-accent="y2k-chrome"] {
+  /* Deep charcoal backgrounds */
+  --bg-base:       #0a0a0a;
+  --bg-surface:    #141414;
+  --bg-surface-2:  #1c1c1c;
+  --bg-hover:      #252525;
+  --bg-page:       #0a0a0a;
+  --bg-sidebar:    #141414;
+  --bg-card:       #1c1c1c;
+  --border:        #2a2a2a;
+  --border-light:  #353535;
+  --border-hover:  #FFD700;
+  --bar-track:     #222222;
+  --topbar-bg:     rgba(10, 10, 10, 0.92);
+
+  --accent:           #FFD700;
+  --accent-light:     #FFE566;
+  --accent-dark:      #CC9900;
+  --accent-muted:     rgba(255, 215, 0, 0.12);
+  --accent-glow:      rgba(255, 215, 0, 0.25);
+  --accent-bg:        #1a1a00;
+  --accent-bg-hover:  #242400;
+  --accent-border:    #FFD700;
+  --border-focus:     #FFD700;
+  --pro-bg:           rgba(255, 215, 0, 0.15);
+  --pro-text:         #FFE566;
+  --success:          #FFD700;
+  --accent-rgb:       255, 215, 0;
+
+  --color-protein:       #FFD700;
+  --color-protein-light: #FFD700;
+  --color-protein-bg:    #2a2a00;
+  --color-protein-track: #2a2a00;
+  --color-carbs:         #C0C0C0;
+  --color-carbs-light:   #C0C0C0;
+  --color-carbs-bg:      #1a1a1a;
+  --color-carbs-track:   #2a2a2a;
+  --color-fat:           #666666;
+  --color-fat-light:     #888888;
+  --color-fat-bg:        #1a1a1a;
+  --color-fat-track:     #1a1a1a;
+  --color-calories:      #FFD700;
+  --color-calories-light:#FFE566;
+  --color-calories-bg:   #2a2a00;
+  --color-calories-track:#2a2a00;
+  --color-workouts:      #FFD700;
+  --color-workouts-light:#FFE566;
+  --color-workouts-bg:   #1a1a00;
+  --color-progress-chart:#FFD700;
+  --color-progress-light:#FFE566;
+  --color-progress-bg:   #1a1a00;
+  --color-streak:        #FFD700;
+}
+
+[data-theme="light"][data-accent="y2k-chrome"] {
+  --accent:           #CC9900;
+  --accent-light:     #FFD700;
+  --accent-dark:      #886600;
+  --accent-muted:     rgba(255, 215, 0, 0.08);
+  --accent-glow:      rgba(255, 215, 0, 0.15);
+  --accent-bg:        #FFFDE0;
+  --accent-bg-hover:  #FFF9B3;
+  --accent-border:    #FFD700;
+  --pro-bg:           #FFF9B3;
+  --pro-text:         #665500;
+}
+
+/* ── Retro card borders — accent-colored for that deep look ── */
+/* XP Aqua — accent-tinted card borders */
+[data-accent="xp-aqua"] .bento-card,
+[data-accent="xp-aqua"] .settings-card,
+[data-accent="xp-aqua"] .mp-container,
+[data-accent="xp-aqua"] .wl,
+[data-accent="xp-aqua"] .wl-log-card,
+[data-accent="xp-aqua"] .wl-history-card,
+[data-accent="xp-aqua"] .gp-goal-card,
+[data-accent="xp-aqua"] .gp-log-card,
+[data-accent="xp-aqua"] .pg-card,
+[data-accent="xp-aqua"] .el-card {
+  border-color: rgba(0, 191, 255, 0.35);
+}
+
+/* MySpace — bold magenta card borders */
+[data-accent="myspace"] .bento-card,
+[data-accent="myspace"] .settings-card,
+[data-accent="myspace"] .mp-container,
+[data-accent="myspace"] .wl,
+[data-accent="myspace"] .wl-log-card,
+[data-accent="myspace"] .wl-history-card,
+[data-accent="myspace"] .gp-goal-card,
+[data-accent="myspace"] .gp-log-card,
+[data-accent="myspace"] .pg-card,
+[data-accent="myspace"] .el-card {
+  border-color: rgba(255, 0, 255, 0.5);
+}
+
+/* Y2K Chrome — gold card borders */
+[data-accent="y2k-chrome"] .bento-card,
+[data-accent="y2k-chrome"] .settings-card,
+[data-accent="y2k-chrome"] .mp-container,
+[data-accent="y2k-chrome"] .wl,
+[data-accent="y2k-chrome"] .wl-log-card,
+[data-accent="y2k-chrome"] .wl-history-card,
+[data-accent="y2k-chrome"] .gp-goal-card,
+[data-accent="y2k-chrome"] .gp-log-card,
+[data-accent="y2k-chrome"] .pg-card,
+[data-accent="y2k-chrome"] .el-card {
+  border-color: rgba(255, 215, 0, 0.35);
+}
+
 /* ── Spectrum — multi-color macro theme ────────────────────── */
 
 [data-accent="spectrum"] {

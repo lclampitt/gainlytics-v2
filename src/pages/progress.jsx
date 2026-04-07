@@ -83,7 +83,7 @@ function StatChip({ label, value, suffix = '', decimals = 1, index = 0, positive
 }
 
 function ProgressPageContent() {
-  const { isSpectrum } = useTheme();
+  const { isSpectrum, isRetro } = useTheme();
   const [session, setSession] = useState(null);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -248,15 +248,15 @@ function ProgressPageContent() {
       {/* Stat chips */}
       <div className="pg-chips">
         <StatChip label="Current weight" value={currentWeight} suffix=" lbs" decimals={1} index={0}
-          spectrumColor={isSpectrum ? '#EF9F27' : undefined} />
+          spectrumColor={(isSpectrum || isRetro) ? 'var(--color-progress-chart)' : undefined} />
         <StatChip label="Body fat %" value={currentBf} suffix="%" decimals={1} index={1}
-          spectrumColor={isSpectrum ? '#DB2777' : undefined} />
+          spectrumColor={(isSpectrum || isRetro) ? 'var(--color-fat)' : undefined} />
         <StatChip label="Weight change" value={weightChange} suffix=" lbs" decimals={1} index={2}
           positive={weightChange != null ? weightChange <= 0 : undefined}
-          spectrumColor={isSpectrum ? '#1D9E75' : undefined} />
+          spectrumColor={(isSpectrum || isRetro) ? 'var(--color-workouts)' : undefined} />
         <StatChip label="BF% change" value={bfChange} suffix="%" decimals={1} index={3}
           positive={bfChange != null ? bfChange <= 0 : undefined}
-          spectrumColor={isSpectrum ? '#DB2777' : undefined} />
+          spectrumColor={(isSpectrum || isRetro) ? 'var(--color-fat)' : undefined} />
       </div>
 
       {/* Chart */}

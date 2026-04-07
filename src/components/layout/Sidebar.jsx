@@ -58,27 +58,42 @@ const MORE_PAGES = [
 
 const MORE_ROUTES = ['/goalplanner', '/calculators', '/exercises', '/measurements', '/settings'];
 
-const getNavColor = (route, isSpectrum) => {
-  if (!isSpectrum) return null;
-  const map = {
-    '/home':         { bg:'#0a1a0f', border:'#1D9E75', text:'#5DCAA5', icon:'#5DCAA5' },
-    '/calculators':  { bg:'#1a0d30', border:'#7C3AED', text:'#A78BFA', icon:'#A78BFA' },
-    '/workouts':     { bg:'#0a1a0f', border:'#1D9E75', text:'#5DCAA5', icon:'#5DCAA5' },
-    '/exercises':    { bg:'#2a0d1a', border:'#DB2777', text:'#F472B6', icon:'#F472B6' },
-    '/measurements': { bg:'#2a0d1a', border:'#DB2777', text:'#F472B6', icon:'#F472B6' },
-    '/goalplanner':  { bg:'#0a1a3a', border:'#2563EB', text:'#60A5FA', icon:'#60A5FA' },
-    '/meal-planner': { bg:'#2a1208', border:'#EA580C', text:'#FB923C', icon:'#FB923C' },
-    '/progress':     { bg:'#2a1a04', border:'#EF9F27', text:'#FAC775', icon:'#FAC775' },
-    '/settings':     { bg:'#1e1a30', border:'#7C3AED', text:'#A78BFA', icon:'#A78BFA' },
-  };
-  return map[route] || map['/home'];
+const getNavColor = (route, accent) => {
+  if (accent === 'spectrum') {
+    const map = {
+      '/home':         { bg:'#0a1a0f', border:'#1D9E75', text:'#5DCAA5', icon:'#5DCAA5' },
+      '/calculators':  { bg:'#1a0d30', border:'#7C3AED', text:'#A78BFA', icon:'#A78BFA' },
+      '/workouts':     { bg:'#0a1a0f', border:'#1D9E75', text:'#5DCAA5', icon:'#5DCAA5' },
+      '/exercises':    { bg:'#2a0d1a', border:'#DB2777', text:'#F472B6', icon:'#F472B6' },
+      '/measurements': { bg:'#2a0d1a', border:'#DB2777', text:'#F472B6', icon:'#F472B6' },
+      '/goalplanner':  { bg:'#0a1a3a', border:'#2563EB', text:'#60A5FA', icon:'#60A5FA' },
+      '/meal-planner': { bg:'#2a1208', border:'#EA580C', text:'#FB923C', icon:'#FB923C' },
+      '/progress':     { bg:'#2a1a04', border:'#EF9F27', text:'#FAC775', icon:'#FAC775' },
+      '/settings':     { bg:'#1e1a30', border:'#7C3AED', text:'#A78BFA', icon:'#A78BFA' },
+    };
+    return map[route] || map['/home'];
+  }
+  if (accent === 'xp-aqua') {
+    return { bg:'#0a1a2a', border:'#00BFFF', text:'#66D9FF', icon:'#66D9FF' };
+  }
+  if (accent === 'myspace') {
+    return { bg:'#2a002a', border:'#FF00FF', text:'#FF66FF', icon:'#FF66FF' };
+  }
+  if (accent === 'y2k-chrome') {
+    return { bg:'#1a1a00', border:'#FFD700', text:'#FFE566', icon:'#FFE566' };
+  }
+  return null;
 };
 
-const SPECTRUM_MOBILE_DOT = {
-  '/home': '#1D9E75',
-  '/workouts': '#1D9E75',
-  '/meal-planner': '#EA580C',
-  '/progress': '#EF9F27',
+const getMobileDotColor = (route, accent) => {
+  if (accent === 'spectrum') {
+    const map = { '/home': '#1D9E75', '/workouts': '#1D9E75', '/meal-planner': '#EA580C', '/progress': '#EF9F27' };
+    return map[route] || null;
+  }
+  if (accent === 'xp-aqua') return '#39FF14';
+  if (accent === 'myspace') return '#FF00FF';
+  if (accent === 'y2k-chrome') return '#FFD700';
+  return null;
 };
 
 export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) {
@@ -93,7 +108,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
 
   // Close More sheet on route change
   useEffect(() => { setMoreOpen(false); }, [location.pathname]);
-  const { theme, toggle: toggleTheme, isDark, isSpectrum } = useTheme();
+  const { theme, toggle: toggleTheme, isDark, isSpectrum, isXpAqua, isMyspace, isY2kChrome, isRetro, accent, isY2K } = useTheme();
 
   const userEmail = session?.user?.email ?? '';
   const emailFallback = userEmail.split('@')[0] || 'User';
@@ -132,7 +147,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
     <div className={`sidebar ${collapsed ? 'sidebar--collapsed' : ''}`}>
       {/* Logo */}
       <div className="sidebar__logo">
-        <div className="sidebar__logo-icon" style={isSpectrum ? { background: 'linear-gradient(135deg, #7C3AED, #2563EB)' } : undefined}><Lock size={18} /></div>
+        <div className="sidebar__logo-icon" style={isSpectrum ? { background: 'linear-gradient(135deg, #7C3AED, #2563EB)' } : isXpAqua ? { background: 'linear-gradient(135deg, #00BFFF, #39FF14)' } : isMyspace ? { background: 'linear-gradient(135deg, #FF00FF, #8800FF)' } : isY2kChrome ? { background: 'linear-gradient(135deg, #888888, #FFD700)' } : undefined}><Lock size={18} /></div>
         <AnimatePresence>
           {!collapsed && (
             <motion.span
@@ -148,6 +163,9 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
         </AnimatePresence>
       </div>
 
+      {/* Y2K section label */}
+      {isY2K && !collapsed && <div className="sidebar__y2k-label">Navigation</div>}
+
       {/* Nav — Free items */}
       <nav className="sidebar__nav">
         {FREE_NAV_ITEMS.map((item) => {
@@ -162,7 +180,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
               }
               title={collapsed ? item.label : undefined}
               style={({ isActive }) => {
-                const sc = getNavColor(item.to, isSpectrum);
+                const sc = getNavColor(item.to, accent);
                 if (!isActive || !sc) return undefined;
                 return {
                   background: sc.bg,
@@ -172,7 +190,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
               }}
             >
               {({ isActive }) => {
-                const sc = getNavColor(item.to, isSpectrum);
+                const sc = getNavColor(item.to, accent);
                 return (
                   <>
                     <Icon size={18} className="sidebar__nav-icon" style={isActive && sc ? { color: sc.icon } : undefined} />
@@ -198,7 +216,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
       </nav>
 
       {/* Nav — Pro section */}
-      <div className="sidebar__section-label">
+      <div className={`sidebar__section-label${isY2K ? ' sidebar__section-label--y2k' : ''}`}>
         <AnimatePresence>
           {!collapsed ? (
             <motion.span
@@ -206,9 +224,9 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              style={isSpectrum ? { color: '#7C3AED' } : undefined}
+              style={(isSpectrum || isRetro) ? { color: 'var(--accent)' } : undefined}
             >
-              PRO
+              {isY2K ? '⭐ Pro Features' : 'PRO'}
             </motion.span>
           ) : (
             <motion.div
@@ -234,7 +252,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
               }
               title={collapsed ? item.label : undefined}
               style={({ isActive }) => {
-                const sc = getNavColor(item.to, isSpectrum);
+                const sc = getNavColor(item.to, accent);
                 if (!isActive || !sc) return undefined;
                 return {
                   background: sc.bg,
@@ -244,7 +262,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
               }}
             >
               {({ isActive }) => {
-                const sc = getNavColor(item.to, isSpectrum);
+                const sc = getNavColor(item.to, accent);
                 return (
                   <>
                     <Icon size={18} className="sidebar__nav-icon" style={isActive && sc ? { color: sc.icon } : undefined} />
@@ -275,28 +293,30 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
       {/* Spacer */}
       <div className="sidebar__spacer" />
 
-      {/* Theme toggle — pinned above Settings */}
-      <div style={{ padding: '0 8px 2px' }}>
-        <button
-          className="sidebar__theme-toggle"
-          onClick={toggleTheme}
-          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {isDark ? <Sun size={18} /> : <Moon size={18} />}
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                {isDark ? 'Light mode' : 'Dark mode'}
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </button>
-      </div>
+      {/* Theme toggle — pinned above Settings (hidden for retro themes) */}
+      {!isRetro && (
+        <div style={{ padding: '0 8px 2px' }}>
+          <button
+            className="sidebar__theme-toggle"
+            onClick={toggleTheme}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {isDark ? 'Light mode' : 'Dark mode'}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
+        </div>
+      )}
 
       {/* Settings — pinned above user section */}
       <div style={{ padding: '0 8px 4px' }}>
@@ -307,7 +327,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
           }
           title={collapsed ? 'Settings' : undefined}
           style={({ isActive }) => {
-            const sc = getNavColor('/settings', isSpectrum);
+            const sc = getNavColor('/settings', accent);
             if (!isActive || !sc) return undefined;
             return {
               background: sc.bg,
@@ -317,7 +337,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
           }}
         >
           {({ isActive }) => {
-            const sc = getNavColor('/settings', isSpectrum);
+            const sc = getNavColor('/settings', accent);
             return (
               <>
                 <Settings size={18} className="sidebar__nav-icon" style={isActive && sc ? { color: sc.icon } : undefined} />
@@ -342,7 +362,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
 
       {/* User section */}
       <div className="sidebar__user">
-        <div className="sidebar__avatar" style={isSpectrum ? { background: 'linear-gradient(135deg, #7C3AED, #DB2777)' } : undefined}>
+        <div className="sidebar__avatar" style={isSpectrum ? { background: 'linear-gradient(135deg, #7C3AED, #DB2777)' } : isXpAqua ? { background: 'linear-gradient(135deg, #00BFFF, #39FF14)' } : isMyspace ? { background: 'linear-gradient(135deg, #FF00FF, #8800FF)' } : isY2kChrome ? { background: 'linear-gradient(135deg, #888888, #FFD700)' } : undefined}>
           <User size={14} />
         </div>
         <AnimatePresence>
@@ -412,14 +432,14 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
       {/* ── Mobile top bar ── */}
       <div className="mob-topbar">
         <Link to="/home" className="mob-topbar__logo">
-          <div className="mob-topbar__logo-icon" style={isSpectrum ? { background: 'linear-gradient(135deg, #7C3AED, #2563EB)' } : undefined}><Lock size={16} /></div>
+          <div className="mob-topbar__logo-icon" style={isSpectrum ? { background: 'linear-gradient(135deg, #7C3AED, #2563EB)' } : isXpAqua ? { background: 'linear-gradient(135deg, #00BFFF, #39FF14)' } : isMyspace ? { background: 'linear-gradient(135deg, #FF00FF, #8800FF)' } : isY2kChrome ? { background: 'linear-gradient(135deg, #888888, #FFD700)' } : undefined}><Lock size={16} /></div>
           <span className="mob-topbar__logo-name">MacroVault</span>
         </Link>
         <button
           className="mob-topbar__avatar"
           onClick={() => setActionSheetOpen(true)}
           aria-label="Open user menu"
-          style={isSpectrum ? { background: 'linear-gradient(135deg, #7C3AED, #DB2777)' } : undefined}
+          style={isSpectrum ? { background: 'linear-gradient(135deg, #7C3AED, #DB2777)' } : isXpAqua ? { background: 'linear-gradient(135deg, #00BFFF, #39FF14)' } : isMyspace ? { background: 'linear-gradient(135deg, #FF00FF, #8800FF)' } : isY2kChrome ? { background: 'linear-gradient(135deg, #888888, #FFD700)' } : undefined}
         >
           {initials}
         </button>
@@ -429,7 +449,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
       <nav className="mob-bottom-nav">
         {MOBILE_TABS.map(({ to, icon: Icon, label }) => {
           const isActive = location.pathname === to || location.pathname.startsWith(to + '/');
-          const spectrumDotColor = isSpectrum && SPECTRUM_MOBILE_DOT[to];
+          const customDotColor = getMobileDotColor(to, accent);
           return (
             <motion.button
               key={to}
@@ -437,7 +457,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
               onClick={() => navigate(to)}
               whileTap={{ scale: 0.9 }}
             >
-              {isActive && <span className="mob-nav-tab__dot" style={spectrumDotColor ? { background: spectrumDotColor } : undefined} />}
+              {isActive && <span className="mob-nav-tab__dot" style={customDotColor ? { background: customDotColor } : undefined} />}
               <Icon size={20} />
               <span className="mob-nav-tab__label">{label}</span>
             </motion.button>
@@ -448,7 +468,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
           onClick={() => setMoreOpen((p) => !p)}
           whileTap={{ scale: 0.9 }}
         >
-          {isMoreActive && <span className="mob-nav-tab__dot" style={isSpectrum ? { background: '#7C3AED' } : undefined} />}
+          {isMoreActive && <span className="mob-nav-tab__dot" style={getMobileDotColor('/home', accent) ? { background: accent === 'spectrum' ? '#7C3AED' : accent === 'xp-aqua' ? '#00BFFF' : accent === 'myspace' ? '#FF00FF' : accent === 'y2k-chrome' ? '#FFD700' : undefined } : undefined} />}
           <LayoutGrid size={20} />
           <span className="mob-nav-tab__label">More</span>
         </motion.button>

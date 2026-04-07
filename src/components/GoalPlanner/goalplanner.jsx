@@ -286,7 +286,7 @@ function GoalPlannerGate() {
 }
 
 function GoalPlannerContent({ compact = false }) {
-  const { isSpectrum } = useTheme();
+  const { isSpectrum, isRetro } = useTheme();
 
   // Spotlight via query param
   const [searchParams, setSearchParams] = useSearchParams();
@@ -649,9 +649,9 @@ function GoalPlannerContent({ compact = false }) {
 
             {/* Macro bars */}
             <motion.div variants={fadeUp} className="gp-macro-bars">
-              <MacroBar label="Protein" value={macros.protein} max={totalMacroG} color={isSpectrum ? 'var(--color-protein)' : 'var(--accent)'} />
-              <MacroBar label="Carbs"   value={macros.carbs}   max={totalMacroG} color={isSpectrum ? 'var(--color-carbs)' : 'var(--accent-light)'} />
-              <MacroBar label="Fat"     value={macros.fat}     max={totalMacroG} color={isSpectrum ? 'var(--color-fat)' : 'var(--accent-dark)'} />
+              <MacroBar label="Protein" value={macros.protein} max={totalMacroG} color={(isSpectrum || isRetro) ? 'var(--color-protein)' : 'var(--accent)'} />
+              <MacroBar label="Carbs"   value={macros.carbs}   max={totalMacroG} color={(isSpectrum || isRetro) ? 'var(--color-carbs)' : 'var(--accent-light)'} />
+              <MacroBar label="Fat"     value={macros.fat}     max={totalMacroG} color={(isSpectrum || isRetro) ? 'var(--color-fat)' : 'var(--accent-dark)'} />
             </motion.div>
 
             {/* Actions */}
@@ -714,7 +714,7 @@ function GoalPlannerContent({ compact = false }) {
                     { label: 'Fat',      value: macros.fat,      unit: 'g',    spectrumColor: 'var(--color-fat)' },
                   ].map(({ label, value, unit, spectrumColor }) => (
                     <div key={label} className="gp-macro-chip">
-                      <span className="gp-macro-chip__value" style={isSpectrum ? { color: spectrumColor } : undefined}>{value}<span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 2 }}>{unit}</span></span>
+                      <span className="gp-macro-chip__value" style={(isSpectrum || isRetro) ? { color: spectrumColor } : undefined}>{value}<span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 2 }}>{unit}</span></span>
                       <span className="gp-macro-chip__label">{label}</span>
                     </div>
                   ))}

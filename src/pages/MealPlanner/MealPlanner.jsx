@@ -114,7 +114,7 @@ function SlotPanel({
   isProPlus = false,
 }) {
   const { triggerUpgrade } = useUpgrade();
-  const { isSpectrum } = useTheme();
+  const { isSpectrum, isRetro } = useTheme();
   const [tab, setTab] = useState(isProPlus ? 'ai' : 'manual');
   const [suggestions, setSuggestions] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -461,10 +461,10 @@ function SlotPanel({
                           </p>
                         )}
                         <div className="mp-suggestion-card__macros">
-                          <span className="mp-macro-chip" style={isSpectrum ? { color: 'var(--color-calories-light)', background: 'var(--color-calories-bg)' } : undefined}>Cal: {s.calories}</span>
-                          <span className="mp-macro-chip" style={isSpectrum ? { color: 'var(--color-protein-light)', background: 'var(--color-protein-bg)' } : undefined}>P: {s.protein}g</span>
-                          <span className="mp-macro-chip" style={isSpectrum ? { color: 'var(--color-carbs-light)', background: 'var(--color-carbs-bg)' } : undefined}>C: {s.carbs}g</span>
-                          <span className="mp-macro-chip" style={isSpectrum ? { color: 'var(--color-fat-light)', background: 'var(--color-fat-bg)' } : undefined}>F: {s.fat}g</span>
+                          <span className="mp-macro-chip" style={(isSpectrum || isRetro) ? { color: 'var(--color-calories-light)', background: 'var(--color-calories-bg)' } : undefined}>Cal: {s.calories}</span>
+                          <span className="mp-macro-chip" style={(isSpectrum || isRetro) ? { color: 'var(--color-protein-light)', background: 'var(--color-protein-bg)' } : undefined}>P: {s.protein}g</span>
+                          <span className="mp-macro-chip" style={(isSpectrum || isRetro) ? { color: 'var(--color-carbs-light)', background: 'var(--color-carbs-bg)' } : undefined}>C: {s.carbs}g</span>
+                          <span className="mp-macro-chip" style={(isSpectrum || isRetro) ? { color: 'var(--color-fat-light)', background: 'var(--color-fat-bg)' } : undefined}>F: {s.fat}g</span>
                         </div>
                         <button
                           className="mp-suggestion-card__add-btn"
@@ -761,7 +761,7 @@ function SnackSheet({ userId, onClose }) {
    ──────────────────────────────────────────────────── */
 function MealPlannerContent({ isProPlus = false }) {
   const { triggerUpgrade } = useUpgrade();
-  const { isSpectrum } = useTheme();
+  const { isSpectrum, isRetro } = useTheme();
   const [userId, setUserId] = useState(null);
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [planId, setPlanId] = useState(null);
@@ -1322,28 +1322,28 @@ function MealPlannerContent({ isProPlus = false }) {
           actual: weekTotals.calories,
           goal: weeklyGoal.calories,
           unit: 'kcal',
-          color: isSpectrum ? 'var(--color-calories)' : 'var(--accent)',
+          color: (isSpectrum || isRetro) ? 'var(--color-calories)' : 'var(--accent)',
         },
         {
           label: 'Protein',
           actual: weekTotals.protein,
           goal: weeklyGoal.protein,
           unit: 'g',
-          color: isSpectrum ? 'var(--color-protein)' : 'var(--accent-light)',
+          color: (isSpectrum || isRetro) ? 'var(--color-protein)' : 'var(--accent-light)',
         },
         {
           label: 'Carbs',
           actual: weekTotals.carbs,
           goal: weeklyGoal.carbs,
           unit: 'g',
-          color: isSpectrum ? 'var(--color-carbs)' : 'var(--accent-dark)',
+          color: (isSpectrum || isRetro) ? 'var(--color-carbs)' : 'var(--accent-dark)',
         },
         {
           label: 'Fat',
           actual: weekTotals.fat,
           goal: weeklyGoal.fat,
           unit: 'g',
-          color: isSpectrum ? 'var(--color-fat)' : 'rgba(var(--accent-rgb),0.6)',
+          color: (isSpectrum || isRetro) ? 'var(--color-fat)' : 'rgba(var(--accent-rgb),0.6)',
         },
       ]
     : null;
@@ -1557,16 +1557,16 @@ function MealPlannerContent({ isProPlus = false }) {
                   <span className="mp-slot__name">{entry.meal_name}</span>
 
                   <div className="mp-slot__macros">
-                    <span className="mp-macro-chip" style={isSpectrum ? { color: 'var(--color-calories-light)', background: 'var(--color-calories-bg)' } : undefined}>
+                    <span className="mp-macro-chip" style={(isSpectrum || isRetro) ? { color: 'var(--color-calories-light)', background: 'var(--color-calories-bg)' } : undefined}>
                       Cal: {entry.calories}
                     </span>
-                    <span className="mp-macro-chip" style={isSpectrum ? { color: 'var(--color-protein-light)', background: 'var(--color-protein-bg)' } : undefined}>
+                    <span className="mp-macro-chip" style={(isSpectrum || isRetro) ? { color: 'var(--color-protein-light)', background: 'var(--color-protein-bg)' } : undefined}>
                       P: {entry.protein}g
                     </span>
-                    <span className="mp-macro-chip" style={isSpectrum ? { color: 'var(--color-carbs-light)', background: 'var(--color-carbs-bg)' } : undefined}>
+                    <span className="mp-macro-chip" style={(isSpectrum || isRetro) ? { color: 'var(--color-carbs-light)', background: 'var(--color-carbs-bg)' } : undefined}>
                       C: {entry.carbs}g
                     </span>
-                    <span className="mp-macro-chip" style={isSpectrum ? { color: 'var(--color-fat-light)', background: 'var(--color-fat-bg)' } : undefined}>
+                    <span className="mp-macro-chip" style={(isSpectrum || isRetro) ? { color: 'var(--color-fat-light)', background: 'var(--color-fat-bg)' } : undefined}>
                       F: {entry.fat}g
                     </span>
                   </div>

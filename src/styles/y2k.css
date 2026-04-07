@@ -1,0 +1,457 @@
+/* ============================================================
+   Y2K UI MODE — RETRO DESKTOP APP AESTHETIC
+   ============================================================ */
+
+/* ── CSS Variables ── */
+[data-ui-mode="y2k"] {
+  --y2k-border-raised:  2px outset #8888aa;
+  --y2k-border-sunken:  2px inset #334466;
+  --y2k-border-flat:    1px solid #334488;
+  --y2k-radius:         4px;
+  --y2k-radius-sm:      2px;
+  --y2k-shadow-card:    2px 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+  --y2k-shadow-btn:     1px 1px 3px rgba(0,0,0,0.5);
+  --y2k-shadow-inset:   inset 1px 1px 3px rgba(0,0,0,0.5);
+  --y2k-text-shadow:    1px 1px 2px rgba(0,0,0,0.8);
+  --y2k-bar-height:     8px;
+  --y2k-titlebar-h:     26px;
+  --y2k-status-h:       22px;
+}
+
+/* ── Global radius override — everything sharper ── */
+[data-ui-mode="y2k"] .bento-card,
+[data-ui-mode="y2k"] .settings-card,
+[data-ui-mode="y2k"] .mp-container,
+[data-ui-mode="y2k"] .wl,
+[data-ui-mode="y2k"] .wl-log-card,
+[data-ui-mode="y2k"] .wl-history-card,
+[data-ui-mode="y2k"] .gp-goal-card,
+[data-ui-mode="y2k"] .gp-log-card,
+[data-ui-mode="y2k"] .el-card {
+  border-radius: var(--y2k-radius);
+  border: var(--y2k-border-raised);
+  box-shadow: var(--y2k-shadow-card);
+}
+
+[data-ui-mode="y2k"] .btn,
+[data-ui-mode="y2k"] .settings-btn,
+[data-ui-mode="y2k"] .mp-gate__btn,
+[data-ui-mode="y2k"] .settings-toggle__opt,
+[data-ui-mode="y2k"] button[class*="btn"] {
+  border-radius: var(--y2k-radius-sm);
+}
+
+[data-ui-mode="y2k"] .input,
+[data-ui-mode="y2k"] .settings-input,
+[data-ui-mode="y2k"] input {
+  border-radius: var(--y2k-radius-sm);
+}
+
+[data-ui-mode="y2k"] .settings-toggle {
+  border-radius: var(--y2k-radius-sm);
+}
+
+[data-ui-mode="y2k"] .settings-plan-badge,
+[data-ui-mode="y2k"] .sidebar__pro-badge {
+  border-radius: var(--y2k-radius-sm);
+}
+
+/* ── Font weight — heavier throughout ── */
+[data-ui-mode="y2k"] .sidebar__nav-label,
+[data-ui-mode="y2k"] .bento-card__title,
+[data-ui-mode="y2k"] .settings-card__title,
+[data-ui-mode="y2k"] .app-shell__page-title,
+[data-ui-mode="y2k"] .dashboard-v2__greeting {
+  font-weight: 700;
+}
+
+[data-ui-mode="y2k"] .sidebar__nav-item {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+[data-ui-mode="y2k"] .sidebar__nav-item--active {
+  font-weight: 700;
+}
+
+/* ── Text shadows on headings ── */
+[data-ui-mode="y2k"] .app-shell__page-title,
+[data-ui-mode="y2k"] .dashboard-v2__greeting,
+[data-ui-mode="y2k"] h1, [data-ui-mode="y2k"] h2 {
+  text-shadow: var(--y2k-text-shadow);
+}
+
+/* ── Sidebar — Y2K mode ── */
+[data-ui-mode="y2k"] .sidebar__logo {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent) 60%, #223388),
+    color-mix(in srgb, var(--accent) 30%, #112255)
+  );
+  border-bottom: var(--y2k-border-flat);
+  padding: 0 14px;
+}
+
+[data-ui-mode="y2k"] .sidebar__logo-icon {
+  border: var(--y2k-border-raised);
+  border-radius: var(--y2k-radius);
+}
+
+[data-ui-mode="y2k"] .sidebar__logo-name {
+  font-weight: 700;
+  font-size: 12px;
+  text-shadow: var(--y2k-text-shadow);
+  color: #fff;
+}
+
+[data-ui-mode="y2k"] .sidebar__section-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sidebar__y2k-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--accent-light) 60%, #6688aa);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 10px 14px 2px;
+}
+
+[data-ui-mode="y2k"] .sidebar__nav-item {
+  border-left: 3px solid transparent;
+  border-radius: var(--y2k-radius-sm);
+}
+
+[data-ui-mode="y2k"] .sidebar__nav-item--active {
+  background: linear-gradient(90deg, var(--accent-bg), transparent);
+  border-left-color: var(--accent);
+  color: var(--accent-light);
+  text-shadow: var(--y2k-text-shadow);
+}
+
+[data-ui-mode="y2k"] .sidebar__nav-item--active .sidebar__nav-icon {
+  border: var(--y2k-border-raised);
+  border-radius: var(--y2k-radius-sm);
+  background: var(--accent);
+  color: #fff;
+  padding: 1px;
+}
+
+[data-ui-mode="y2k"] .sidebar__user {
+  border-top: var(--y2k-border-sunken);
+  background: linear-gradient(180deg, var(--bg-surface-2), var(--bg-surface));
+}
+
+[data-ui-mode="y2k"] .sidebar__user-name {
+  font-weight: 700;
+  text-shadow: var(--y2k-text-shadow);
+}
+
+[data-ui-mode="y2k"] .sidebar__pro-badge {
+  background: linear-gradient(180deg, var(--accent), var(--accent-dark));
+  border: var(--y2k-border-raised);
+  color: #fff;
+  font-weight: 700;
+  font-size: 8px;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+}
+
+[data-ui-mode="y2k"] .sidebar__free-badge {
+  border: var(--y2k-border-raised);
+  border-radius: var(--y2k-radius-sm);
+  font-weight: 700;
+  font-size: 8px;
+}
+
+/* ── Cards — title bar treatment ── */
+[data-ui-mode="y2k"] .bento-card__header {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent) 30%, #223388),
+    color-mix(in srgb, var(--accent) 15%, #1a2255)
+  );
+  border-bottom: var(--y2k-border-flat);
+  border-radius: var(--y2k-radius) var(--y2k-radius) 0 0;
+  padding: 5px 12px;
+  margin: 0;
+}
+
+[data-ui-mode="y2k"] .settings-card__header {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent) 30%, #223388),
+    color-mix(in srgb, var(--accent) 15%, #1a2255)
+  );
+  border-bottom: var(--y2k-border-flat);
+  border-radius: var(--y2k-radius) var(--y2k-radius) 0 0;
+}
+
+[data-ui-mode="y2k"] .bento-card__title,
+[data-ui-mode="y2k"] .settings-card__title {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--accent-light);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-shadow: var(--y2k-text-shadow);
+}
+
+[data-ui-mode="y2k"] .bento-card__action {
+  border-radius: var(--y2k-radius-sm);
+  font-weight: 700;
+  font-size: 10px;
+}
+
+/* Y2K cards don't float on hover */
+[data-ui-mode="y2k"] .bento-card:hover {
+  transform: none;
+}
+
+/* ── Buttons — Y2K raised/sunken ── */
+[data-ui-mode="y2k"] .btn-primary,
+[data-ui-mode="y2k"] .settings-btn--teal {
+  border: var(--y2k-border-raised);
+  box-shadow: var(--y2k-shadow-btn);
+  font-weight: 700;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.4);
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent-light) 60%, var(--accent)),
+    var(--accent-dark)
+  );
+}
+
+[data-ui-mode="y2k"] .btn-primary:active,
+[data-ui-mode="y2k"] .settings-btn--teal:active {
+  border: var(--y2k-border-sunken);
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+[data-ui-mode="y2k"] .btn-primary:hover,
+[data-ui-mode="y2k"] .settings-btn--teal:hover {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent-light) 70%, var(--accent)),
+    var(--accent)
+  );
+}
+
+[data-ui-mode="y2k"] .settings-btn--outline {
+  border: var(--y2k-border-raised);
+  background: linear-gradient(180deg, var(--bg-surface-2), var(--bg-surface));
+  font-weight: 700;
+  color: var(--accent-light);
+  box-shadow: var(--y2k-shadow-btn);
+}
+
+[data-ui-mode="y2k"] .settings-btn--outline:active {
+  border: var(--y2k-border-sunken);
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+/* ── Progress bars ── */
+[data-ui-mode="y2k"] .dm__bar-track,
+[data-ui-mode="y2k"] .gp-macro-bar__track,
+[data-ui-mode="y2k"] .dc__bar-track {
+  height: var(--y2k-bar-height);
+  border: var(--y2k-border-sunken);
+  border-radius: var(--y2k-radius-sm);
+  background: color-mix(in srgb, var(--bg-base) 80%, #000);
+}
+
+[data-ui-mode="y2k"] .dm__bar-fill,
+[data-ui-mode="y2k"] .gp-macro-bar__fill,
+[data-ui-mode="y2k"] .dc__bar-fill {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent-light) 80%, #fff),
+    var(--accent)
+  );
+  border-radius: 1px;
+}
+
+/* ── Topbar — hidden in Y2K, replaced by title bar ── */
+[data-ui-mode="y2k"] .app-shell__topbar {
+  display: none;
+}
+
+/* ── Title bar ── */
+.y2k-titlebar {
+  display: none;
+}
+
+[data-ui-mode="y2k"] .y2k-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--y2k-titlebar-h);
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent) 50%, #3344aa),
+    color-mix(in srgb, var(--accent) 20%, #1a2266)
+  );
+  border-bottom: var(--y2k-border-flat);
+  padding: 0 12px;
+  flex-shrink: 0;
+  z-index: 1;
+  position: relative;
+}
+
+.y2k-titlebar__name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: var(--y2k-text-shadow);
+}
+
+.y2k-titlebar__controls {
+  display: flex;
+  gap: 3px;
+}
+
+.y2k-titlebar__btn {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--y2k-radius-sm);
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.y2k-titlebar__btn--min {
+  background: linear-gradient(180deg, #ffdd44, #ccaa00);
+  border: 1px outset #eebb00;
+  color: #000;
+}
+
+.y2k-titlebar__btn--max {
+  background: linear-gradient(180deg, #44aa44, #226622);
+  border: 1px outset #44aa44;
+  color: #fff;
+}
+
+.y2k-titlebar__btn--close {
+  background: linear-gradient(180deg, #ee4444, #aa2222);
+  border: 1px outset #ee4444;
+  color: #fff;
+}
+
+/* Shake animation for close button */
+@keyframes y2k-shake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-3px); }
+  40%  { transform: translateX(3px); }
+  60%  { transform: translateX(-2px); }
+  80%  { transform: translateX(2px); }
+  100% { transform: translateX(0); }
+}
+
+.y2k-shake {
+  animation: y2k-shake 0.3s ease;
+}
+
+/* ── Status bar ── */
+.y2k-statusbar {
+  display: none;
+}
+
+[data-ui-mode="y2k"] .y2k-statusbar {
+  display: flex;
+  align-items: center;
+  height: var(--y2k-status-h);
+  background: linear-gradient(180deg, var(--bg-surface-2), var(--bg-surface));
+  border-top: var(--y2k-border-sunken);
+  padding: 0;
+  flex-shrink: 0;
+  z-index: 1;
+  position: relative;
+}
+
+.y2k-statusbar__item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--text-muted);
+  border-right: 1px solid #334466;
+  height: 100%;
+}
+
+.y2k-statusbar__item:last-child {
+  border-right: none;
+}
+
+.y2k-statusbar__dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #44ee88;
+  flex-shrink: 0;
+}
+
+.y2k-statusbar__spacer {
+  flex: 1;
+}
+
+/* ── Toggle (units/date) — Y2K ── */
+[data-ui-mode="y2k"] .settings-toggle {
+  border: var(--y2k-border-sunken);
+}
+
+[data-ui-mode="y2k"] .settings-toggle__opt--active {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent-light) 60%, var(--accent)),
+    var(--accent-dark)
+  );
+  border: var(--y2k-border-raised);
+  font-weight: 700;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.4);
+}
+
+/* ── Inputs — Y2K ── */
+[data-ui-mode="y2k"] .settings-input,
+[data-ui-mode="y2k"] .input {
+  border: var(--y2k-border-sunken);
+  box-shadow: var(--y2k-shadow-inset);
+}
+
+/* ── Mobile bottom nav ── */
+[data-ui-mode="y2k"] .mob-bottom-nav {
+  border-top: var(--y2k-border-sunken);
+  border-radius: 0;
+}
+
+[data-ui-mode="y2k"] .mob-topbar {
+  border-bottom: var(--y2k-border-flat);
+}
+
+/* ── Theme/accent picker cards ── */
+[data-ui-mode="y2k"] .settings-theme-card,
+[data-ui-mode="y2k"] .settings-accent-card,
+[data-ui-mode="y2k"] .settings-retro-card,
+[data-ui-mode="y2k"] .settings-spectrum-card {
+  border-radius: var(--y2k-radius);
+  border-width: 2px;
+}
+
+/* ── Macro chips ── */
+[data-ui-mode="y2k"] .mp-macro-chip {
+  border-radius: var(--y2k-radius-sm);
+  font-weight: 700;
+}
+
+/* ── Calorie ring text ── */
+[data-ui-mode="y2k"] .dm__ring-col text {
+  font-weight: 700;
+}
+
+/* ── Grid dot background — slightly bolder in Y2K ── */
+[data-ui-mode="y2k"] .app-shell__main::before {
+  background-size: 48px 48px;
+}

@@ -25,10 +25,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 20px 16px 16px;
+  padding: 0 16px;
+  height: 60px;
   border-bottom: 1px solid var(--border);
   overflow: hidden;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .sidebar__logo-icon {

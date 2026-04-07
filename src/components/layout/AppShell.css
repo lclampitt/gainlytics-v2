@@ -101,6 +101,11 @@
 [data-accent="spectrum"] .app-shell__page-title[data-page="/progress"]::before      { background: #EF9F27; }
 [data-accent="spectrum"] .app-shell__page-title[data-page="/settings"]::before      { background: #7C3AED; }
 
+/* Retro — per-theme page dot colors */
+[data-accent="xp-aqua"] .app-shell__page-title::before    { background: #00BFFF; }
+[data-accent="myspace"] .app-shell__page-title::before     { background: #FF00FF; }
+[data-accent="y2k-chrome"] .app-shell__page-title::before  { background: #FFD700; }
+
 .app-shell__action-btn {
   background: var(--accent);
   color: #fff;

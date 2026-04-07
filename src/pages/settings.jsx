@@ -19,6 +19,36 @@ const ACCENT_THEMES = [
   { id: 'crimson', label: 'Crimson', color: '#DC2626' },
 ];
 
+const RETRO_THEMES = [
+  {
+    id: 'xp-aqua',
+    label: 'XP Aqua',
+    bg: '#080d14',
+    stripBg: '#0d1e3a',
+    bars: [{ color: '#39FF14', w: '60%' }, { color: '#00BFFF', w: '40%' }],
+    swatches: ['#00BFFF', '#39FF14', '#FF69B4'],
+    toast: 'XP Aqua applied. Welcome to the internet.',
+  },
+  {
+    id: 'myspace',
+    label: 'MySpace',
+    bg: '#080008',
+    stripBg: '#120012',
+    bars: [{ color: '#8800FF', w: '60%' }, { color: '#FF00FF', w: '40%' }],
+    swatches: ['#FF00FF', '#8800FF', '#FF4488'],
+    toast: 'MySpace theme applied. Don\'t forget to add songs to your profile.',
+  },
+  {
+    id: 'y2k-chrome',
+    label: 'Y2K Chrome',
+    bg: '#0c0c0c',
+    stripBg: '#1a1a1a',
+    bars: [{ color: '#FFD700', w: '60%' }, { color: '#C0C0C0', w: '40%' }],
+    swatches: ['#FFD700', '#C0C0C0', '#666666'],
+    toast: 'Y2K Chrome applied. Looking crispy.',
+  },
+];
+
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 16 },
   animate: { opacity: 1, y: 0 },
@@ -120,7 +150,7 @@ function DeleteModal({ onClose }) {
 export default function SettingsPage() {
   const { plan, isPro, isProPlus, stripeCustomerId, isLoading: planLoading } = usePlan();
   const { triggerUpgrade } = useUpgrade();
-  const { theme, toggle: toggleTheme, accent, setAccent, isDark } = useTheme();
+  const { theme, toggle: toggleTheme, accent, setAccent, isDark, isRetro, toggleMode, uiMode, setUiMode, isY2K } = useTheme();
 
   const [session,     setSession]     = useState(null);
   const [displayName, setDisplayName] = useState('');
@@ -232,31 +262,35 @@ export default function SettingsPage() {
       {/* ── Appearance ── */}
       <SettingsCard icon={Sun} title="Appearance" index={0}>
         <div className="settings-appearance-wrap">
-          <div className="settings-row">
-            <span className="settings-row__label">Color theme</span>
-            <div className="settings-theme-picker">
-              <button
-                className={`settings-theme-card${theme === 'dark' ? ' settings-theme-card--active' : ''}`}
-                onClick={() => isPro && theme !== 'dark' && toggleTheme()}
-              >
-                <div className="settings-theme-card__preview settings-theme-card__preview--dark">
-                  <div /><div /><div />
+          {!isRetro && (
+            <>
+              <div className="settings-row">
+                <span className="settings-row__label">Color theme</span>
+                <div className="settings-theme-picker">
+                  <button
+                    className={`settings-theme-card${theme === 'dark' ? ' settings-theme-card--active' : ''}`}
+                    onClick={() => isPro && theme !== 'dark' && toggleTheme()}
+                  >
+                    <div className="settings-theme-card__preview settings-theme-card__preview--dark">
+                      <div /><div /><div />
+                    </div>
+                    <span>Dark</span>
+                  </button>
+                  <button
+                    className={`settings-theme-card${theme === 'light' ? ' settings-theme-card--active' : ''}`}
+                    onClick={() => isPro && theme !== 'light' && toggleTheme()}
+                  >
+                    <div className="settings-theme-card__preview settings-theme-card__preview--light">
+                      <div /><div /><div />
+                    </div>
+                    <span>Light</span>
+                  </button>
                 </div>
-                <span>Dark</span>
-              </button>
-              <button
-                className={`settings-theme-card${theme === 'light' ? ' settings-theme-card--active' : ''}`}
-                onClick={() => isPro && theme !== 'light' && toggleTheme()}
-              >
-                <div className="settings-theme-card__preview settings-theme-card__preview--light">
-                  <div /><div /><div />
-                </div>
-                <span>Light</span>
-              </button>
-            </div>
-          </div>
+              </div>
 
-          <div className="settings-divider" />
+              <div className="settings-divider" />
+            </>
+          )}
 
           <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
             <span className="settings-row__label">Accent color</span>
@@ -307,6 +341,64 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </button>
+
+            {/* Retro section */}
+            <div className="settings-retro-divider">Retro</div>
+            {RETRO_THEMES.map((rt) => (
+              <button
+                key={rt.id}
+                className={`settings-retro-card${accent === rt.id ? ' settings-retro-card--active' : ''}`}
+                onClick={() => {
+                  if (isPro) {
+                    if (theme !== 'dark') toggleTheme();
+                    setAccent(rt.id);
+                    toast.success(rt.toast);
+                  }
+                }}
+                style={{ '--retro-border': rt.swatches[0] }}
+              >
+                <div className="settings-retro-card__preview" style={{ background: rt.bg }}>
+                  {rt.bars.map((bar, i) => (
+                    <div key={i} className="settings-retro-card__bar" style={{ background: bar.color, width: bar.w }} />
+                  ))}
+                </div>
+                <div className="settings-retro-card__info" style={{ background: rt.stripBg }}>
+                  <span className="settings-retro-card__name">{rt.label}</span>
+                  <div className="settings-retro-card__swatches">
+                    {rt.swatches.map((c) => (
+                      <div key={c} className="settings-retro-card__dot" style={{ background: c }} />
+                    ))}
+                  </div>
+                </div>
+              </button>
+            ))}
+            </div>
+          </div>
+
+          <div className="settings-divider" />
+
+          <div className="settings-row">
+            <div className="settings-row__left">
+              <span className="settings-row__label">UI Mode</span>
+              <span className="settings-row__sub">Change the overall interface style</span>
+            </div>
+            <div className="settings-row__control">
+              <div className="settings-toggle">
+                <button
+                  type="button"
+                  className={`settings-toggle__opt${uiMode === 'modern' ? ' settings-toggle__opt--active' : ''}`}
+                  onClick={() => isPro && setUiMode('modern')}
+                >
+                  Modern
+                </button>
+                <button
+                  type="button"
+                  className={`settings-toggle__opt${uiMode === 'y2k' ? ' settings-toggle__opt--active' : ''}`}
+                  onClick={() => isPro && setUiMode('y2k')}
+                >
+                  Y2K
+                </button>
+              </div>
             </div>
           </div>
 

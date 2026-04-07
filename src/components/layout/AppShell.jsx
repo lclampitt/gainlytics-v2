@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
 import { useUsage } from '../../hooks/useUsage';
+import { useTheme } from '../../hooks/useTheme';
 import './AppShell.css';
+import '../../styles/y2k.css';
 
 /* Map routes to page titles and optional quick-action buttons */
 const PAGE_META = {
@@ -36,6 +38,14 @@ export default function AppShell({ session, onLogout, isPro, isProPlus, children
   const meta = PAGE_META[location.pathname] ?? { title: 'MacroVault' };
   const userId = session?.user?.id ?? null;
   const { usage } = useUsage(userId);
+  const { isY2K } = useTheme();
+  const [shaking, setShaking] = useState(false);
+
+  const handleFakeClose = () => {
+    setShaking(true);
+    setTimeout(() => setShaking(false), 300);
+  };
+
   const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
   const activeVariants = isMobile ? mobilePageVariants : pageVariants;
 
@@ -54,8 +64,18 @@ export default function AppShell({ session, onLogout, isPro, isProPlus, children
           )}
         </div>
 
+        {/* Y2K title bar */}
+        <div className="y2k-titlebar">
+          <span className="y2k-titlebar__name">{meta.title} — MacroVault v2.0</span>
+          <div className="y2k-titlebar__controls">
+            <button className="y2k-titlebar__btn y2k-titlebar__btn--min">–</button>
+            <button className="y2k-titlebar__btn y2k-titlebar__btn--max">□</button>
+            <button className="y2k-titlebar__btn y2k-titlebar__btn--close" onClick={handleFakeClose}>×</button>
+          </div>
+        </div>
+
         {/* Page content with animation */}
-        <div className="app-shell__content">
+        <div className={`app-shell__content${shaking ? ' y2k-shake' : ''}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -67,6 +87,21 @@ export default function AppShell({ session, onLogout, isPro, isProPlus, children
               {children}
             </motion.div>
           </AnimatePresence>
+        </div>
+
+        {/* Y2K status bar */}
+        <div className="y2k-statusbar">
+          <div className="y2k-statusbar__item">
+            <span className="y2k-statusbar__dot" />
+            Connected
+          </div>
+          <div className="y2k-statusbar__item">
+            {isPro ? 'Pro Member' : 'Free Plan'}
+          </div>
+          <div className="y2k-statusbar__spacer" />
+          <div className="y2k-statusbar__item">
+            MacroVault v2.0
+          </div>
         </div>
       </div>
     </div>

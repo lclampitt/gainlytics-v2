@@ -10,8 +10,10 @@
       (function() {
         var t = localStorage.getItem('macrovault-theme') || 'dark';
         var a = localStorage.getItem('macrovault-accent') || 'teal';
+        var u = localStorage.getItem('macrovault-ui-mode') || 'modern';
         document.documentElement.setAttribute('data-theme', t);
         document.documentElement.setAttribute('data-accent', a);
+        document.documentElement.setAttribute('data-ui-mode', u);
       })();
     </script>
   </head>
