@@ -168,7 +168,12 @@ function SlotPanel({
       if (!res.ok) throw new Error('Failed to get suggestions');
 
       const data = await res.json();
-      setSuggestions(data.suggestions || []);
+      const remaining = body.remaining_calories;
+      const tagged = (data.suggestions || []).map((s) => ({
+        ...s,
+        fit: s.calories <= remaining * 1.1 ? 'good' : 'ok',
+      }));
+      setSuggestions(tagged);
     } catch (err) {
       console.error('AI suggest error:', err);
       toast.error('Could not generate suggestions. The AI endpoint may not be available yet.');
