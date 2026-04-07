@@ -92,13 +92,13 @@ bodyfat_model = None
 if os.path.exists(MODEL_PATH):
     try:
         bodyfat_model = joblib.load(MODEL_PATH)
-        print("✅ Loaded bodyfat model from", MODEL_PATH)
+        print("[OK] Loaded bodyfat model from", MODEL_PATH)
     except Exception as e:
         # If the model fails to load, we log and the endpoint will later 500
-        print("⚠️ Could not load model:", e)
+        print("[WARN] Could not load model:", e)
 else:
     # Helpful log if the training step hasn't been run yet
-    print("⚠️ bodyfat_model.joblib not found. /analyze-measurements will error until you train it.")
+    print("[WARN] bodyfat_model.pkl not found. /analyze-measurements will error until you train it.")
 
 # Load model metadata to determine feature set and whether correction is needed
 MODEL_INFO_PATH = os.path.join(BASE_DIR, "models", "model_info.json")
@@ -107,14 +107,15 @@ if os.path.exists(MODEL_INFO_PATH):
     try:
         with open(MODEL_INFO_PATH, "r") as f:
             model_info = json.load(f)
-        print(f"✅ Model info: {model_info.get('trained_on', 'unknown')}, "
+        print(f"[OK] Model info: {model_info.get('trained_on', 'unknown')}, "
               f"features={model_info.get('features', [])}")
     except Exception as e:
-        print(f"⚠️ Could not load model info: {e}")
+        print(f"[WARN] Could not load model info: {e}")
 
 # If the model was retrained with expanded features (BMI, WHR, WHTR),
 # the age+gender correction is no longer needed.
 _MODEL_HAS_EXPANDED_FEATURES = "bmi" in model_info.get("features", [])
+print(f"[INFO] BF correction active: {not _MODEL_HAS_EXPANDED_FEATURES}")
 
 
 # -------------------------------------------------
@@ -685,12 +686,16 @@ async def analyze_measurements(data: MeasurementRequest):
 
     # Clamp prediction to a realistic range
     bodyfat = max(4.0, min(45.0, bodyfat))
+    raw_bf = bodyfat  # keep for logging
 
     # Apply age+gender correction for model overestimation (Fix 1).
     # Automatically skipped once the retrained multi-cycle model is loaded,
     # detected by _MODEL_HAS_EXPANDED_FEATURES (presence of "bmi" in features).
     if not _MODEL_HAS_EXPANDED_FEATURES:
         bodyfat = apply_bf_correction(bodyfat, data.age, data.gender)
+
+    print(f"[BF] age={data.age} gender={data.gender} raw={raw_bf:.1f} "
+          f"corrected={bodyfat:.1f} correction_active={not _MODEL_HAS_EXPANDED_FEATURES}")
 
     category, goal_suggestion, _cals_unused, notes = interpretation_and_plan(bodyfat)
 
