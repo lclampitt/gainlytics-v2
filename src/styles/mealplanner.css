@@ -176,20 +176,65 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px 20px;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
 }
 
 .mp-summary-bar__label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-size: 12px;
+  color: #888;
   white-space: nowrap;
 }
 
+.mp-summary-bar__bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mp-macro-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mp-macro-row__label {
+  width: 60px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: #888;
+}
+
+.mp-macro-bar {
+  flex: 1;
+  height: 5px;
+  background: #1e2536;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.mp-macro-bar__fill {
+  height: 100%;
+  border-radius: 99px;
+  animation: mp-bar-fill 0.6s ease-out;
+  transition: width 0.4s ease-out;
+}
+
+@keyframes mp-bar-fill {
+  from { width: 0; }
+}
+
+.mp-macro-row__value {
+  width: 120px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* Legacy chip classes (kept for backwards compat if needed) */
 .mp-summary-bar__chips {
   display: flex;
   gap: 16px;
@@ -269,6 +314,47 @@
   /* empty cell */
 }
 
+/* ── DAILY MACRO SUMMARY (per column) ─────── */
+.mp-daily-summary {
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+
+.mp-daily-summary__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.mp-daily-summary__cal {
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.mp-daily-summary__pills {
+  font-size: 9px;
+  color: #555;
+  white-space: nowrap;
+}
+
+.mp-daily-bar {
+  height: 3px;
+  background: #1e2536;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 3px;
+}
+
+.mp-daily-bar__fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease-out;
+}
+
 /* ── MEAL SLOT (BASE) ─────────────────────── */
 .mp-slot {
   background: var(--bg-surface);
@@ -322,10 +408,9 @@
   font-size: 10px;
   color: var(--text-muted);
   line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mp-slot__macros {
@@ -343,6 +428,63 @@
   border-radius: 10px;
   padding: 2px 6px;
   white-space: nowrap;
+}
+
+/* ── Collapsible ingredient expand button ─── */
+.mp-slot__expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  color: #555;
+  transition: color 0.15s ease;
+}
+
+.mp-slot__expand-btn:hover {
+  color: #1D9E75;
+}
+
+/* ── Expanded ingredient list ────────────── */
+.mp-slot__ingredient-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.mp-slot__ingredient-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.mp-slot__ingredient-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #1D9E75;
+  flex-shrink: 0;
+}
+
+/* ── Heart / Favorite button ──────────────── */
+.mp-slot__heart {
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.mp-slot__heart:hover {
+  border-color: #1D9E75 !important;
+}
+
+.mp-slot__heart--active {
+  border-color: #1D9E75;
 }
 
 /* Hover action icons */
@@ -382,6 +524,55 @@
 .mp-slot__action-btn--delete:hover {
   color: var(--error);
   border-color: var(--error);
+}
+
+/* ── QUICK ACTIONS PER DAY ────────────────── */
+.mp-day-actions {
+  padding: 4px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.mp-day-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 10px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.mp-day-action-btn--teal {
+  border: 1px solid #1D9E75;
+  color: #5DCAA5;
+  flex: 1;
+}
+
+.mp-day-action-btn--teal:hover:not(:disabled) {
+  background: rgba(29, 158, 117, 0.1);
+}
+
+.mp-day-action-btn--muted {
+  border: 1px solid var(--border);
+  color: #666;
+}
+
+.mp-day-action-btn--muted:hover {
+  border-color: var(--border-light);
+  color: #888;
+}
+
+.mp-day-action-btn--disabled,
+.mp-day-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* ── SLIDE-IN PANEL ──────────────────────── */
@@ -890,12 +1081,21 @@
   }
 
   .mp-summary-bar {
-    flex-direction: column;
-    align-items: flex-start;
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 
   .mp-panel {
     width: 100vw;
+  }
+
+  .mp-day-actions {
+    flex-wrap: wrap;
+  }
+
+  .mp-daily-summary__top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
   }
 }

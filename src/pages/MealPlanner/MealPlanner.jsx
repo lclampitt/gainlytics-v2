@@ -4,6 +4,8 @@ import {
   UtensilsCrossed,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Sparkles,
   Trash2,
   Plus,
@@ -11,6 +13,9 @@ import {
   RefreshCw,
   Search,
   Loader,
+  Heart,
+  ClipboardCheck,
+  Copy,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '../../supabaseClient';
@@ -50,6 +55,10 @@ function fmtDate(d) {
 
 function isSameDay(a, b) {
   return fmtDate(a) === fmtDate(b);
+}
+
+function fmtNumber(n) {
+  return n.toLocaleString('en-US');
 }
 
 /* ── Cell stagger animation ──────────────────────── */
@@ -490,11 +499,18 @@ function SlotPanel({
               {loadingSaved ? (
                 <p className="mp-empty-state">Loading saved meals...</p>
               ) : filteredSaved.length === 0 ? (
-                <p className="mp-empty-state">
-                  {savedSearch
-                    ? 'No meals match your search.'
-                    : 'No saved meals yet. Add meals via Manual Entry with "Save to my meals" checked.'}
-                </p>
+                <div className="mp-empty-state">
+                  {savedSearch ? (
+                    <p>No meals match your search.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                      <Heart size={24} style={{ color: '#2a3548' }} />
+                      <p style={{ margin: 0 }}>
+                        No saved meals yet. Heart any meal in the planner to save it here for quick re-use.
+                      </p>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <AnimatePresence>
                   {filteredSaved.map((m, i) => (
@@ -620,7 +636,58 @@ function MealPlannerContent({ isProPlus = false }) {
   const [aiWeekLoading, setAiWeekLoading] = useState(false);
   const [clearing, setClearing] = useState(false);
 
+  /* ── NEW STATE: goals, expanded slot, favorites ── */
+  const [goalData, setGoalData] = useState(null);
+  const [expandedSlot, setExpandedSlot] = useState(null);
+  const [favoriteIds, setFavoriteIds] = useState(new Set());
+  const [favoriteNameMap, setFavoriteNameMap] = useState({}); // meal_name -> saved_meals id
+
   const today = useMemo(() => new Date(), []);
+
+  /* ── Fetch goal data ────────────────────────── */
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+
+    (async () => {
+      const { data } = await supabase
+        .from('goals')
+        .select('calories, protein, carbs, fat')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!cancelled) {
+        setGoalData(data || null);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  /* ── Fetch favorites (saved_meals) on mount ──── */
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+
+    (async () => {
+      const { data } = await supabase
+        .from('saved_meals')
+        .select('id, meal_name')
+        .eq('user_id', userId);
+
+      if (!cancelled && data) {
+        const ids = new Set(data.map((m) => m.id));
+        const nameMap = {};
+        data.forEach((m) => {
+          nameMap[m.meal_name] = m.id;
+        });
+        setFavoriteIds(ids);
+        setFavoriteNameMap(nameMap);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [userId]);
 
   /* ── Fetch plan & entries ────────────────── */
   const loadPlan = useCallback(
@@ -738,6 +805,22 @@ function MealPlannerContent({ isProPlus = false }) {
       ),
     [entries]
   );
+
+  /* ── Daily macro totals (per column) ─────── */
+  const dailyTotals = useMemo(() => {
+    return DAY_NAMES.map((_, dayIdx) => {
+      const dayEntries = entries.filter((e) => e.day_of_week === dayIdx);
+      return dayEntries.reduce(
+        (acc, e) => ({
+          calories: acc.calories + (Number(e.calories) || 0),
+          protein: acc.protein + (Number(e.protein) || 0),
+          carbs: acc.carbs + (Number(e.carbs) || 0),
+          fat: acc.fat + (Number(e.fat) || 0),
+        }),
+        { calories: 0, protein: 0, carbs: 0, fat: 0 }
+      );
+    });
+  }, [entries]);
 
   /* ── Get entry for a specific slot ───────── */
   function getEntry(dayIdx, mealType) {
@@ -915,6 +998,90 @@ function MealPlannerContent({ isProPlus = false }) {
     }
   }
 
+  /* ── Heart / Favorite toggle ─────────────── */
+  async function handleToggleFavorite(entry, e) {
+    e.stopPropagation();
+    if (!userId || !entry.meal_name) return;
+
+    const mealName = entry.meal_name;
+    const existingId = favoriteNameMap[mealName];
+
+    if (existingId) {
+      // Remove from saved_meals
+      const { error } = await supabase
+        .from('saved_meals')
+        .delete()
+        .eq('id', existingId);
+
+      if (error) {
+        toast.error('Failed to remove from saved meals.');
+        return;
+      }
+
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        next.delete(existingId);
+        return next;
+      });
+      setFavoriteNameMap((prev) => {
+        const next = { ...prev };
+        delete next[mealName];
+        return next;
+      });
+      toast.success('Removed from saved meals', { duration: 2000 });
+    } else {
+      // Add to saved_meals
+      const { data, error } = await supabase
+        .from('saved_meals')
+        .insert({
+          user_id: userId,
+          meal_name: mealName,
+          ingredients: entry.ingredients || '',
+          calories: Number(entry.calories) || 0,
+          protein: Number(entry.protein) || 0,
+          carbs: Number(entry.carbs) || 0,
+          fat: Number(entry.fat) || 0,
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        toast.error('Failed to save meal.');
+        return;
+      }
+
+      setFavoriteIds((prev) => new Set(prev).add(data.id));
+      setFavoriteNameMap((prev) => ({ ...prev, [mealName]: data.id }));
+      toast.success('Saved to meals', { duration: 2000 });
+    }
+  }
+
+  /* ── Quick actions: Log day ──────────────── */
+  function handleLogDay(dayIdx) {
+    const dayDate = addDays(weekStart, dayIdx);
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+    if (dayDate > todayDate) return; // disabled for future
+
+    const dayEntries = entries.filter((e) => e.day_of_week === dayIdx);
+    const filledMeals = MEAL_TYPES.filter((mt) =>
+      dayEntries.some((e) => e.meal_type?.toLowerCase() === mt.toLowerCase())
+    );
+
+    if (filledMeals.length < 3) {
+      toast.error('Fill all meals to log this day');
+      return;
+    }
+
+    toast.success(`${DAY_NAMES[dayIdx]} logged to food diary`);
+  }
+
+  /* ── Collapsible ingredient helpers ─────── */
+  function toggleExpandSlot(key, e) {
+    e.stopPropagation();
+    setExpandedSlot((prev) => (prev === key ? null : key));
+  }
+
   /* ── Render ──────────────────────────────── */
   if (loading) {
     return (
@@ -922,6 +1089,58 @@ function MealPlannerContent({ isProPlus = false }) {
         <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Loading...</p>
       </div>
     );
+  }
+
+  /* ── Weekly goal calculations ───────────── */
+  const weeklyGoal = goalData
+    ? {
+        calories: goalData.calories * 5,
+        protein: goalData.protein * 5,
+        carbs: goalData.carbs * 5,
+        fat: goalData.fat * 5,
+      }
+    : null;
+
+  const macroBarData = weeklyGoal
+    ? [
+        {
+          label: 'Calories',
+          actual: weekTotals.calories,
+          goal: weeklyGoal.calories,
+          unit: 'kcal',
+          color: '#1D9E75',
+        },
+        {
+          label: 'Protein',
+          actual: weekTotals.protein,
+          goal: weeklyGoal.protein,
+          unit: 'g',
+          color: '#5DCAA5',
+        },
+        {
+          label: 'Carbs',
+          actual: weekTotals.carbs,
+          goal: weeklyGoal.carbs,
+          unit: 'g',
+          color: '#0F6E56',
+        },
+        {
+          label: 'Fat',
+          actual: weekTotals.fat,
+          goal: weeklyGoal.fat,
+          unit: 'g',
+          color: 'rgba(29,158,117,0.6)',
+        },
+      ]
+    : null;
+
+  /* ── Daily calorie color helper ──────────── */
+  function getDayCalColor(dayCal) {
+    if (!goalData) return '#888';
+    const ratio = dayCal / goalData.calories;
+    if (ratio < 0.8) return '#888';
+    if (ratio <= 1.1) return '#1D9E75';
+    return '#EF9F27';
   }
 
   return (
@@ -959,25 +1178,50 @@ function MealPlannerContent({ isProPlus = false }) {
         </div>
       </div>
 
-      {/* Macro Summary Bar */}
+      {/* ── Weekly Macro Comparison Bar ──────── */}
       <div className="mp-summary-bar">
-        <span className="mp-summary-bar__label">Week of {weekLabel}</span>
-        <div className="mp-summary-bar__chips">
-          {[
-            { label: 'Calories', value: weekTotals.calories, unit: 'kcal' },
-            { label: 'Protein', value: weekTotals.protein, unit: 'g' },
-            { label: 'Carbs', value: weekTotals.carbs, unit: 'g' },
-            { label: 'Fat', value: weekTotals.fat, unit: 'g' },
-          ].map(({ label, value, unit }) => (
-            <div key={label} className="mp-summary-bar__chip">
-              <span className="mp-summary-bar__chip-value">
-                {Math.round(value)}
-                {unit}
-              </span>
-              <span className="mp-summary-bar__chip-label">{label}</span>
-            </div>
-          ))}
-        </div>
+        <span className="mp-summary-bar__label">
+          Week of {fmtShort(weekStart)} &ndash; {fmtShort(weekEnd)}
+        </span>
+
+        {macroBarData ? (
+          <div className="mp-summary-bar__bars">
+            {macroBarData.map((m) => {
+              const pct = m.goal > 0 ? (m.actual / m.goal) * 100 : 0;
+              const isOver = pct > 100;
+              const fillColor = isOver ? '#EF9F27' : m.color;
+              const fillWidth = Math.min(pct, 100);
+
+              return (
+                <div key={m.label} className="mp-macro-row">
+                  <span className="mp-macro-row__label">{m.label}</span>
+                  <div className="mp-macro-bar">
+                    <div
+                      className="mp-macro-bar__fill"
+                      style={{
+                        width: `${fillWidth}%`,
+                        background: fillColor,
+                      }}
+                    />
+                  </div>
+                  <span className="mp-macro-row__value">
+                    <span style={{ color: isOver ? '#EF9F27' : '#fff', fontWeight: 500 }}>
+                      {fmtNumber(Math.round(m.actual))}
+                    </span>
+                    <span style={{ color: '#555' }}>
+                      {' / '}
+                      {fmtNumber(Math.round(m.goal))} {m.unit}
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <span style={{ fontSize: 12, color: '#555' }}>
+            Set a goal to see targets
+          </span>
+        )}
       </div>
 
       {/* Meal Grid */}
@@ -998,6 +1242,42 @@ function MealPlannerContent({ isProPlus = false }) {
           );
         })}
 
+        {/* ── Daily Macro Totals Row ──────────── */}
+        <div className="mp-grid-corner" />
+        {DAY_NAMES.map((day, dayIdx) => {
+          const dt = dailyTotals[dayIdx];
+          const calColor = getDayCalColor(dt.calories);
+          const pct = goalData && goalData.calories > 0
+            ? (dt.calories / goalData.calories) * 100
+            : 0;
+          const barWidth = Math.min(pct, 100);
+
+          return (
+            <div key={`daily-${day}`} className="mp-daily-summary">
+              <div className="mp-daily-summary__top">
+                <span
+                  className="mp-daily-summary__cal"
+                  style={{ color: calColor }}
+                >
+                  {Math.round(dt.calories)} kcal
+                </span>
+                <span className="mp-daily-summary__pills">
+                  P: {Math.round(dt.protein)}g&nbsp;&nbsp;C: {Math.round(dt.carbs)}g&nbsp;&nbsp;F: {Math.round(dt.fat)}g
+                </span>
+              </div>
+              <div className="mp-daily-bar">
+                <div
+                  className="mp-daily-bar__fill"
+                  style={{
+                    width: `${barWidth}%`,
+                    background: calColor,
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })}
+
         {/* Meal rows */}
         {MEAL_TYPES.map((mealType, rowIdx) => (
           <React.Fragment key={mealType}>
@@ -1008,6 +1288,9 @@ function MealPlannerContent({ isProPlus = false }) {
             {DAY_NAMES.map((day, colIdx) => {
               const cellIndex = rowIdx * 5 + colIdx;
               const entry = getEntry(colIdx, mealType);
+              const slotKey = `${colIdx}-${mealType}`;
+              const isExpanded = expandedSlot === slotKey;
+              const isFav = entry ? !!favoriteNameMap[entry.meal_name] : false;
 
               return entry ? (
                 <motion.div
@@ -1023,6 +1306,19 @@ function MealPlannerContent({ isProPlus = false }) {
                   layout
                 >
                   <div className="mp-slot__actions">
+                    {/* Heart / Favorite button */}
+                    <motion.button
+                      className={`mp-slot__action-btn mp-slot__heart ${isFav ? 'mp-slot__heart--active' : ''}`}
+                      title={isFav ? 'Remove from saved meals' : 'Save to meals'}
+                      onClick={(e) => handleToggleFavorite(entry, e)}
+                      whileTap={{ scale: 0.85 }}
+                    >
+                      <Heart
+                        size={11}
+                        fill={isFav ? '#1D9E75' : 'none'}
+                        stroke={isFav ? '#1D9E75' : '#444'}
+                      />
+                    </motion.button>
                     <button
                       className="mp-slot__action-btn"
                       title="Replace meal"
@@ -1045,11 +1341,19 @@ function MealPlannerContent({ isProPlus = false }) {
                     </button>
                   </div>
                   <span className="mp-slot__name">{entry.meal_name}</span>
-                  {entry.ingredients && (
+
+                  {/* Collapsed ingredients: first 2, truncated */}
+                  {entry.ingredients && !isExpanded && (
                     <span className="mp-slot__ingredients">
-                      {entry.ingredients}
+                      {entry.ingredients
+                        .split(',')
+                        .slice(0, 2)
+                        .map((s) => s.trim())
+                        .join(', ')}
+                      {entry.ingredients.split(',').length > 2 ? '...' : ''}
                     </span>
                   )}
+
                   <div className="mp-slot__macros">
                     <span className="mp-macro-chip">
                       Cal: {entry.calories}
@@ -1064,6 +1368,46 @@ function MealPlannerContent({ isProPlus = false }) {
                       F: {entry.fat}g
                     </span>
                   </div>
+
+                  {/* Expand / collapse ingredients button */}
+                  {entry.ingredients && entry.ingredients.split(',').length > 2 && (
+                    <button
+                      className="mp-slot__expand-btn"
+                      onClick={(e) => toggleExpandSlot(slotKey, e)}
+                    >
+                      {isExpanded ? (
+                        <>
+                          <ChevronUp size={12} />
+                          <span>Hide ingredients</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown size={12} />
+                          <span>Show ingredients</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Expanded ingredient list with animation */}
+                  <AnimatePresence>
+                    {isExpanded && entry.ingredients && (
+                      <motion.div
+                        className="mp-slot__ingredient-list"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: 'easeOut' }}
+                      >
+                        {entry.ingredients.split(',').map((ing, idx) => (
+                          <div key={idx} className="mp-slot__ingredient-item">
+                            <span className="mp-slot__ingredient-dot" />
+                            <span>{ing.trim()}</span>
+                          </div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               ) : (
                 <motion.div
@@ -1086,6 +1430,42 @@ function MealPlannerContent({ isProPlus = false }) {
             })}
           </React.Fragment>
         ))}
+
+        {/* ── Quick Actions Row ──────────────── */}
+        <div className="mp-row-label" />
+        {DAY_NAMES.map((day, dayIdx) => {
+          const dayDate = addDays(weekStart, dayIdx);
+          const todayDate = new Date();
+          todayDate.setHours(0, 0, 0, 0);
+          const isFuture = dayDate > todayDate;
+
+          return (
+            <div key={`actions-${day}`} className="mp-day-actions">
+              <button
+                className={`mp-day-action-btn mp-day-action-btn--teal ${isFuture ? 'mp-day-action-btn--disabled' : ''}`}
+                onClick={() => !isFuture && handleLogDay(dayIdx)}
+                disabled={isFuture}
+              >
+                <ClipboardCheck size={12} />
+                Log day
+              </button>
+              <button
+                className="mp-day-action-btn mp-day-action-btn--muted"
+                onClick={() => toast('Swap coming soon')}
+              >
+                <RefreshCw size={12} />
+                Swap
+              </button>
+              <button
+                className="mp-day-action-btn mp-day-action-btn--muted"
+                onClick={() => toast('Copy coming soon')}
+                title="Copy day"
+              >
+                <Copy size={12} />
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       {/* Slot Panel */}
