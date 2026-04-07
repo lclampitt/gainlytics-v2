@@ -324,7 +324,7 @@ function GoalPlannerContent({ compact = false }) {
       if (error && error.code !== 'PGRST116') {
         setError('Could not fetch your goal.');
       } else if (data) {
-        // Existing goal found → populate state and start in view mode
+        // Existing goal found → populate state
         setRowId(data.id ?? null);
         setGoal(data.goal ?? '');
         setMacros({
@@ -335,7 +335,11 @@ function GoalPlannerContent({ compact = false }) {
         });
         setTimeframe(Number(data.timeframe_weeks) || 0);
         setCreatedAt(data.created_at ?? null);
-        setEditing(false);
+
+        // If macros are set but timeframe is missing (e.g. saved from Macro Calculator),
+        // go straight to edit mode so the user can complete the goal
+        const isComplete = !!data.goal && (Number(data.timeframe_weeks) || 0) > 0 && (Number(data.calories) || 0) > 0;
+        setEditing(!isComplete);
       } else {
         // No goal yet → start in editing mode so user sees the form immediately
         setEditing(true);
