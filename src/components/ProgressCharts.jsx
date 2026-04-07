@@ -32,7 +32,7 @@ export default function ProgressCharts({ rows = [] }) {
 
   if (!data.length) {
     return (
-      <div style={{ color: '#4f5a6e', fontSize: 13 }}>
+      <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
         No progress yet — add your first entry below.
       </div>
     );
@@ -44,10 +44,10 @@ export default function ProgressCharts({ rows = [] }) {
     const bf     = payload.find((p) => p.dataKey === 'body_fat_pct');
     return (
       <div style={{
-        background: '#080c14', border: '1px solid #1a2538',
-        borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#e8eaf0',
+        background: 'var(--bg-surface-2)', border: '1px solid var(--border)',
+        borderRadius: 8, padding: '8px 12px', fontSize: 12, color: 'var(--text-primary)',
       }}>
-        <div style={{ marginBottom: 4, color: '#8892a4' }}>{label}</div>
+        <div style={{ marginBottom: 4, color: 'var(--text-muted)' }}>{label}</div>
         {weight && <div>Weight: <strong>{weight.value}</strong> lbs</div>}
         {bf     && <div>BF%: <strong>{bf.value}</strong></div>}
       </div>
@@ -65,13 +65,13 @@ export default function ProgressCharts({ rows = [] }) {
             </linearGradient>
           </defs>
 
-          <CartesianGrid strokeDasharray="3 3" stroke="#1a2538" />
-          <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#8892a4' }} />
-          <YAxis yAxisId="left"  tick={{ fontSize: 11, fill: '#8892a4' }} />
-          <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#8892a4' }} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+          <YAxis yAxisId="left"  tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+          <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
           <Tooltip content={renderTooltip} />
           <Legend
-            wrapperStyle={{ paddingTop: 8, fontSize: 12, color: '#8892a4' }}
+            wrapperStyle={{ paddingTop: 8, fontSize: 12, color: 'var(--text-muted)' }}
             formatter={(v) => v === 'weight_lbs' ? 'Weight (lbs)' : 'BF%'}
           />
 

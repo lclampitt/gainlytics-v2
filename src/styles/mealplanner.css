@@ -228,7 +228,7 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #888;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   padding-left: 4px;
@@ -609,7 +609,7 @@
 }
 
 .mp-suggestion-card__add-btn:hover {
-  background: #0a2a1e;
+  background: var(--accent-bg);
 }
 
 .mp-retry-btn {
@@ -720,7 +720,7 @@
 }
 
 .mp-saved-meal__add-btn:hover {
-  background: #0a2a1e;
+  background: var(--accent-bg);
 }
 
 /* ── MANUAL ENTRY FORM ───────────────────── */

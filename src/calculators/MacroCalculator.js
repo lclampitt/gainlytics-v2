@@ -33,8 +33,8 @@ const DIET_OPTS = [
 // ── Shared styles ──────────────────────────────────────────────────────────────
 
 const inputStyle = {
-  background: '#080c14', border: '1px solid #1a2538', borderRadius: 8,
-  padding: '10px 12px', fontSize: 13, color: '#fff', fontFamily: 'inherit',
+  background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 8,
+  padding: '10px 12px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'inherit',
   outline: 'none', width: '100%', boxSizing: 'border-box',
 };
 
@@ -44,7 +44,7 @@ const tealBtn = {
 };
 
 const outlineBtn = {
-  background: 'transparent', color: '#5DCAA5', border: '1px solid #1a2538',
+  background: 'transparent', color: '#5DCAA5', border: '1px solid var(--border)',
   borderRadius: 8, padding: '10px 20px', fontSize: 13,
   fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
 };
@@ -56,10 +56,10 @@ function UnitPills({ value, onChange, opts }) {
     <div style={{ display: 'inline-flex', gap: 4 }}>
       {opts.map(o => (
         <button key={o.value} onClick={() => onChange(o.value)} style={value === o.value ? {
-          background: '#0a2a1e', border: '1px solid #1D9E75', color: '#5DCAA5',
+          background: 'var(--accent-bg)', border: '1px solid #1D9E75', color: '#5DCAA5',
           borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
         } : {
-          background: 'transparent', border: '1px solid #1a2538', color: '#666',
+          background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)',
           borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
         }}>
           {o.label}
@@ -145,12 +145,12 @@ function ResultsView({ results, goal, onReset, onSave, onCopy, saving = false })
       style={{ maxWidth: 560, margin: '0 auto' }}
     >
       <div style={{
-        background: '#0e1624', border: '1px solid #1D9E75', borderRadius: 12,
+        background: 'var(--bg-surface)', border: '1px solid #1D9E75', borderRadius: 12,
         padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 24,
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 16, fontWeight: 500, color: '#fff' }}>Your macro targets</span>
+          <span style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-primary)' }}>Your macro targets</span>
           <span style={{
             background: 'rgba(29,158,117,0.15)', border: '1px solid #1D9E75',
             color: '#5DCAA5', borderRadius: 99, fontSize: 11, padding: '2px 10px', fontWeight: 500,
@@ -162,8 +162,8 @@ function ResultsView({ results, goal, onReset, onSave, onCopy, saving = false })
           <div style={{ fontSize: 36, fontWeight: 500, color: '#1D9E75', lineHeight: 1 }}>
             <AnimatedNumber value={targetCals} duration={600} />
           </div>
-          <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>kcal per day</div>
-          <div style={{ fontSize: 11, color: '#444', marginTop: 6 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>kcal per day</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
             TDEE: {tdee.toLocaleString()} kcal · {deltaLabel}
           </div>
         </div>
@@ -180,20 +180,20 @@ function ResultsView({ results, goal, onReset, onSave, onCopy, saving = false })
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: m.delay / 1000 }}
-              style={{ background: '#080c14', borderRadius: 8, padding: '14px 16px' }}
+              style={{ background: 'var(--bg-base)', borderRadius: 8, padding: '14px 16px' }}
             >
-              <div style={{ fontSize: 11, color: '#555', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{m.label}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{m.label}</div>
               <div style={{ fontSize: 22, fontWeight: 500, color: m.color, lineHeight: 1.2, marginTop: 4 }}>
                 <AnimatedNumber value={m.grams} duration={600} delay={m.delay} />g
               </div>
-              <div style={{ fontSize: 10, color: '#444', marginTop: 3 }}>{m.pct}% of calories</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>{m.pct}% of calories</div>
             </motion.div>
           ))}
         </div>
 
         {/* Ratio bar */}
         <div>
-          <div style={{ fontSize: 10, color: '#555', marginBottom: 6 }}>Macro ratio</div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>Macro ratio</div>
           <div style={{ height: 8, borderRadius: 4, overflow: 'hidden', display: 'flex' }}>
             {[
               { pct: pPct, color: '#1D9E75', delay: 0   },
@@ -211,7 +211,7 @@ function ResultsView({ results, goal, onReset, onSave, onCopy, saving = false })
             {[['Protein', '#1D9E75'], ['Carbs', '#5DCAA5'], ['Fat', '#0F6E56']].map(([l, c]) => (
               <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: c }} />
-                <span style={{ fontSize: 10, color: '#555' }}>{l}</span>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{l}</span>
               </div>
             ))}
           </div>
@@ -219,7 +219,7 @@ function ResultsView({ results, goal, onReset, onSave, onCopy, saving = false })
 
         {/* Per-meal */}
         <div>
-          <div style={{ fontSize: 10, color: '#555', marginBottom: 8 }}>Per meal (based on 3 meals/day)</div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 8 }}>Per meal (based on 3 meals/day)</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
             {[
               { label: 'Calories', value: Math.round(targetCals / 3) },
@@ -227,9 +227,9 @@ function ResultsView({ results, goal, onReset, onSave, onCopy, saving = false })
               { label: 'Carbs',    value: `${Math.round(carbG / 3)}g` },
               { label: 'Fat',      value: `${Math.round(fatG / 3)}g` },
             ].map(m => (
-              <div key={m.label} style={{ background: '#080c14', borderRadius: 6, padding: '8px 10px' }}>
-                <div style={{ fontSize: 10, color: '#555', marginBottom: 3 }}>{m.label}</div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: '#888' }}>{m.value}</div>
+              <div key={m.label} style={{ background: 'var(--bg-base)', borderRadius: 6, padding: '8px 10px' }}>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>{m.label}</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>{m.value}</div>
               </div>
             ))}
           </div>
@@ -244,7 +244,7 @@ function ResultsView({ results, goal, onReset, onSave, onCopy, saving = false })
           <button style={outlineBtn} onClick={onCopy}>Copy results</button>
         </div>
 
-        <p style={{ fontSize: 11, color: '#444', lineHeight: 1.5, margin: 0 }}>
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
           These are estimates based on established nutritional formulas. Individual needs vary.
           Adjust based on real-world results over 2–4 weeks.
         </p>
@@ -394,8 +394,8 @@ export default function MacroCalculator() {
   };
 
   function renderStep() {
-    const Q   = ({ children }) => <h2 style={{ fontSize: 20, fontWeight: 600, color: '#fff', margin: '0 0 6px' }}>{children}</h2>;
-    const Sub = ({ children }) => <p  style={{ fontSize: 12, color: '#555', margin: '0 0 20px', lineHeight: 1.5 }}>{children}</p>;
+    const Q   = ({ children }) => <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 6px' }}>{children}</h2>;
+    const Sub = ({ children }) => <p  style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 20px', lineHeight: 1.5 }}>{children}</p>;
 
     switch (step) {
       case 1:
@@ -410,14 +410,14 @@ export default function MacroCalculator() {
                   animate={{ scale: sex === val ? 1.02 : 1 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                   style={{
-                    background: sex === val ? '#0a2a1e' : '#080c14',
-                    border: `1px solid ${sex === val ? '#1D9E75' : '#1a2538'}`,
+                    background: sex === val ? 'var(--accent-bg)' : 'var(--bg-base)',
+                    border: `1px solid ${sex === val ? '#1D9E75' : 'var(--border)'}`,
                     borderRadius: 10, padding: 20, cursor: 'pointer',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, fontFamily: 'inherit',
                   }}
                 >
-                  <Icon width={28} height={28} stroke={sex === val ? '#1D9E75' : '#555'} strokeWidth={1.5} fill="none" />
-                  <span style={{ fontSize: 13, fontWeight: 500, color: sex === val ? '#fff' : '#888' }}>{label}</span>
+                  <Icon width={28} height={28} stroke={sex === val ? '#1D9E75' : 'var(--text-muted)'} strokeWidth={1.5} fill="none" />
+                  <span style={{ fontSize: 13, fontWeight: 500, color: sex === val ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{label}</span>
                 </motion.button>
               ))}
             </div>
@@ -430,12 +430,12 @@ export default function MacroCalculator() {
             <Q>Tell us about your body</Q>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ fontSize: 11, color: '#666', display: 'block', marginBottom: 5 }}>Age (years)</label>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>Age (years)</label>
                 <input type="number" min="16" max="80" value={age} onChange={e => setAge(e.target.value)} style={inputStyle} placeholder="e.g. 28" />
               </div>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                  <label style={{ fontSize: 11, color: '#666' }}>Height</label>
+                  <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Height</label>
                   <UnitPills value={heightUnit} onChange={setHeightUnit} opts={[{ value: 'imperial', label: 'ft/in' }, { value: 'metric', label: 'cm' }]} />
                 </div>
                 {heightUnit === 'imperial' ? (
@@ -449,7 +449,7 @@ export default function MacroCalculator() {
               </div>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                  <label style={{ fontSize: 11, color: '#666' }}>Weight</label>
+                  <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Weight</label>
                   <UnitPills value={weightUnit} onChange={setWeightUnit} opts={[{ value: 'imperial', label: 'lbs' }, { value: 'metric', label: 'kg' }]} />
                 </div>
                 <input type="number" min="0" value={weight} onChange={e => setWeight(e.target.value)} style={inputStyle} placeholder={weightUnit === 'imperial' ? 'e.g. 175' : 'e.g. 80'} />
@@ -471,8 +471,8 @@ export default function MacroCalculator() {
               </button>
               {showBfInfo && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-                  style={{ marginTop: 10, background: '#080c14', border: '1px solid #1a2538', borderRadius: 8, padding: '12px 14px' }}>
-                  <p style={{ fontSize: 11, color: '#666', lineHeight: 1.6, margin: 0 }}>
+                  style={{ marginTop: 10, background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px' }}>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
                     The Navy method estimates body fat from waist, neck, and hip measurements.
                     Or use the AI Body Analyzer for a photo-based estimate. If you skip, we'll use a
                     conservative estimate (15% for males, 25% for females).
@@ -481,7 +481,7 @@ export default function MacroCalculator() {
               )}
             </div>
             <button onClick={() => { setBodyFat(''); dirRef.current = 1; setStep(s => s + 1); }}
-              style={{ background: 'none', border: 'none', color: '#555', fontSize: 12, cursor: 'pointer', padding: 0, marginTop: 14, fontFamily: 'inherit', display: 'block' }}>
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', padding: 0, marginTop: 14, fontFamily: 'inherit', display: 'block' }}>
               Skip this step
             </button>
           </>
@@ -497,12 +497,12 @@ export default function MacroCalculator() {
                 return (
                   <div key={opt.value} onClick={() => setActivity(opt.value)} style={{
                     borderLeft: `3px solid ${sel ? '#1D9E75' : 'transparent'}`,
-                    background: sel ? '#0a2a1e' : 'transparent',
+                    background: sel ? 'var(--accent-bg)' : 'transparent',
                     borderRadius: '0 8px 8px 0', padding: '12px 14px',
                     cursor: 'pointer', transition: 'all 0.15s ease',
                   }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: sel ? '#fff' : '#888' }}>{opt.label}</div>
-                    <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{opt.sub}</div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: sel ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{opt.label}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{opt.sub}</div>
                   </div>
                 );
               })}
@@ -523,14 +523,14 @@ export default function MacroCalculator() {
                     animate={{ scale: sel ? 1.02 : 1 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                     style={{
-                      background: sel ? '#0a2a1e' : '#080c14',
-                      border: `1px solid ${sel ? '#1D9E75' : '#1a2538'}`,
+                      background: sel ? 'var(--accent-bg)' : 'var(--bg-base)',
+                      border: `1px solid ${sel ? '#1D9E75' : 'var(--border)'}`,
                       borderRadius: 10, padding: '16px 12px', cursor: 'pointer',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, fontFamily: 'inherit',
                     }}>
-                    <Icon width={20} height={20} stroke={sel ? '#1D9E75' : '#555'} strokeWidth={1.5} fill="none" />
-                    <span style={{ fontSize: 13, fontWeight: 500, color: sel ? '#fff' : '#888' }}>{label}</span>
-                    <span style={{ fontSize: 10, color: '#555' }}>{sub}</span>
+                    <Icon width={20} height={20} stroke={sel ? '#1D9E75' : 'var(--text-muted)'} strokeWidth={1.5} fill="none" />
+                    <span style={{ fontSize: 13, fontWeight: 500, color: sel ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{label}</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{sub}</span>
                   </motion.button>
                 );
               })}
@@ -548,9 +548,9 @@ export default function MacroCalculator() {
                 const sel = diet === val;
                 return (
                   <button key={val} onClick={() => setDiet(val)} style={{
-                    background: sel ? '#0a2a1e' : 'transparent',
-                    border: `1px solid ${sel ? '#1D9E75' : '#1a2538'}`,
-                    color: sel ? '#5DCAA5' : '#666', borderRadius: 99,
+                    background: sel ? 'var(--accent-bg)' : 'transparent',
+                    border: `1px solid ${sel ? '#1D9E75' : 'var(--border)'}`,
+                    color: sel ? '#5DCAA5' : 'var(--text-muted)', borderRadius: 99,
                     padding: '7px 16px', fontSize: 13, cursor: 'pointer',
                     fontFamily: 'inherit', transition: 'all 0.15s ease',
                   }}>
@@ -607,15 +607,15 @@ export default function MacroCalculator() {
                     onClick={() => setShowConfirm(false)}
                     style={{
                       position: 'absolute', top: 12, right: 12,
-                      background: 'none', border: 'none', color: '#666', cursor: 'pointer', padding: 4,
+                      background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4,
                     }}
                   >
                     <X size={16} />
                   </button>
-                  <h3 style={{ fontSize: 16, fontWeight: 600, color: '#fff', margin: '0 0 8px' }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 8px' }}>
                     Update Goal Planner?
                   </h3>
-                  <p style={{ fontSize: 13, color: '#888', lineHeight: 1.6, margin: '0 0 20px' }}>
+                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 20px' }}>
                     You already have macro targets saved in your Goal Planner. Would you like to replace them with these new calculations?
                   </p>
                   <div style={{ display: 'flex', gap: 10 }}>
@@ -646,14 +646,14 @@ export default function MacroCalculator() {
     <div style={{ maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Progress bar */}
       <div>
-        <div style={{ height: 3, background: '#1a2538', borderRadius: 99, overflow: 'hidden' }}>
+        <div style={{ height: 3, background: 'var(--border)', borderRadius: 99, overflow: 'hidden' }}>
           <motion.div
             style={{ height: '100%', background: '#1D9E75', borderRadius: 99 }}
             animate={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
           />
         </div>
-        <div style={{ textAlign: 'right', fontSize: 10, color: '#555', marginTop: 5 }}>
+        <div style={{ textAlign: 'right', fontSize: 10, color: 'var(--text-muted)', marginTop: 5 }}>
           Step {step} of {TOTAL_STEPS}
         </div>
       </div>
@@ -668,7 +668,7 @@ export default function MacroCalculator() {
           animate="center"
           exit="exit"
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          style={{ background: '#0e1624', border: '1px solid #1a2538', borderRadius: 12, padding: '28px 32px' }}
+          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px' }}
         >
           {renderStep()}
           {error && <div style={{ color: '#f87171', fontSize: 12, marginTop: 10 }}>{error}</div>}

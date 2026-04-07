@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Sliders, CreditCard, AlertTriangle, Crown } from 'lucide-react';
+import { User, Sliders, CreditCard, AlertTriangle, Crown, Sun, Moon } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '../supabaseClient';
 import { usePlan } from '../hooks/usePlan';
+import { useTheme } from '../hooks/useTheme';
 import '../styles/settings.css';
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'https://gainlytics-1.onrender.com';
@@ -108,6 +109,7 @@ function DeleteModal({ onClose }) {
 /* ── Main page ── */
 export default function SettingsPage() {
   const { plan, isPro, isProPlus, stripeCustomerId, isLoading: planLoading } = usePlan();
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const [session,     setSession]     = useState(null);
   const [displayName, setDisplayName] = useState('');
@@ -216,8 +218,35 @@ export default function SettingsPage() {
   return (
     <div className="settings">
 
+      {/* ── Appearance ── */}
+      <SettingsCard icon={Sun} title="Appearance" index={0}>
+        <div className="settings-row">
+          <span className="settings-row__label">Color theme</span>
+          <div className="settings-theme-picker">
+            <button
+              className={`settings-theme-card${theme === 'dark' ? ' settings-theme-card--active' : ''}`}
+              onClick={() => theme !== 'dark' && toggleTheme()}
+            >
+              <div className="settings-theme-card__preview settings-theme-card__preview--dark">
+                <div /><div /><div />
+              </div>
+              <span>Dark</span>
+            </button>
+            <button
+              className={`settings-theme-card${theme === 'light' ? ' settings-theme-card--active' : ''}`}
+              onClick={() => theme !== 'light' && toggleTheme()}
+            >
+              <div className="settings-theme-card__preview settings-theme-card__preview--light">
+                <div /><div /><div />
+              </div>
+              <span>Light</span>
+            </button>
+          </div>
+        </div>
+      </SettingsCard>
+
       {/* ── Profile ── */}
-      <SettingsCard icon={User} title="Profile" index={0}>
+      <SettingsCard icon={User} title="Profile" index={1}>
         {/* Avatar row */}
         <div className="settings-avatar">
           <div className="settings-avatar__circle">{initials}</div>
@@ -266,7 +295,7 @@ export default function SettingsPage() {
       </SettingsCard>
 
       {/* ── Preferences ── */}
-      <SettingsCard icon={Sliders} title="Preferences" index={1}>
+      <SettingsCard icon={Sliders} title="Preferences" index={2}>
         <div className="settings-row">
           <div className="settings-row__left">
             <span className="settings-row__label">Units</span>
@@ -312,7 +341,7 @@ export default function SettingsPage() {
       </SettingsCard>
 
       {/* ── Subscription ── */}
-      <SettingsCard icon={CreditCard} title="Subscription" index={2}>
+      <SettingsCard icon={CreditCard} title="Subscription" index={3}>
         <div className="settings-row">
           <div className="settings-row__left">
             <span className="settings-row__label">Current plan</span>
@@ -365,7 +394,7 @@ export default function SettingsPage() {
       </SettingsCard>
 
       {/* ── Danger zone ── */}
-      <SettingsCard icon={AlertTriangle} title="Danger zone" danger index={3}>
+      <SettingsCard icon={AlertTriangle} title="Danger zone" danger index={4}>
         <div className="settings-row">
           <div className="settings-row__left">
             <span className="settings-row__label">Delete account</span>

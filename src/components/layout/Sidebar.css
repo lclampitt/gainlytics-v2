@@ -212,7 +212,7 @@
 /* Usage hint */
 .sidebar__usage-hint {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-muted);
   padding: 2px 12px 6px 44px;
   margin-top: -4px;
   display: flex;
@@ -222,6 +222,28 @@
 
 .sidebar__usage-hint--locked {
   color: #f87171;
+}
+
+/* Theme toggle */
+.sidebar__theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  width: 100%;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-family: inherit;
+}
+
+.sidebar__theme-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .sidebar__usage-lock {

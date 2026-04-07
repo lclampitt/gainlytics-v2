@@ -1,10 +1,10 @@
 .footer {
   margin-top: 0;   /* or 0 if you want it tight */
   padding: 1.6rem 1.6rem 1.4rem;
-  border-top: 1px solid rgba(40, 55, 92, 0.9);
-  background: radial-gradient(circle at top, #0f1320 0, #050711 60%);
-  box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.75);
-  color: #c7d1ea;
+  border-top: 1px solid var(--border);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-card);
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
@@ -28,8 +28,8 @@
   width: 26px;
   height: 26px;
   border-radius: 999px;
-  background: radial-gradient(circle at 20% 0%, #00cfff, #006bff);
-  box-shadow: 0 0 18px rgba(0, 207, 255, 0.7);
+  background: radial-gradient(circle at 20% 0%, var(--accent), var(--accent-dark));
+  box-shadow: 0 0 18px var(--accent-glow);
   flex-shrink: 0;
 }
 
@@ -38,12 +38,12 @@
   letter-spacing: 0.16em;
   font-weight: 600;
   font-size: 0.95rem;
-  color: #f4f8ff;
+  color: var(--text-primary);
 }
 
 .footer-tagline {
   margin: 0.25rem 0 0;
-  color: #9faac6;
+  color: var(--text-muted);
   font-size: 0.88rem;
 }
 
@@ -51,7 +51,7 @@
 .footer-column-title {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #e0ebff;
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   margin-bottom: 0.6rem;
@@ -64,21 +64,21 @@
 }
 
 .footer-link {
-  color: #c7d1ea;
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 0.88rem;
   transition: color 0.16s ease, transform 0.16s ease;
 }
 
 .footer-link:hover {
-  color: #00cfff;
+  color: var(--accent-light);
   transform: translateX(1px);
 }
 
 /* Disclaimer / contact */
 .footer-disclaimer {
   margin: 0 0 0.4rem;
-  color: #95a3c2;
+  color: var(--text-muted);
   font-size: 0.82rem;
   line-height: 1.45;
 }
@@ -86,11 +86,11 @@
 .footer-contact {
   margin: 0;
   font-size: 0.84rem;
-  color: #c7d1ea;
+  color: var(--text-secondary);
 }
 
 .footer-contact a {
-  color: #00cfff;
+  color: var(--accent-light);
   text-decoration: none;
 }
 
@@ -103,17 +103,17 @@
   max-width: 1200px;
   margin: 1rem auto 0;
   padding-top: 0.6rem;
-  border-top: 1px solid rgba(27, 33, 52, 0.9);
+  border-top: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
-  color: #808baa;
+  color: var(--text-muted);
   font-size: 0.82rem;
 }
 
 .footer-built-by {
-  color: #a4b1d0;
+  color: var(--text-secondary);
 }
 
 /* Responsive tweaks */

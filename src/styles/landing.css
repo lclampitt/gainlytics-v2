@@ -18,7 +18,7 @@
 }
 
 .lp-nav--scrolled {
-  background: rgba(8, 12, 20, 0.85);
+  background: var(--topbar-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
@@ -117,8 +117,8 @@
 }
 
 .lp-btn--teal:hover {
-  background: #18b885;
-  border-color: #18b885;
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
   opacity: 1;
 }
 
@@ -478,8 +478,8 @@
 }
 
 .lp-pricing-card__cta--teal:hover {
-  background: #18b885;
-  border-color: #18b885;
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
   opacity: 1;
 }
 

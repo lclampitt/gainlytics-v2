@@ -3,9 +3,9 @@
   top: 0;
   z-index: 100;
   backdrop-filter: blur(16px);
-  background: radial-gradient(circle at top, rgba(14, 18, 34, 0.9), rgba(5, 7, 15, 0.96));
-  border-bottom: 1px solid rgba(40, 55, 92, 0.7);
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65);
+  background: var(--topbar-bg);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
 }
 
 /* Layout */
@@ -37,11 +37,8 @@
   align-items: center;
   justify-content: center;
   
-  /* Modern fitness / analytics gradient */
-  background: radial-gradient(circle at 25% 0%, #00cfff, #006eff);
-  
-  /* Blue glow */
-  box-shadow: 0 0 18px rgba(0, 207, 255, 0.55);
+  background: radial-gradient(circle at 25% 0%, var(--accent), var(--accent-dark));
+  box-shadow: 0 0 18px var(--accent-glow);
 }
 
 .header-logo-img {
@@ -56,7 +53,7 @@
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #e9f5ff;
+  color: var(--text-primary);
 }
 
 /* ----- NAVIGATION ----- */
@@ -72,7 +69,7 @@
 
 .nav-link {
   position: relative;
-  color: #cfd6e4;
+  color: var(--text-secondary);
   font-weight: 500;
   font-size: 0.95rem;
   text-decoration: none;
@@ -81,7 +78,7 @@
 }
 
 .nav-link:hover {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 /* Underline animation */
@@ -92,7 +89,7 @@
   bottom: -3px;
   width: 0;
   height: 2px;
-  background: linear-gradient(90deg, #00cfff, #00ffbf);
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
   border-radius: 999px;
   transition: width 0.22s ease;
 }
@@ -102,7 +99,7 @@
 }
 
 .nav-link.active {
-  color: #00dbff;
+  color: var(--accent-light);
 }
 
 .nav-link.active::after {

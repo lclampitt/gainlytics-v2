@@ -359,7 +359,7 @@ function DailyChecklist({ userId }) {
             key={key}
             className={`dc__item ${checks[key] ? 'dc__item--done' : ''}`}
             onClick={() => navigate(route)}
-            whileHover={{ backgroundColor: checks[key] ? '#0a2a1e' : 'rgba(29,158,117,0.06)' }}
+            whileHover={{ backgroundColor: checks[key] ? 'var(--accent-bg)' : 'rgba(29,158,117,0.06)' }}
             transition={{ duration: 0.15 }}
           >
             <CheckCircle checked={checks[key]} />
@@ -441,7 +441,7 @@ function DailyMacrosCard({ caloriesLogged, calorieGoal, proteinLogged, proteinGo
       <div className="dm__ring-col">
         <svg width="100" height="100" viewBox="0 0 100 100" aria-hidden="true">
           {/* track */}
-          <circle cx="50" cy="50" r="40" fill="none" stroke="#1a2538" strokeWidth="8" />
+          <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" strokeWidth="8" />
           {/* progress arc */}
           <circle
             cx="50" cy="50" r="40" fill="none"
@@ -453,8 +453,8 @@ function DailyMacrosCard({ caloriesLogged, calorieGoal, proteinLogged, proteinGo
             transform="rotate(-90 50 50)"
             style={{ transition: 'stroke-dashoffset 0.8s ease-out, stroke 0.3s ease' }}
           />
-          <text x="50" y="43" textAnchor="middle" fontSize="15" fontWeight="500" fill="#ffffff" fontFamily="inherit">{caloriesLogged.toLocaleString()}</text>
-          <text x="50" y="60" textAnchor="middle" fontSize="9"  fill="#888888" fontFamily="inherit">kcal</text>
+          <text x="50" y="43" textAnchor="middle" fontSize="15" fontWeight="500" fill="var(--text-primary)" fontFamily="inherit">{caloriesLogged.toLocaleString()}</text>
+          <text x="50" y="60" textAnchor="middle" fontSize="9"  fill="var(--text-muted)" fontFamily="inherit">kcal</text>
         </svg>
         <p className="dm__ring-sub">
           {calorieGoal != null ? `of ${calorieGoal.toLocaleString()} kcal goal` : 'No goal set'}

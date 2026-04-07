@@ -173,8 +173,8 @@
 }
 
 .tdee-chip {
-  background: #0e1624;
-  border: 1px solid #1a2538;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px 14px;
   display: flex;

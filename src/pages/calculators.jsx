@@ -55,7 +55,7 @@ const tips = [
 function SectionLabel({ text }) {
   return (
     <div style={{
-      fontSize: 10, fontWeight: 500, color: '#888',
+      fontSize: 10, fontWeight: 500, color: 'var(--text-secondary)',
       textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10,
     }}>
       {text}
@@ -65,10 +65,10 @@ function SectionLabel({ text }) {
 
 function ResultChip({ value, label, source }) {
   return (
-    <div style={{ background: '#080c14', border: '1px solid #1a2538', borderRadius: 8, padding: '10px 14px' }}>
+    <div style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}>
       <div style={{ fontSize: 18, fontWeight: 500, color: '#1D9E75', lineHeight: 1 }}>{value ?? '—'}</div>
-      <div style={{ fontSize: 10, color: '#555', marginTop: 3 }}>{label}</div>
-      <div style={{ fontSize: 9, color: '#2a3548', marginTop: 2 }}>{source}</div>
+      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>{label}</div>
+      <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>{source}</div>
     </div>
   );
 }
@@ -125,13 +125,13 @@ function CalculatorsPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.25 }}
-          style={{ background: '#0e1624', border: '1px solid #1a2538', borderRadius: 10, padding: '16px 20px' }}
+          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '16px 20px' }}
         >
           {hasAnyResults ? (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <span style={{ fontSize: 12, fontWeight: 500, color: '#fff' }}>Based on your profile</span>
-                <span style={{ fontSize: 10, color: '#555' }}>Last updated {lastUpdated}</span>
+                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)' }}>Based on your profile</span>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Last updated {lastUpdated}</span>
               </div>
               <div className="results-chips-grid">
                 <ResultChip
@@ -157,7 +157,7 @@ function CalculatorsPage() {
               </div>
             </>
           ) : (
-            <div style={{ textAlign: 'center', padding: '20px 0', fontSize: 12, color: '#555' }}>
+            <div style={{ textAlign: 'center', padding: '20px 0', fontSize: 12, color: 'var(--text-muted)' }}>
               Run a calculator to see your results here
             </div>
           )}
@@ -167,7 +167,7 @@ function CalculatorsPage() {
       {/* ── Section 2: How these work ── */}
       <div>
         <SectionLabel text="How These Work" />
-        <div style={{ background: '#0e1624', border: '1px solid #1a2538', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
           {howRows.map((row, i) => (
             <motion.div
               key={row.title}
@@ -176,19 +176,19 @@ function CalculatorsPage() {
               transition={{ duration: 0.25, delay: 0.32 + i * 0.06 }}
               style={{
                 display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 16px',
-                borderBottom: i < howRows.length - 1 ? '1px solid #1a2538' : 'none',
+                borderBottom: i < howRows.length - 1 ? '1px solid var(--border)' : 'none',
               }}
             >
               <div style={{
-                width: 30, height: 30, borderRadius: 6, background: '#0a2a1e',
+                width: 30, height: 30, borderRadius: 6, background: 'var(--accent-bg)',
                 border: '1px solid #1D9E75', display: 'flex', alignItems: 'center',
                 justifyContent: 'center', flexShrink: 0,
               }}>
                 <row.icon width={13} height={13} stroke="#1D9E75" strokeWidth={1.5} fill="none" />
               </div>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 500, color: '#fff', marginBottom: 3 }}>{row.title}</div>
-                <div style={{ fontSize: 10, color: '#555', lineHeight: 1.5 }}>{row.body}</div>
+                <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 3 }}>{row.title}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.5 }}>{row.body}</div>
               </div>
             </motion.div>
           ))}
@@ -205,10 +205,10 @@ function CalculatorsPage() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: 0.5 + i * 0.06 }}
-              style={{ background: '#0e1624', border: '1px solid #1a2538', borderRadius: 8, padding: '12px 14px' }}
+              style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px' }}
             >
               <div style={{ fontSize: 11, fontWeight: 500, color: '#5DCAA5', marginBottom: 4 }}>{tip.title}</div>
-              <div style={{ fontSize: 10, color: '#555', lineHeight: 1.5 }}>{tip.body}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.5 }}>{tip.body}</div>
             </motion.div>
           ))}
         </div>

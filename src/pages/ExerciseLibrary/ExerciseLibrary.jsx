@@ -35,10 +35,10 @@ function titleCase(str = '') {
 }
 
 function difficultyStyle(d) {
-  if (d === 'beginner')     return { bg: '#1a2e0d', text: '#97C459' };
-  if (d === 'intermediate') return { bg: '#2e1a06', text: '#EF9F27' };
-  if (d === 'advanced')     return { bg: '#2e0d0d', text: '#F09595' };
-  return { bg: '#1a2538', text: '#aab' };
+  if (d === 'beginner')     return { bg: 'rgba(151, 196, 89, 0.12)', text: '#97C459' };
+  if (d === 'intermediate') return { bg: 'rgba(239, 159, 39, 0.12)', text: '#EF9F27' };
+  if (d === 'advanced')     return { bg: 'rgba(240, 149, 149, 0.12)', text: '#F09595' };
+  return { bg: 'var(--border)', text: 'var(--text-muted)' };
 }
 
 /* ── Dropdown ─────────────────────────────────────────────── */

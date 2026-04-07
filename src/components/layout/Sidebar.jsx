@@ -18,7 +18,10 @@ import {
   Crown,
   Lock,
   Settings,
+  Sun,
+  Moon,
 } from 'lucide-react';
+import { useTheme } from '../../hooks/useTheme';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
@@ -44,6 +47,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
   const [collapsed, setCollapsed] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const navigate = useNavigate();
+  const { theme, toggle: toggleTheme, isDark } = useTheme();
 
   const userEmail = session?.user?.email ?? '';
   const emailFallback = userEmail.split('@')[0] || 'User';
@@ -128,7 +132,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
               )}
             </AnimatePresence>
             {!isPro && locked && !collapsed && (
-              <Lock size={12} style={{ color: '#666', flexShrink: 0, marginLeft: 'auto' }} title="Pro feature" />
+              <Lock size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginLeft: 'auto' }} title="Pro feature" />
             )}
           </NavLink>
         ))}
@@ -136,6 +140,29 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
 
       {/* Spacer */}
       <div className="sidebar__spacer" />
+
+      {/* Theme toggle — pinned above Settings */}
+      <div style={{ padding: '0 8px 2px' }}>
+        <button
+          className="sidebar__theme-toggle"
+          onClick={toggleTheme}
+          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                {isDark ? 'Light mode' : 'Dark mode'}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </button>
+      </div>
 
       {/* Settings — pinned above user section */}
       <div style={{ padding: '0 8px 4px' }}>

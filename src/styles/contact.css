@@ -133,7 +133,7 @@
 }
 
 .ct-btn--teal:hover:not(:disabled) {
-  background: #18b885;
+  background: var(--accent-dark);
 }
 
 .ct-btn--teal:disabled {

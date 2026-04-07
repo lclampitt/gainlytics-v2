@@ -2,8 +2,8 @@ import React, { memo, useMemo } from 'react';
 
 const PRIMARY   = '#1D9E75';
 const SECONDARY = '#0F6E56';
-const INACTIVE  = '#2a3548';
-const STRUCT    = '#2a3548'; // head, neck, forearms — never highlighted
+const INACTIVE  = 'var(--border)';
+const STRUCT    = 'var(--border)'; // head, neck, forearms — never highlighted
 
 /* ── Muscle name → region IDs ───────────────────────────────── */
 const MUSCLE_MAP = {
@@ -123,10 +123,10 @@ const MuscleMap = memo(function MuscleMap({ targetMuscle, secondaryMuscles = [],
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <rect width="120" height="110" fill="#0a0d13" />
+      <rect width="120" height="110" fill="var(--bg-base)" />
 
       {/* Divider */}
-      <line x1="60" y1="4" x2="60" y2="106" stroke="#1a2538" strokeWidth="0.6" />
+      <line x1="60" y1="4" x2="60" y2="106" stroke="var(--border)" strokeWidth="0.6" />
 
       {/* ═══════════ FRONT FIGURE (center x=30) ═══════════ */}
 

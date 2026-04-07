@@ -56,7 +56,7 @@
   font-size: 11px;
   font-weight: 500;
   color: var(--accent-light);
-  background: #0a2a1e;
+  background: var(--accent-bg);
   border: 1px solid var(--accent);
   border-radius: 20px;
   padding: 3px 10px;
@@ -138,7 +138,7 @@
 }
 
 .gp-pill--active {
-  background: #0a2a1e;
+  background: var(--accent-bg);
   border-color: var(--accent);
   color: var(--accent-light);
 }
@@ -390,7 +390,7 @@
 }
 
 .gp-log-btn:hover:not(:disabled) {
-  background: #0a2a1e;
+  background: var(--accent-bg);
 }
 
 .gp-log-btn:disabled {

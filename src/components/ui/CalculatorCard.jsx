@@ -26,8 +26,8 @@ export default function CalculatorCard({ title, subtitle, description, icon: Ico
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: '#0e1624',
-        border: `1px solid ${hovered ? '#1D9E75' : '#1a2538'}`,
+        background: 'var(--bg-surface)',
+        border: `1px solid ${hovered ? '#1D9E75' : 'var(--border)'}`,
         borderRadius: 12,
         padding: '18px 20px',
         cursor: 'pointer',
@@ -45,7 +45,7 @@ export default function CalculatorCard({ title, subtitle, description, icon: Ico
           width: 38,
           height: 38,
           borderRadius: 8,
-          background: '#0a2a1e',
+          background: 'var(--accent-bg)',
           border: '1px solid #1D9E75',
           display: 'flex',
           alignItems: 'center',
@@ -57,7 +57,7 @@ export default function CalculatorCard({ title, subtitle, description, icon: Ico
 
         {/* Title + subtitle */}
         <div>
-          <div style={{ fontSize: 13, fontWeight: 500, color: '#fff' }}>{title}</div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{title}</div>
           <div style={{ fontSize: 10, color: '#5DCAA5', marginTop: 2 }}>{subtitle}</div>
         </div>
       </div>
@@ -65,7 +65,7 @@ export default function CalculatorCard({ title, subtitle, description, icon: Ico
       {/* ── Description ── */}
       <p style={{
         fontSize: 11,
-        color: '#555',
+        color: 'var(--text-muted)',
         lineHeight: 1.6,
         margin: 0,
         marginBottom: 14,
@@ -75,11 +75,11 @@ export default function CalculatorCard({ title, subtitle, description, icon: Ico
 
       {/* ── Open button ── */}
       <div style={{
-        border: `1px solid ${hovered ? '#1D9E75' : '#1a2538'}`,
+        border: `1px solid ${hovered ? '#1D9E75' : 'var(--border)'}`,
         borderRadius: 6,
         padding: '6px 0',
         fontSize: 11,
-        color: hovered ? '#5DCAA5' : '#888',
+        color: hovered ? '#5DCAA5' : 'var(--text-secondary)',
         background: 'transparent',
         width: '100%',
         textAlign: 'center',

@@ -58,7 +58,7 @@ const SHAPES = {
       <GlowEllipse cx={27} cy={45} rx={13} ry={11} />
       <GlowEllipse cx={63} cy={45} rx={13} ry={11} />
       {/* centre divider */}
-      <line x1="45" y1="30" x2="45" y2="62" stroke="#0a0d13" strokeWidth="2.5" />
+      <line x1="45" y1="30" x2="45" y2="62" stroke="var(--bg-base)" strokeWidth="2.5" />
     </g>
   ),
 
@@ -99,7 +99,7 @@ const SHAPES = {
       <GlowEllipse cx={26} cy={48} rx={20} ry={22} />
       <GlowEllipse cx={64} cy={48} rx={20} ry={22} />
       {/* hide centre overlap with bg colour */}
-      <rect x={36} y={28} width={18} height={44} fill="#0a0d13" />
+      <rect x={36} y={28} width={18} height={44} fill="var(--bg-base)" />
     </g>
   ),
 
@@ -108,7 +108,7 @@ const SHAPES = {
       <GlowEllipse cx={16} cy={45} rx={13} ry={17} />
       <GlowEllipse cx={74} cy={45} rx={13} ry={17} />
       {/* dark connector bar in the middle */}
-      <rect x={27} y={34} width={36} height={22} rx={4} fill="#0a0d13" />
+      <rect x={27} y={34} width={36} height={22} rx={4} fill="var(--bg-base)" />
       {/* small visible bridge */}
       <rect x={30} y={40} width={30} height={10} rx={3} fill={C} opacity="0.18" />
     </g>
@@ -155,7 +155,7 @@ const SHAPES = {
           <rect key={i} x={x} y={y} width={18} height={15} rx={5} fill={C} opacity="0.90" />
         ))}
         {/* centre divider */}
-        <line x1="45" y1="10" x2="45" y2="76" stroke="#0a0d13" strokeWidth="1.8" />
+        <line x1="45" y1="10" x2="45" y2="76" stroke="var(--bg-base)" strokeWidth="1.8" />
       </g>
     );
   },

@@ -1,8 +1,8 @@
 import React from 'react';
 
 /* ── Color tokens ─────────────────────────────────────────── */
-const BG       = '#080c14';
-const SILHOUETTE = '#2a3548';
+const BG       = 'var(--bg-base)';
+const SILHOUETTE = 'var(--border)';
 const PRIMARY  = '#1D9E75';
 const SECONDARY = '#0F6E56';
 

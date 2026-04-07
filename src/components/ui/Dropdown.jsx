@@ -117,13 +117,13 @@ export default function Dropdown({
             justifyContent: 'space-between',
             alignItems: 'center',
             background: 'var(--bg-base)',
-            border: `1px solid ${isOpen ? '#1D9E75' : '#1a2538'}`,
+            border: `1px solid ${isOpen ? '#1D9E75' : 'var(--border)'}`,
             borderRadius: isOpen ? '8px 8px 0 0' : '8px',
             padding: '8px 12px',
             cursor: 'pointer',
             fontFamily: 'inherit',
             fontSize: 13,
-            color: displayLabel ? '#fff' : '#555',
+            color: displayLabel ? 'var(--text-primary)' : 'var(--text-muted)',
             transition: 'border-color 0.15s ease, border-radius 0.15s ease',
             outline: 'none',
           }}
@@ -131,7 +131,7 @@ export default function Dropdown({
             if (!isOpen) e.currentTarget.style.borderColor = '#1D9E75';
           }}
           onMouseLeave={(e) => {
-            if (!isOpen) e.currentTarget.style.borderColor = '#1a2538';
+            if (!isOpen) e.currentTarget.style.borderColor = 'var(--border)';
           }}
         >
           <span>{displayLabel ?? placeholder}</span>
@@ -162,7 +162,7 @@ export default function Dropdown({
                 left: 0,
                 right: 0,
                 zIndex: 50,
-                background: '#0e1624',
+                background: 'var(--bg-surface)',
                 border: '1px solid #1D9E75',
                 borderTop: 'none',
                 borderRadius: '0 0 8px 8px',
@@ -190,8 +190,8 @@ export default function Dropdown({
                       display: 'flex',
                       alignItems: 'center',
                       gap: 8,
-                      background: isSelected || isFocused ? '#0a2a1e' : 'transparent',
-                      color: isSelected ? '#1D9E75' : isFocused ? '#5DCAA5' : '#ccc',
+                      background: isSelected || isFocused ? 'var(--accent-bg)' : 'transparent',
+                      color: isSelected ? '#1D9E75' : isFocused ? '#5DCAA5' : 'var(--text-secondary)',
                       fontWeight: isSelected ? 500 : 400,
                       transition: 'background 0.1s ease, color 0.1s ease',
                     }}

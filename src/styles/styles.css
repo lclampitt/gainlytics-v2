@@ -61,10 +61,8 @@ body {
 
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background:
-    radial-gradient(circle at top left, #15192a 0, #050711 55%),
-    #050711;
-  color: #e8f1ff;
+  background: var(--bg-base);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -72,9 +70,7 @@ body {
 /* Main app content wrapper (optional – if you have a top-level <main>) */
 main {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, #15192a 0%, #050711 55%),
-    #050711 !important;
+  background: var(--bg-base) !important;
 }
 
 /* ===========================
@@ -98,13 +94,13 @@ h2 {
 }
 
 a {
-  color: #00cfff;
+  color: var(--accent-light);
   text-decoration: none;
 }
 
 /* Muted helper text */
 .text-muted {
-  color: #9aa0a6;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -123,14 +119,14 @@ a {
 }
 
 ::-webkit-scrollbar-track {
-  background: #050711;
+  background: var(--bg-base);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27314a;
+  background: var(--border);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #364261;
+  background: var(--border-light);
 }

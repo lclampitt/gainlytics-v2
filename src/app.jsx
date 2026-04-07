@@ -50,7 +50,7 @@ import './styles/theme.css';
 function ProtectedRoute({ session, loading, children, redirectTo = '/auth' }) {
   if (loading) {
     return (
-      <div style={{ color: '#9aa0a6', textAlign: 'center', marginTop: '100px' }}>
+      <div style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '100px' }}>
         Loading…
       </div>
     );
