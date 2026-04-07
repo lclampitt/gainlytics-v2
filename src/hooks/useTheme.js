@@ -57,7 +57,15 @@ export function useTheme() {
     };
   }, []);
 
-  /* On mount: load ALL theme settings from Supabase profile (overrides localStorage) */
+  // Accents that require a Pro subscription — free users get reset to 'teal'
+  const PRO_ONLY_ACCENTS = new Set([
+    'blue', 'violet', 'orange', 'rose', 'crimson',
+    'xp-aqua', 'myspace', 'y2k-chrome', 'spectrum',
+  ]);
+
+  /* On mount: load ALL theme settings from Supabase profile (overrides localStorage).
+     Also enforces free-tier defaults: if the user is on the free plan and has a
+     Pro-only accent or Y2K UI mode, reset them to 'teal' / 'modern'. */
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -67,24 +75,47 @@ export function useTheme() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('accent_theme, theme_mode, ui_mode')
+        .select('accent_theme, theme_mode, ui_mode, subscription_tier')
         .eq('id', userId)
         .maybeSingle();
 
       if (!mounted) return;
 
-      // Override local state with Supabase values (if they exist)
-      if (profile?.accent_theme && profile.accent_theme !== accent) {
-        setAccentState(profile.accent_theme);
-        window.dispatchEvent(new CustomEvent('macrovault-accent-change', { detail: profile.accent_theme }));
+      const tier = profile?.subscription_tier || 'free';
+      const isFree = tier === 'free';
+
+      // Determine which values to apply — enforce defaults for free users
+      let resolvedAccent = profile?.accent_theme || accent;
+      let resolvedMode = profile?.theme_mode || mode;
+      let resolvedUiMode = profile?.ui_mode || uiMode;
+
+      if (isFree) {
+        if (PRO_ONLY_ACCENTS.has(resolvedAccent)) resolvedAccent = 'teal';
+        if (resolvedUiMode === 'y2k') resolvedUiMode = 'modern';
       }
-      if (profile?.theme_mode && profile.theme_mode !== mode) {
-        setMode(profile.theme_mode);
-        window.dispatchEvent(new CustomEvent('macrovault-mode-change', { detail: profile.theme_mode }));
+
+      // Override local state with resolved values
+      if (resolvedAccent !== accent) {
+        setAccentState(resolvedAccent);
+        window.dispatchEvent(new CustomEvent('macrovault-accent-change', { detail: resolvedAccent }));
       }
-      if (profile?.ui_mode && profile.ui_mode !== uiMode) {
-        setUiModeState(profile.ui_mode);
-        window.dispatchEvent(new CustomEvent('macrovault-ui-mode-change', { detail: profile.ui_mode }));
+      if (resolvedMode !== mode) {
+        setMode(resolvedMode);
+        window.dispatchEvent(new CustomEvent('macrovault-mode-change', { detail: resolvedMode }));
+      }
+      if (resolvedUiMode !== uiMode) {
+        setUiModeState(resolvedUiMode);
+        window.dispatchEvent(new CustomEvent('macrovault-ui-mode-change', { detail: resolvedUiMode }));
+      }
+
+      // Persist the reset back to Supabase so it sticks
+      if (isFree) {
+        const updates = {};
+        if (profile?.accent_theme && PRO_ONLY_ACCENTS.has(profile.accent_theme)) updates.accent_theme = 'teal';
+        if (profile?.ui_mode === 'y2k') updates.ui_mode = 'modern';
+        if (Object.keys(updates).length > 0) {
+          supabase.from('profiles').update(updates).eq('id', userId).then(() => {});
+        }
       }
 
       initialLoadDone.current = true;
