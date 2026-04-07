@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 
 const MODE_KEY = 'macrovault-theme';
@@ -20,6 +20,9 @@ export function useTheme() {
     if (typeof window === 'undefined') return 'modern';
     return localStorage.getItem(UI_MODE_KEY) || 'modern';
   });
+
+  // Track whether initial Supabase load is done to avoid writing defaults back
+  const initialLoadDone = useRef(false);
 
   /* Apply mode to DOM + localStorage */
   useEffect(() => {
@@ -54,7 +57,7 @@ export function useTheme() {
     };
   }, []);
 
-  /* On mount: load accent from Supabase profile (overrides localStorage) */
+  /* On mount: load ALL theme settings from Supabase profile (overrides localStorage) */
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -64,46 +67,65 @@ export function useTheme() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('accent_theme')
+        .select('accent_theme, theme_mode, ui_mode')
         .eq('id', userId)
         .maybeSingle();
 
       if (!mounted) return;
+
+      // Override local state with Supabase values (if they exist)
       if (profile?.accent_theme && profile.accent_theme !== accent) {
         setAccentState(profile.accent_theme);
+        window.dispatchEvent(new CustomEvent('macrovault-accent-change', { detail: profile.accent_theme }));
       }
+      if (profile?.theme_mode && profile.theme_mode !== mode) {
+        setMode(profile.theme_mode);
+        window.dispatchEvent(new CustomEvent('macrovault-mode-change', { detail: profile.theme_mode }));
+      }
+      if (profile?.ui_mode && profile.ui_mode !== uiMode) {
+        setUiModeState(profile.ui_mode);
+        window.dispatchEvent(new CustomEvent('macrovault-ui-mode-change', { detail: profile.ui_mode }));
+      }
+
+      initialLoadDone.current = true;
     })();
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const toggleMode = () => {
+  /** Helper: persist a partial update to Supabase profiles (fire-and-forget) */
+  const persistToSupabase = useCallback(async (fields) => {
+    const { data } = await supabase.auth.getSession();
+    const userId = data?.session?.user?.id;
+    if (!userId) return;
+    await supabase
+      .from('profiles')
+      .update(fields)
+      .eq('id', userId);
+  }, []);
+
+  const toggleMode = useCallback(() => {
     setMode((m) => {
       const next = m === 'dark' ? 'light' : 'dark';
       window.dispatchEvent(new CustomEvent('macrovault-mode-change', { detail: next }));
+      persistToSupabase({ theme_mode: next });
       return next;
     });
-  };
+  }, [persistToSupabase]);
 
-  /* Set accent: update state + broadcast + persist to Supabase in background */
+  /* Set accent: update state + broadcast + persist to Supabase */
   const setAccent = useCallback((a) => {
     setAccentState(a);
     window.dispatchEvent(new CustomEvent('macrovault-accent-change', { detail: a }));
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      const userId = data?.session?.user?.id;
-      if (!userId) return;
-      await supabase
-        .from('profiles')
-        .update({ accent_theme: a })
-        .eq('id', userId);
-    })();
-  }, []);
+    persistToSupabase({ accent_theme: a });
+  }, [persistToSupabase]);
 
+  /* Set UI mode: update state + broadcast + persist to Supabase */
   const setUiMode = useCallback((m) => {
     setUiModeState(m);
     window.dispatchEvent(new CustomEvent('macrovault-ui-mode-change', { detail: m }));
-  }, []);
+    persistToSupabase({ ui_mode: m });
+  }, [persistToSupabase]);
 
   const isY2K = uiMode === 'y2k';
   const isSpectrum = accent === 'spectrum';
