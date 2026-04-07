@@ -39,6 +39,11 @@
   color: var(--pro-text, #1D9E75);
 }
 
+.billing__plan-badge--pro_plus {
+  background: var(--pro-bg, rgba(29,158,117,0.15));
+  color: var(--pro-text, #1D9E75);
+}
+
 .billing__plan-badge--free {
   background: var(--bg-hover);
   color: var(--text-muted);

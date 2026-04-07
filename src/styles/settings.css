@@ -269,6 +269,12 @@
   color: var(--pro-text);
 }
 
+.settings-plan-badge--pro_plus {
+  background: var(--pro-bg);
+  border: 1px solid rgba(29, 158, 117, 0.3);
+  color: var(--pro-text);
+}
+
 /* ── Danger zone card ── */
 .settings-card--danger {
   border-color: rgba(239, 68, 68, 0.2);

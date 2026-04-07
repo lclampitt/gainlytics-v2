@@ -17,11 +17,13 @@ const UpgradeContext = createContext(null);
 export function UpgradeProvider({ children }) {
   const [open, setOpen]       = useState(false);
   const [feature, setFeature] = useState(null);
+  const [tier, setTier]       = useState('pro'); // 'pro' or 'pro_plus'
 
-  const triggerUpgrade = (feat = null) => {
+  const triggerUpgrade = (feat = null, targetTier = 'pro') => {
     setFeature(feat);
+    setTier(targetTier);
     setOpen(true);
-    posthog.capture('upgrade_modal_viewed', { feature: feat });
+    posthog.capture('upgrade_modal_viewed', { feature: feat, tier: targetTier });
   };
 
   return (
@@ -31,6 +33,7 @@ export function UpgradeProvider({ children }) {
       <UpgradeModal
         isOpen={open}
         feature={feature}
+        tier={tier}
         onClose={() => setOpen(false)}
       />
     </UpgradeContext.Provider>

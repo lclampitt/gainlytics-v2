@@ -6,7 +6,7 @@ import '../styles/billing.css';
 const API_BASE = process.env.REACT_APP_API_BASE || 'https://gainlytics-1.onrender.com';
 
 export default function BillingPage() {
-  const { plan, stripeCustomerId, isLoading } = usePlan();
+  const { plan, isPro, isProPlus, stripeCustomerId, isLoading } = usePlan();
   const [session, setSession] = useState(null);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState('');
@@ -44,6 +44,28 @@ export default function BillingPage() {
     }
   }
 
+  async function handleUpgradeProPlus() {
+    setError('');
+    if (!session?.user) return;
+    setWorking(true);
+    try {
+      const res = await fetch(`${API_BASE}/stripe/checkout-pro-plus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: session.user.id,
+          email: session.user.email,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Checkout failed.');
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch (err) {
+      setError(err.message);
+      setWorking(false);
+    }
+  }
+
   async function handleManageBilling() {
     setError('');
     if (!stripeCustomerId) return;
@@ -63,6 +85,8 @@ export default function BillingPage() {
     }
   }
 
+  const planLabel = isProPlus ? 'Pro+' : isPro ? 'Pro' : 'Free';
+
   if (isLoading) {
     return <div className="billing"><p className="billing__muted">Loading…</p></div>;
   }
@@ -75,14 +99,14 @@ export default function BillingPage() {
         <div className="billing__plan-row">
           <span className="billing__plan-label">Current plan</span>
           <span className={`billing__plan-badge billing__plan-badge--${plan}`}>
-            {plan === 'pro' ? '⭐ Pro' : 'Free'}
+            {isProPlus ? '⭐ Pro+' : isPro ? '⭐ Pro' : 'Free'}
           </span>
         </div>
 
         {/* Redirect feedback */}
         {didSucceed && (
           <p className="billing__alert billing__alert--success">
-            You're now on Pro! Thanks for subscribing.
+            You're now on {planLabel}! Thanks for subscribing.
           </p>
         )}
         {didCancel && (
@@ -110,13 +134,61 @@ export default function BillingPage() {
               onClick={handleUpgrade}
               disabled={working}
             >
-              {working ? 'Redirecting…' : 'Upgrade to Pro'}
+              {working ? 'Redirecting…' : 'Upgrade to Pro — $4.99/mo'}
+            </button>
+
+            <div className="billing__perks" style={{ marginTop: 24 }}>
+              <p className="billing__perks-title">Upgrade to Pro+ — $9.99/month</p>
+              <ul>
+                <li>✓ Everything in Pro</li>
+                <li>✓ AI Meal Suggestions (300/month)</li>
+                <li>✓ AI-powered nutrition planning</li>
+                <li>✓ Cancel anytime</li>
+              </ul>
+            </div>
+            <button
+              className="billing__btn billing__btn--upgrade"
+              onClick={handleUpgradeProPlus}
+              disabled={working}
+            >
+              {working ? 'Redirecting…' : 'Upgrade to Pro+ — $9.99/mo'}
+            </button>
+          </>
+        ) : plan === 'pro' ? (
+          <>
+            <p className="billing__muted">
+              You have full access to all Pro features.
+            </p>
+
+            <div className="billing__perks" style={{ marginTop: 16 }}>
+              <p className="billing__perks-title">Upgrade to Pro+ — $9.99/month</p>
+              <ul>
+                <li>✓ Everything in Pro</li>
+                <li>✓ AI Meal Suggestions (300/month)</li>
+                <li>✓ AI-powered nutrition planning</li>
+              </ul>
+            </div>
+            <button
+              className="billing__btn billing__btn--upgrade"
+              onClick={handleUpgradeProPlus}
+              disabled={working}
+              style={{ marginBottom: 12 }}
+            >
+              {working ? 'Redirecting…' : 'Upgrade to Pro+ — $9.99/mo'}
+            </button>
+
+            <button
+              className="billing__btn billing__btn--manage"
+              onClick={handleManageBilling}
+              disabled={working || !stripeCustomerId}
+            >
+              {working ? 'Redirecting…' : 'Manage billing'}
             </button>
           </>
         ) : (
           <>
             <p className="billing__muted">
-              You have full access to all Pro features.
+              You have full access to all Pro+ features including AI meal suggestions.
             </p>
             <button
               className="billing__btn billing__btn--manage"

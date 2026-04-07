@@ -19,7 +19,7 @@
 .upgrade-modal {
   pointer-events: all;
   width: 90%;
-  max-width: 520px;
+  max-width: 700px;
   background: var(--bg-surface);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
@@ -74,7 +74,7 @@
 /* Tier cards */
 .upgrade-modal__tiers {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -148,6 +148,35 @@
   color: var(--text-muted);
 }
 
+/* Pro+ focused card */
+.upgrade-modal__proplus-card {
+  background: rgba(15, 110, 86, 0.06);
+  border: 1px solid var(--accent-dark);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.upgrade-modal__proplus-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-light);
+  background: var(--accent-muted);
+  border-radius: 20px;
+  padding: 3px 12px;
+  margin-bottom: 12px;
+}
+
+.upgrade-modal__proplus-card .tier-card__features {
+  text-align: left;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
 /* CTA */
 .upgrade-modal__cta {
   width: 100%;
@@ -163,6 +192,16 @@
 
 .upgrade-modal__cta:hover {
   background: var(--accent-dark);
+}
+
+.upgrade-modal__cta--secondary {
+  background: transparent;
+  border: 1px solid var(--accent-dark);
+  color: var(--accent-light);
+}
+
+.upgrade-modal__cta--secondary:hover {
+  background: var(--accent-muted);
 }
 
 .upgrade-modal__cancel-note {
@@ -187,6 +226,10 @@
     border-radius: 20px 20px 0 0;
     max-height: 90vh;
     overflow-y: auto;
+  }
+
+  .upgrade-modal__tiers {
+    grid-template-columns: 1fr;
   }
 }
 

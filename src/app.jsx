@@ -69,12 +69,13 @@ function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isPro, setIsPro] = useState(false);
+  const [isProPlus, setIsProPlus] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(true); // default true avoids flash
   const navigate = useNavigate();
 
   // Fetch profile: subscription tier + onboarding status
   async function fetchTier(userId, userEmail) {
-    if (!userId) { setIsPro(false); setOnboardingDone(true); return; }
+    if (!userId) { setIsPro(false); setIsProPlus(false); setOnboardingDone(true); return; }
     Sentry.setUser({ id: userId, email: userEmail });
     posthog.identify(userId, { email: userEmail });
     const { data } = await supabase
@@ -82,7 +83,9 @@ function App() {
       .select('subscription_tier, onboarding_completed')
       .eq('id', userId)
       .maybeSingle();
-    setIsPro(data?.subscription_tier === 'pro');
+    const tier = data?.subscription_tier || 'free';
+    setIsPro(tier === 'pro' || tier === 'pro_plus');
+    setIsProPlus(tier === 'pro_plus');
     // Only show wizard when column explicitly equals false (after migration + new signup).
     // If column is missing (migration not yet run), default to true so wizard stays hidden.
     setOnboardingDone(data?.onboarding_completed !== false);
@@ -122,7 +125,7 @@ function App() {
   };
 
   const shell = (child) => (
-    <AppShell session={session} onLogout={handleLogout} isPro={isPro}>
+    <AppShell session={session} onLogout={handleLogout} isPro={isPro} isProPlus={isProPlus}>
       {child}
     </AppShell>
   );
@@ -177,7 +180,7 @@ function App() {
       <Route path="/calculators/macros"   element={protect(<MacroCalculator />)} />
       <Route path="/calculators/1rm"     element={protect(<OneRepMaxCalculator />)} />
       <Route path="/goalplanner"         element={protect(<GoalPlanner isPro={isPro} />)} />
-      <Route path="/meal-planner"        element={protect(<MealPlanner isPro={isPro} />)} />
+      <Route path="/meal-planner"        element={protect(<MealPlanner isPro={isPro} isProPlus={isProPlus} />)} />
       <Route path="/progress"            element={protect(<ProgressPage isPro={isPro} />)} />
       <Route path="/workouts"            element={protect(<WorkoutLogger />)} />
       <Route path="/billing"             element={protect(<BillingPage />)} />

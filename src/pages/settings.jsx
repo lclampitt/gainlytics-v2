@@ -107,7 +107,7 @@ function DeleteModal({ onClose }) {
 
 /* ── Main page ── */
 export default function SettingsPage() {
-  const { plan, stripeCustomerId, isLoading: planLoading } = usePlan();
+  const { plan, isPro, isProPlus, stripeCustomerId, isLoading: planLoading } = usePlan();
 
   const [session,     setSession]     = useState(null);
   const [displayName, setDisplayName] = useState('');
@@ -317,12 +317,12 @@ export default function SettingsPage() {
           <div className="settings-row__left">
             <span className="settings-row__label">Current plan</span>
             <span className="settings-row__sub">
-              {plan === 'pro' ? 'Full access to all Pro features' : 'Limited to free tier usage'}
+              {isProPlus ? 'Full access to all Pro+ features including AI suggestions' : isPro ? 'Full access to all Pro features' : 'Limited to free tier usage'}
             </span>
           </div>
           <div className="settings-row__control">
             <span className={`settings-plan-badge settings-plan-badge--${plan}`}>
-              {plan === 'pro' ? <><Crown size={11} /> Pro</> : 'Free'}
+              {isProPlus ? <><Crown size={11} /> Pro+</> : isPro ? <><Crown size={11} /> Pro</> : 'Free'}
             </span>
           </div>
         </div>

@@ -25,7 +25,7 @@ const pageVariants = {
   exit:    { opacity: 0, y: -10, transition: { duration: 0.15 } },
 };
 
-export default function AppShell({ session, onLogout, isPro, children }) {
+export default function AppShell({ session, onLogout, isPro, isProPlus, children }) {
   const location = useLocation();
   const meta = PAGE_META[location.pathname] ?? { title: 'Gainlytics' };
   const userId = session?.user?.id ?? null;
@@ -33,7 +33,7 @@ export default function AppShell({ session, onLogout, isPro, children }) {
 
   return (
     <div className="app-shell">
-      <Sidebar session={session} onLogout={onLogout} isPro={isPro} usage={usage} />
+      <Sidebar session={session} onLogout={onLogout} isPro={isPro} isProPlus={isProPlus} usage={usage} />
 
       <div className="app-shell__main">
         {/* Top bar */}

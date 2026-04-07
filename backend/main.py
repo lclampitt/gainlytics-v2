@@ -46,8 +46,9 @@ posthog_client = _Posthog(_posthog_key, host=_posthog_host) if (_posthog_availab
 # Stripe config
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-STRIPE_PRICE_ID_PRO   = os.environ.get("STRIPE_PRICE_ID_PRO", "")
-FRONTEND_URL          = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+STRIPE_PRICE_ID_PRO      = os.environ.get("STRIPE_PRICE_ID_PRO", "")
+STRIPE_PRICE_ID_PRO_PLUS = os.environ.get("STRIPE_PRICE_ID_PRO_PLUS", "")
+FRONTEND_URL             = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
 # Contact email config (Outlook SMTP)
 CONTACT_SMTP_USER     = os.environ.get("CONTACT_SMTP_USER", "")
@@ -191,11 +192,46 @@ def _current_month() -> str:
     return datetime.utcnow().strftime("%Y-%m")
 
 def _get_plan(user_id: str) -> str:
-    """Return 'pro' or 'free' for a given user."""
+    """Return 'pro', 'pro_plus', or 'free' for a given user."""
     if not supabase_admin:
         return "free"
     result = supabase_admin.table("profiles").select("subscription_tier").eq("id", user_id).maybe_single().execute()
     return (result.data or {}).get("subscription_tier", "free")
+
+def can_use_ai_suggestions(user_id: str) -> bool:
+    """Return True if the user has AI suggestion uses remaining (Pro+ only, 300/month)."""
+    if not supabase_admin:
+        return True
+    result = supabase_admin.table("profiles") \
+        .select("subscription_tier,ai_suggestions_this_month,ai_suggestions_month") \
+        .eq("id", user_id).maybe_single().execute()
+    profile = result.data or {}
+    if profile.get("subscription_tier") != "pro_plus":
+        return False
+    month = _current_month()
+    if profile.get("ai_suggestions_month", "") != month:
+        return True  # New month, counter resets
+    return (profile.get("ai_suggestions_this_month") or 0) < 300
+
+def increment_ai_suggestion_use(user_id: str, count: int = 1):
+    """Increment the AI suggestion counter for this month."""
+    if not supabase_admin:
+        return
+    month = _current_month()
+    result = supabase_admin.table("profiles") \
+        .select("ai_suggestions_this_month,ai_suggestions_month") \
+        .eq("id", user_id).maybe_single().execute()
+    profile = result.data or {}
+    if profile.get("ai_suggestions_month", "") != month:
+        supabase_admin.table("profiles").update({
+            "ai_suggestions_this_month": count,
+            "ai_suggestions_month": month,
+        }).eq("id", user_id).execute()
+    else:
+        current = profile.get("ai_suggestions_this_month") or 0
+        supabase_admin.table("profiles").update({
+            "ai_suggestions_this_month": current + count,
+        }).eq("id", user_id).execute()
 
 def can_use_analyzer(user_id: str) -> bool:
     """Return True if the user is allowed to run an analysis."""
@@ -205,7 +241,7 @@ def can_use_analyzer(user_id: str) -> bool:
         .select("subscription_tier,analyzer_uses_this_month,analyzer_month") \
         .eq("id", user_id).maybe_single().execute()
     profile = result.data or {}
-    if profile.get("subscription_tier") == "pro":
+    if profile.get("subscription_tier") in ("pro", "pro_plus"):
         return True
     month = _current_month()
     # Reset counter if we're in a new month
@@ -239,7 +275,7 @@ def can_log_workout(user_id: str) -> bool:
     """Return True if the user is under their workout log limit."""
     if not supabase_admin:
         return True
-    if _get_plan(user_id) == "pro":
+    if _get_plan(user_id) in ("pro", "pro_plus"):
         return True
     result = supabase_admin.table("workouts").select("id").eq("user_id", user_id).execute()
     count = len(result.data) if result.data else 0
@@ -248,23 +284,28 @@ def can_log_workout(user_id: str) -> bool:
 def get_usage_summary(user_id: str) -> dict:
     """Return a full usage summary for the given user."""
     if not supabase_admin:
-        return {"analyzerUsed": 0, "analyzerLimit": 3, "workoutCount": 0, "workoutLimit": 10, "plan": "free"}
+        return {"analyzerUsed": 0, "analyzerLimit": 3, "workoutCount": 0, "workoutLimit": 10, "aiSuggestionsUsed": 0, "aiSuggestionsLimit": 300, "plan": "free"}
     profile_res = supabase_admin.table("profiles") \
-        .select("subscription_tier,analyzer_uses_this_month,analyzer_month") \
+        .select("subscription_tier,analyzer_uses_this_month,analyzer_month,ai_suggestions_this_month,ai_suggestions_month") \
         .eq("id", user_id).maybe_single().execute()
     profile = profile_res.data or {}
     plan = profile.get("subscription_tier", "free")
+    is_paid = plan in ("pro", "pro_plus")
     month = _current_month()
     analyzer_used = 0 if profile.get("analyzer_month", "") != month \
         else (profile.get("analyzer_uses_this_month") or 0)
+    ai_used = 0 if profile.get("ai_suggestions_month", "") != month \
+        else (profile.get("ai_suggestions_this_month") or 0)
     workout_res = supabase_admin.table("workouts").select("id").eq("user_id", user_id).execute()
     workout_count = len(workout_res.data) if workout_res.data else 0
     return {
-        "analyzerUsed":  analyzer_used,
-        "analyzerLimit": None if plan == "pro" else 3,
-        "workoutCount":  workout_count,
-        "workoutLimit":  None if plan == "pro" else 10,
-        "plan":          plan,
+        "analyzerUsed":       analyzer_used,
+        "analyzerLimit":      None if is_paid else 3,
+        "workoutCount":       workout_count,
+        "workoutLimit":       None if is_paid else 10,
+        "aiSuggestionsUsed":  ai_used,
+        "aiSuggestionsLimit": 300,
+        "plan":               plan,
     }
 
 # -------------------------------------------------
@@ -685,6 +726,33 @@ async def create_checkout_session(body: CheckoutRequest):
 
 
 # -------------------------------------------------
+# Stripe: create Checkout session (Pro+ plan)
+# -------------------------------------------------
+class CheckoutProPlusRequest(BaseModel):
+    user_id: str
+    email: str | None = None
+
+@app.post("/stripe/checkout-pro-plus")
+async def create_checkout_pro_plus(body: CheckoutProPlusRequest):
+    if not stripe.api_key:
+        raise HTTPException(status_code=500, detail="Stripe is not configured.")
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{"price": STRIPE_PRICE_ID_PRO_PLUS, "quantity": 1}],
+            mode="subscription",
+            success_url=f"{FRONTEND_URL}/billing?success=true",
+            cancel_url=f"{FRONTEND_URL}/billing?canceled=true",
+            client_reference_id=body.user_id,
+            customer_email=body.email or None,
+            metadata={"tier": "pro_plus"},
+        )
+        return {"url": session.url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# -------------------------------------------------
 # Stripe: webhook handler
 # -------------------------------------------------
 @app.post("/stripe/webhook")
@@ -710,16 +778,21 @@ async def stripe_webhook(request: Request):
             user_id         = obj.get("client_reference_id") if isinstance(obj, dict) else getattr(obj, "client_reference_id", None)
             customer_id     = obj.get("customer") if isinstance(obj, dict) else getattr(obj, "customer", None)
             subscription_id = obj.get("subscription") if isinstance(obj, dict) else getattr(obj, "subscription", None)
+
+            # Determine tier from metadata or subscription price
+            metadata = obj.get("metadata") if isinstance(obj, dict) else getattr(obj, "metadata", {})
+            tier = "pro_plus" if (metadata or {}).get("tier") == "pro_plus" else "pro"
+
             if user_id:
                 supabase_admin.table("profiles").upsert({
                     "id": user_id,
-                    "subscription_tier": "pro",
+                    "subscription_tier": tier,
                     "stripe_customer_id": customer_id,
                     "stripe_subscription_id": subscription_id,
                 }).execute()
                 if posthog_client:
                     try:
-                        posthog_client.capture(user_id, "subscription_started", {"plan": "pro"})
+                        posthog_client.capture(user_id, "subscription_started", {"plan": tier})
                     except Exception:
                         pass
 
@@ -839,10 +912,12 @@ class MealSuggestRequest(BaseModel):
 @app.post("/meal-planner/suggest")
 async def suggest_meal(body: MealSuggestRequest):
     """Generate 3 AI meal suggestions using Claude."""
-    # Pro check
+    # Pro+ check
     plan = _get_plan(body.user_id)
-    if plan != "pro":
-        raise HTTPException(status_code=403, detail="Pro subscription required.")
+    if plan != "pro_plus":
+        raise HTTPException(status_code=403, detail="Pro+ subscription required for AI suggestions.")
+    if not can_use_ai_suggestions(body.user_id):
+        raise HTTPException(status_code=429, detail="Monthly AI suggestion limit reached (300/month).")
 
     if not anthropic_client:
         raise HTTPException(status_code=500, detail="AI service not configured.")
@@ -885,6 +960,7 @@ Return a JSON array of 3 objects only."""
             text = text.strip()
 
         meals = json.loads(text)
+        increment_ai_suggestion_use(body.user_id)
         return {"suggestions": meals}
 
     except json.JSONDecodeError:
@@ -906,6 +982,7 @@ Return a JSON array of 3 objects only."""
                 {"meal_name": "Chicken Pasta", "ingredients": ["130g grilled chicken breast", "80g whole wheat penne", "100g marinara sauce", "20g parmesan", "50g spinach"], "calories": 500, "protein_g": 42, "carbs_g": 48, "fat_g": 12},
             ],
         }
+        increment_ai_suggestion_use(body.user_id)
         return {"suggestions": fallbacks.get(body.meal_type, fallbacks["lunch"])}
 
     except Exception as e:
@@ -925,8 +1002,10 @@ class WeekSuggestRequest(BaseModel):
 async def suggest_week(body: WeekSuggestRequest):
     """Generate a full Mon-Fri meal plan (15 meals) using Claude."""
     plan = _get_plan(body.user_id)
-    if plan != "pro":
-        raise HTTPException(status_code=403, detail="Pro subscription required.")
+    if plan != "pro_plus":
+        raise HTTPException(status_code=403, detail="Pro+ subscription required for AI suggestions.")
+    if not can_use_ai_suggestions(body.user_id):
+        raise HTTPException(status_code=429, detail="Monthly AI suggestion limit reached (300/month).")
 
     if not anthropic_client:
         raise HTTPException(status_code=500, detail="AI service not configured.")
@@ -972,6 +1051,7 @@ Vary the meals across days. Make them realistic and easy to prepare. Return the 
             text = text.strip()
 
         meals = json.loads(text)
+        increment_ai_suggestion_use(body.user_id, count=15)
         return {"suggestions": meals}
 
     except json.JSONDecodeError:
@@ -1003,6 +1083,7 @@ Vary the meals across days. Make them realistic and easy to prepare. Return the 
             fallback.append({**breakfast_opts[i], "day": day, "meal_type": "breakfast"})
             fallback.append({**lunch_opts[i], "day": day, "meal_type": "lunch"})
             fallback.append({**dinner_opts[i], "day": day, "meal_type": "dinner"})
+        increment_ai_suggestion_use(body.user_id, count=15)
         return {"suggestions": fallback}
 
     except Exception as e:

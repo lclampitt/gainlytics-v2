@@ -40,7 +40,7 @@ const BOTTOM_NAV_ITEMS = [
   { to: '/settings',  icon: Settings  },
 ];
 
-export default function Sidebar({ session, onLogout, isPro, usage }) {
+export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) {
   const [collapsed, setCollapsed] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const navigate = useNavigate();
@@ -180,7 +180,7 @@ export default function Sidebar({ session, onLogout, isPro, usage }) {
               <span className="sidebar__user-name">{displayName}</span>
               {isPro ? (
                 <span className="sidebar__pro-badge">
-                  <Crown size={10} /> Pro
+                  <Crown size={10} /> {isProPlus ? 'Pro+' : 'Pro'}
                 </span>
               ) : (
                 <span className="sidebar__free-badge">Free</span>
@@ -299,7 +299,7 @@ export default function Sidebar({ session, onLogout, isPro, usage }) {
                 </div>
                 {isPro ? (
                   <span className="sidebar__pro-badge" style={{ marginLeft: 'auto', flexShrink: 0 }}>
-                    <Crown size={10} /> Pro
+                    <Crown size={10} /> {isProPlus ? 'Pro+' : 'Pro'}
                   </span>
                 ) : (
                   <span className="sidebar__free-badge" style={{ marginLeft: 'auto' }}>Free</span>

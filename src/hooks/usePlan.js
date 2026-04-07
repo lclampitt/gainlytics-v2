@@ -4,7 +4,11 @@ import { supabase } from '../supabaseClient';
 /**
  * Returns the current user's plan and their stripe_customer_id.
  *
- * { plan: 'free' | 'pro', stripeCustomerId: string | null, isLoading: boolean }
+ * { plan: 'free' | 'pro' | 'pro_plus',
+ *   isPro: boolean,       // true for 'pro' OR 'pro_plus'
+ *   isProPlus: boolean,   // true only for 'pro_plus'
+ *   stripeCustomerId: string | null,
+ *   isLoading: boolean }
  *
  * Reads from the `profiles` table which is updated by the Stripe webhook.
  */
@@ -32,7 +36,8 @@ export function usePlan() {
         .maybeSingle();
 
       if (mounted) {
-        setPlan(data?.subscription_tier === 'pro' ? 'pro' : 'free');
+        const tier = data?.subscription_tier || 'free';
+        setPlan(['pro', 'pro_plus'].includes(tier) ? tier : 'free');
         setStripeCustomerId(data?.stripe_customer_id ?? null);
         setIsLoading(false);
       }
@@ -52,5 +57,8 @@ export function usePlan() {
     };
   }, []);
 
-  return { plan, stripeCustomerId, isLoading };
+  const isPro = plan === 'pro' || plan === 'pro_plus';
+  const isProPlus = plan === 'pro_plus';
+
+  return { plan, isPro, isProPlus, stripeCustomerId, isLoading };
 }

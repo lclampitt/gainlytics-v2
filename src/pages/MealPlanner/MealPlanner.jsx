@@ -94,8 +94,10 @@ function SlotPanel({
   onAddMeal,
   weekStart,
   entries,
+  isProPlus = false,
 }) {
-  const [tab, setTab] = useState('ai');
+  const { triggerUpgrade } = useUpgrade();
+  const [tab, setTab] = useState(isProPlus ? 'ai' : 'manual');
   const [suggestions, setSuggestions] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [savedMeals, setSavedMeals] = useState([]);
@@ -147,6 +149,7 @@ function SlotPanel({
         .maybeSingle();
 
       const body = {
+        user_id: user.id,
         day: slot.day,
         meal_type: slot.mealType,
         remaining: {
@@ -207,13 +210,13 @@ function SlotPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slot.day, slot.mealType, dayTotals]);
 
-  // Fetch suggestions on mount for AI tab
+  // Fetch suggestions on mount for AI tab (only for Pro+ users)
   useEffect(() => {
-    if (tab === 'ai' && suggestions.length === 0 && !loadingSuggestions) {
+    if (tab === 'ai' && isProPlus && suggestions.length === 0 && !loadingSuggestions) {
       fetchSuggestions();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
+  }, [tab, isProPlus]);
 
   /* ── Saved Meals ─────────────────────────── */
   useEffect(() => {
@@ -361,6 +364,16 @@ function SlotPanel({
 
           {/* ─── AI Suggest Tab ─── */}
           {tab === 'ai' && (
+            !isProPlus ? (
+              <div className="mp-ai-gate">
+                <Sparkles size={32} style={{ color: 'var(--accent-light)', marginBottom: 12 }} />
+                <h4>AI Suggestions require Pro+</h4>
+                <p>Get personalized meal suggestions powered by AI that fit your macro targets.</p>
+                <button className="mp-ai-gate__btn" onClick={() => triggerUpgrade('ai_meals', 'pro_plus')}>
+                  Upgrade to Pro+ — $9.99/mo
+                </button>
+              </div>
+            ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Remaining macros */}
               <div className="mp-remaining-macros">
@@ -454,6 +467,7 @@ function SlotPanel({
                 </>
               )}
             </div>
+            )
           )}
 
           {/* ─── Saved Meals Tab ─── */}
@@ -592,7 +606,8 @@ function SlotPanel({
 /* ────────────────────────────────────────────────────
    MAIN MEAL PLANNER CONTENT
    ──────────────────────────────────────────────────── */
-function MealPlannerContent() {
+function MealPlannerContent({ isProPlus = false }) {
+  const { triggerUpgrade } = useUpgrade();
   const [userId, setUserId] = useState(null);
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [planId, setPlanId] = useState(null);
@@ -835,6 +850,7 @@ function MealPlannerContent() {
         .maybeSingle();
 
       const body = {
+        user_id: userId,
         plan_id: planId,
         goal: goalData?.goal || 'Maintenance',
         daily_targets: {
@@ -921,7 +937,7 @@ function MealPlannerContent() {
         <div className="mp-week-nav__right">
           <button
             className="mp-week-nav__ai-btn"
-            onClick={handleAiWeek}
+            onClick={isProPlus ? handleAiWeek : () => triggerUpgrade('ai_week', 'pro_plus')}
             disabled={aiWeekLoading}
           >
             <Sparkles size={14} />
@@ -1078,6 +1094,7 @@ function MealPlannerContent() {
             onAddMeal={handleAddMeal}
             weekStart={weekStart}
             entries={entries}
+            isProPlus={isProPlus}
           />
         )}
       </AnimatePresence>
@@ -1122,7 +1139,7 @@ function MealPlannerContent() {
 /* ────────────────────────────────────────────────────
    EXPORT
    ──────────────────────────────────────────────────── */
-export default function MealPlanner({ isPro = false }) {
+export default function MealPlanner({ isPro = false, isProPlus = false }) {
   if (!isPro) return <MealPlannerGate />;
-  return <MealPlannerContent />;
+  return <MealPlannerContent isProPlus={isProPlus} />;
 }

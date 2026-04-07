@@ -77,6 +77,13 @@ const PRO_FEATURES = [
   'No usage limits — ever',
 ];
 
+const PRO_PLUS_FEATURES = [
+  'Everything in Pro',
+  'AI Meal Suggestions (300/mo)',
+  'AI-powered nutrition planning',
+  'Personalized macro-fit meals',
+];
+
 /* ── Navbar ── */
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -337,6 +344,38 @@ function Pricing() {
             onClick={() => navigate('/auth')}
           >
             Upgrade to Pro
+          </button>
+        </motion.div>
+
+        {/* Pro+ */}
+        <motion.div
+          className="lp-pricing-card lp-pricing-card--pro"
+          variants={fadeUp}
+          transition={{ duration: 0.45, delay: 0.2 }}
+        >
+          <div className="lp-pricing-card__badge">Best value</div>
+          <div className="lp-pricing-card__tier">Pro+</div>
+          <div className="lp-pricing-card__price">
+            <span className="lp-pricing-card__amount">$9.99</span>
+            <span className="lp-pricing-card__period">/mo</span>
+          </div>
+          <div className="lp-pricing-card__tagline">
+            Everything in Pro plus AI-powered meal planning.
+          </div>
+          <div className="lp-pricing-card__divider" />
+          <ul className="lp-pricing-card__features">
+            {PRO_PLUS_FEATURES.map((f) => (
+              <li key={f} className="lp-pricing-card__feature">
+                <Check size={14} className="lp-pricing-card__check" />
+                {f}
+              </li>
+            ))}
+          </ul>
+          <button
+            className="lp-pricing-card__cta lp-pricing-card__cta--teal"
+            onClick={() => navigate('/auth')}
+          >
+            Upgrade to Pro+
           </button>
         </motion.div>
       </motion.div>
