@@ -770,18 +770,29 @@ async def stripe_webhook(request: Request):
     if not supabase_admin:
         raise HTTPException(status_code=500, detail="Supabase admin client not configured.")
 
+    # Helper to safely read a field from a Stripe object or dict
+    def _get(obj, key, default=None):
+        if isinstance(obj, dict):
+            return obj.get(key, default)
+        return getattr(obj, key, default)
+
     try:
-        event_type = event["type"] if isinstance(event, dict) else event.type
-        obj = event["data"]["object"] if isinstance(event, dict) else event.data.object
+        event_type = _get(event, "type")
+        event_data = _get(event, "data")
+        obj = _get(event_data, "object") if event_data else None
+
+        if not obj:
+            return {"status": "ok", "note": "no data object"}
 
         if event_type == "checkout.session.completed":
-            user_id         = obj.get("client_reference_id") if isinstance(obj, dict) else getattr(obj, "client_reference_id", None)
-            customer_id     = obj.get("customer") if isinstance(obj, dict) else getattr(obj, "customer", None)
-            subscription_id = obj.get("subscription") if isinstance(obj, dict) else getattr(obj, "subscription", None)
+            user_id         = _get(obj, "client_reference_id")
+            customer_id     = _get(obj, "customer")
+            subscription_id = _get(obj, "subscription")
 
-            # Determine tier from metadata or subscription price
-            metadata = obj.get("metadata") if isinstance(obj, dict) else getattr(obj, "metadata", {})
-            tier = "pro_plus" if (metadata or {}).get("tier") == "pro_plus" else "pro"
+            # Determine tier from metadata
+            metadata = _get(obj, "metadata") or {}
+            tier_val = _get(metadata, "tier") if not isinstance(metadata, dict) else metadata.get("tier")
+            tier = "pro_plus" if tier_val == "pro_plus" else "pro"
 
             if user_id:
                 supabase_admin.table("profiles").upsert({
@@ -797,7 +808,7 @@ async def stripe_webhook(request: Request):
                         pass
 
         elif event_type == "customer.subscription.deleted":
-            customer_id = obj.get("customer") if isinstance(obj, dict) else getattr(obj, "customer", None)
+            customer_id = _get(obj, "customer")
             if customer_id:
                 supabase_admin.table("profiles").update({
                     "subscription_tier": "free",
@@ -805,7 +816,7 @@ async def stripe_webhook(request: Request):
                 }).eq("stripe_customer_id", customer_id).execute()
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Webhook handler error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Webhook handler error: {type(e).__name__}: {str(e)}")
 
     return {"status": "ok"}
 
