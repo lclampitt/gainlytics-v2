@@ -1090,6 +1090,33 @@ function MealPlannerContent({ isProPlus = false }) {
     todayDate.setHours(0, 0, 0, 0);
     if (dayDate > todayDate) return;
 
+    const isLogged = loggedDays.has(dayIdx);
+    const dateStr = fmtDate(dayDate);
+
+    // Unlog — remove meal planner entries for this day
+    if (isLogged) {
+      try {
+        await supabase
+          .from('food_logs')
+          .delete()
+          .eq('user_id', userId)
+          .eq('logged_date', dateStr)
+          .eq('notes', 'From meal planner');
+
+        setLoggedDays((prev) => {
+          const next = new Set(prev);
+          next.delete(dayIdx);
+          return next;
+        });
+        toast.success(`${DAY_NAMES[dayIdx]} unlogged`);
+      } catch (err) {
+        console.error('Unlog day error:', err);
+        toast.error('Failed to unlog day');
+      }
+      return;
+    }
+
+    // Log — insert entries
     const dayEntries = entries.filter((e) => e.day_of_week === dayIdx);
     const filledMeals = MEAL_TYPES.filter((mt) =>
       dayEntries.some((e) => e.meal_type?.toLowerCase() === mt.toLowerCase())
@@ -1101,7 +1128,6 @@ function MealPlannerContent({ isProPlus = false }) {
     }
 
     try {
-      const dateStr = fmtDate(dayDate);
       const rows = dayEntries.map((e) => ({
         user_id: userId,
         logged_date: dateStr,
@@ -1488,8 +1514,8 @@ function MealPlannerContent({ isProPlus = false }) {
             <div key={`actions-${day}`} className="mp-day-actions">
               <button
                 className={`mp-day-action-btn ${isLogged ? 'mp-day-action-btn--logged' : 'mp-day-action-btn--teal'} ${isFuture ? 'mp-day-action-btn--disabled' : ''}`}
-                onClick={() => !isFuture && !isLogged && handleLogDay(dayIdx)}
-                disabled={isFuture || isLogged}
+                onClick={() => !isFuture && handleLogDay(dayIdx)}
+                disabled={isFuture}
               >
                 {isLogged ? <Check size={12} /> : <ClipboardCheck size={12} />}
                 {isLogged ? 'Logged' : 'Log day'}
