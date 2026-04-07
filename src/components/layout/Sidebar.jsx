@@ -27,6 +27,7 @@ import {
   Check,
 } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
+import SidebarThemeSwitcher from '../ui/SidebarThemeSwitcher';
 import './Sidebar.css';
 
 const FREE_NAV_ITEMS = [
@@ -334,6 +335,16 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
         </div>
       )}
 
+      {/* Theme color switcher — collapsed: palette icon row */}
+      {collapsed && (
+        <SidebarThemeSwitcher
+          accent={accent} setAccent={setAccent}
+          uiMode={uiMode} setUiMode={setUiMode}
+          isDark={isDark} toggleTheme={toggleTheme}
+          isPro={isPro} collapsed={collapsed}
+        />
+      )}
+
       {/* Settings — pinned above user section */}
       <div style={{ padding: '0 8px 4px' }}>
         <NavLink
@@ -426,6 +437,16 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
           </button>
         )}
       </div>
+
+      {/* Theme color dots (expanded only) */}
+      {!collapsed && (
+        <SidebarThemeSwitcher
+          accent={accent} setAccent={setAccent}
+          uiMode={uiMode} setUiMode={setUiMode}
+          isDark={isDark} toggleTheme={toggleTheme}
+          isPro={isPro} collapsed={collapsed}
+        />
+      )}
 
       {/* Collapse toggle */}
       <button
