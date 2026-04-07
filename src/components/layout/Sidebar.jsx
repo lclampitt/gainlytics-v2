@@ -24,15 +24,18 @@ import {
 import { useTheme } from '../../hooks/useTheme';
 import './Sidebar.css';
 
-const NAV_ITEMS = [
+const FREE_NAV_ITEMS = [
   { to: '/home',          label: 'Home',             icon: Home             },
   { to: '/calculators',   label: 'Calculators',      icon: Calculator       },
   { to: '/workouts',      label: 'Workouts',         icon: Dumbbell         },
   { to: '/exercises',     label: 'Exercise Library',  icon: BookOpen         },
   { to: '/measurements',  label: 'Measurements',     icon: Ruler            },
-  { to: '/goalplanner',   label: 'Goal Planner',     icon: Target,     locked: true },
-  { to: '/meal-planner',  label: 'Meal Planner',     icon: UtensilsCrossed, locked: true },
-  { to: '/progress',      label: 'Progress',         icon: BarChart2,  locked: true },
+];
+
+const PRO_NAV_ITEMS = [
+  { to: '/goalplanner',   label: 'Goal Planner',     icon: Target            },
+  { to: '/meal-planner',  label: 'Meal Planner',     icon: UtensilsCrossed   },
+  { to: '/progress',      label: 'Progress',         icon: BarChart2         },
 ];
 
 const BOTTOM_NAV_ITEMS = [
@@ -105,9 +108,9 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
         </AnimatePresence>
       </div>
 
-      {/* Nav */}
+      {/* Nav — Free items */}
       <nav className="sidebar__nav">
-        {NAV_ITEMS.map(({ to, label, icon: Icon, locked }) => (
+        {FREE_NAV_ITEMS.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -131,7 +134,59 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
                 </motion.span>
               )}
             </AnimatePresence>
-            {!isPro && locked && !collapsed && (
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Nav — Pro section */}
+      <div className="sidebar__section-label">
+        <AnimatePresence>
+          {!collapsed ? (
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              PRO
+            </motion.span>
+          ) : (
+            <motion.div
+              className="sidebar__section-divider"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+      <nav className="sidebar__nav sidebar__nav--pro">
+        {PRO_NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === '/'}
+            className={({ isActive }) =>
+              `sidebar__nav-item ${isActive ? 'sidebar__nav-item--active' : ''}`
+            }
+            title={collapsed ? label : undefined}
+          >
+            <Icon size={18} className="sidebar__nav-icon" />
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.span
+                  className="sidebar__nav-label"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {label}
+                </motion.span>
+              )}
+            </AnimatePresence>
+            {!isPro && !collapsed && (
               <Lock size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginLeft: 'auto' }} title="Pro feature" />
             )}
           </NavLink>

@@ -96,6 +96,32 @@
   overflow: hidden;
 }
 
+/* Section label (PRO) */
+.sidebar__section-label {
+  padding: 16px 18px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar__section-divider {
+  width: 24px;
+  height: 1px;
+  background: var(--border);
+  margin: 0 auto;
+}
+
+.sidebar__nav--pro {
+  padding-top: 0;
+}
+
 .sidebar__pro-dot {
   width: 6px;
   height: 6px;
