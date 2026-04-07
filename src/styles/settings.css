@@ -357,6 +357,47 @@
   }
 }
 
+/* ── Appearance pro-lock overlay ── */
+.settings-appearance-wrap {
+  position: relative;
+}
+
+.settings-lock-overlay {
+  position: absolute;
+  inset: -22px -24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--topbar-bg);
+  border-radius: var(--radius-lg);
+  z-index: 2;
+}
+
+.settings-lock-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.settings-lock-btn {
+  font-size: 12px;
+  color: var(--accent-light);
+  background: transparent;
+  border: 1px solid var(--accent-dark);
+  border-radius: 8px;
+  padding: 5px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.settings-lock-btn:hover {
+  background: var(--accent-muted);
+  border-color: var(--accent);
+}
+
 /* Theme picker */
 .settings-theme-picker {
   display: flex;
