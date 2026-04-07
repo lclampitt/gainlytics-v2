@@ -63,9 +63,10 @@ export default function SidebarThemeSwitcher({
     if (popOpen) { setPopOpen(false); return; }
     const r = wrapRef.current?.getBoundingClientRect();
     if (!r) return;
+    const popW = 232;
     setPopPos(collapsed
       ? { bottom: Math.max(8, window.innerHeight - r.bottom), left: r.right + 8 }
-      : { bottom: window.innerHeight - r.top + 8, left: r.left }
+      : { bottom: window.innerHeight - r.top + 8, left: Math.max(8, Math.min(r.left, window.innerWidth - popW - 8)) }
     );
     setPopOpen(true);
   }, [popOpen, collapsed]);
