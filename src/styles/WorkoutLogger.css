@@ -1063,13 +1063,22 @@
   white-space: nowrap;
 }
 
+.wlm-sheet__footer {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-surface);
+  padding: 12px 20px calc(12px + var(--keyboard-height));
+  border-top: 1px solid var(--border);
+  transition: padding-bottom 0.25s ease;
+  flex-shrink: 0;
+}
+
 .wlm-sheet__start-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: calc(100% - 40px);
-  margin: 0 20px 20px;
+  width: 100%;
   padding: 14px;
   background: var(--accent);
   color: #fff;
@@ -1080,7 +1089,6 @@
   font-family: inherit;
   cursor: pointer;
   transition: background 0.15s ease;
-  flex-shrink: 0;
 }
 
 .wlm-sheet__start-btn:active {
@@ -1127,7 +1135,7 @@
   border: none;
   border-bottom: 1px solid var(--border);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   font-family: inherit;
   padding: 4px 2px;
@@ -1200,7 +1208,8 @@
   flex-direction: column;
   gap: 12px;
   flex: 1;
-  padding-bottom: 100px;
+  padding-bottom: calc(100px + var(--keyboard-height));
+  transition: padding-bottom 0.25s ease;
 }
 
 .wlm-session__empty {
@@ -1315,10 +1324,10 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   font-family: inherit;
-  padding: 6px 4px;
+  padding: 5px 4px;
   outline: none;
   -moz-appearance: textfield;
   transition: border-color 0.15s ease;
@@ -1432,7 +1441,7 @@
 /* ── REST TIMER PILL ───────────────────── */
 .wlm-rest-pill {
   position: fixed;
-  bottom: 80px;
+  bottom: calc(80px + var(--keyboard-height));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -1445,6 +1454,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   z-index: 100;
   font-variant-numeric: tabular-nums;
+  transition: bottom 0.25s ease;
 }
 
 .wlm-rest-pill .lucide-clock {
@@ -1526,7 +1536,7 @@
   background: transparent;
   border: none;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 16px;
   font-family: inherit;
   outline: none;
 }
@@ -1643,9 +1653,10 @@
 
 /* Custom exercise fallback */
 .wlm-search__custom {
-  padding: 12px 20px;
+  padding: 12px 20px calc(12px + var(--keyboard-height));
   border-top: 1px solid var(--border);
   flex-shrink: 0;
+  transition: padding-bottom 0.25s ease;
 }
 
 .wlm-search__custom-btn {

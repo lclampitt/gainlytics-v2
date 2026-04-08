@@ -6,6 +6,9 @@
    ============================================================ */
 
 :root, [data-theme="dark"] {
+  /* iOS keyboard offset */
+  --keyboard-height: 0px;
+
   /* Backgrounds */
   --bg-base:       #080c14;
   --bg-surface:    #0e1624;

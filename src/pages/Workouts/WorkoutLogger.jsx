@@ -383,6 +383,44 @@ export default function WorkoutLogger() {
     return () => clearTimeout(t);
   }, [restTimer]);
 
+  // ── iOS keyboard offset (visualViewport API) ──
+  useEffect(() => {
+    if (!window.visualViewport) return;
+    const handleResize = () => {
+      const kbHeight = window.innerHeight - window.visualViewport.height;
+      document.documentElement.style.setProperty('--keyboard-height', `${kbHeight}px`);
+    };
+    window.visualViewport.addEventListener('resize', handleResize);
+    window.visualViewport.addEventListener('scroll', handleResize);
+    return () => {
+      window.visualViewport.removeEventListener('resize', handleResize);
+      window.visualViewport.removeEventListener('scroll', handleResize);
+      document.documentElement.style.setProperty('--keyboard-height', '0px');
+    };
+  }, []);
+
+  // ── Scroll focused input into view above keyboard ──
+  const handleInputFocus = useCallback(() => {
+    setTimeout(() => {
+      const el = document.activeElement;
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  }, []);
+
+  // ── Dismiss keyboard on tap outside inputs ──
+  const dismissKeyboard = useCallback((e) => {
+    if (e.target === e.currentTarget) {
+      document.activeElement?.blur();
+    }
+  }, []);
+
+  // ── Blur input on Enter (numeric keyboard "Done") ──
+  const handleInputKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' || e.key === 'Done') {
+      e.currentTarget.blur();
+    }
+  }, []);
+
   // ── Mobile helper functions ───────────────
   const formatDuration = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -1298,13 +1336,15 @@ export default function WorkoutLogger() {
                     </div>
                   ))}
                 </div>
-                <motion.button
-                  className="wlm-sheet__start-btn"
-                  onClick={() => startSessionFromTemplate(templatePreview)}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  <Play size={16} /> Start Workout
-                </motion.button>
+                <div className="wlm-sheet__footer">
+                  <motion.button
+                    className="wlm-sheet__start-btn"
+                    onClick={() => startSessionFromTemplate(templatePreview)}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    <Play size={16} /> Start Workout
+                  </motion.button>
+                </div>
               </motion.div>
             </motion.div>
           )}
@@ -1323,6 +1363,8 @@ export default function WorkoutLogger() {
                 className="wlm-session__name-input"
                 value={sessionName}
                 onChange={(e) => setSessionName(e.target.value)}
+                onFocus={handleInputFocus}
+                onKeyDown={handleInputKeyDown}
                 placeholder="Workout name…"
               />
               <motion.button
@@ -1348,7 +1390,7 @@ export default function WorkoutLogger() {
             </div>
 
             {/* Exercise blocks */}
-            <div className="wlm-session__body">
+            <div className="wlm-session__body" onClick={dismissKeyboard}>
               {sessionExercises.length === 0 && (
                 <div className="wlm-session__empty">
                   <Dumbbell size={28} style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
@@ -1383,16 +1425,22 @@ export default function WorkoutLogger() {
                           <span className="wlm-ex-col wlm-ex-col--set">{setIdx + 1}</span>
                           <input
                             type="number"
+                            inputMode="decimal"
                             className="wlm-ex-input"
                             value={set.weight}
                             onChange={(e) => updateSessionSet(exIdx, setIdx, 'weight', e.target.value)}
+                            onFocus={handleInputFocus}
+                            onKeyDown={handleInputKeyDown}
                             placeholder="—"
                           />
                           <input
                             type="number"
+                            inputMode="numeric"
                             className="wlm-ex-input"
                             value={set.reps}
                             onChange={(e) => updateSessionSet(exIdx, setIdx, 'reps', e.target.value)}
+                            onFocus={handleInputFocus}
+                            onKeyDown={handleInputKeyDown}
                             placeholder="—"
                           />
                           <button
@@ -1472,6 +1520,8 @@ export default function WorkoutLogger() {
                     type="text"
                     value={exerciseSearchQuery}
                     onChange={(e) => setExerciseSearchQuery(e.target.value)}
+                    onFocus={handleInputFocus}
+                    onKeyDown={handleInputKeyDown}
                     placeholder="Search exercises…"
                     autoFocus
                   />
