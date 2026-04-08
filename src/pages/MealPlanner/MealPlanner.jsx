@@ -838,6 +838,14 @@ function MealPlannerContent({ isProPlus = false }) {
   const [clearing, setClearing] = useState(false);
   const [y2kClearDialog, setY2kClearDialog] = useState(false);
 
+  /* ── Mobile state ─────────────────────────── */
+  const [mobileDay, setMobileDay] = useState(() => {
+    const dow = new Date().getDay(); // 0=Sun
+    return dow === 0 || dow === 6 ? 0 : dow - 1; // default to today (Mon=0..Fri=4)
+  });
+  const [swipeDir, setSwipeDir] = useState(1);
+  const [weekSummaryOpen, setWeekSummaryOpen] = useState(false);
+
   /* ── NEW STATE: goals, expanded slot, favorites, snack sheet ── */
   const [goalData, setGoalData] = useState(null);
   const [expandedSlot, setExpandedSlot] = useState(null);
@@ -989,7 +997,14 @@ function MealPlannerContent({ isProPlus = false }) {
   /* ── Week navigation ─────────────────────── */
   const goWeek = (dir) => {
     setWeekStart((prev) => addDays(prev, dir * 7));
+    setMobileDay(0); // reset to Monday on week change
   };
+
+  /* ── Mobile day navigation ──────────────── */
+  const goMobileDay = useCallback((idx) => {
+    setSwipeDir(idx > mobileDay ? 1 : -1);
+    setMobileDay(idx);
+  }, [mobileDay]);
 
   const weekEnd = addDays(weekStart, 4); // Friday
   const weekLabel = `${fmtShort(weekStart)} – ${fmtShort(weekEnd)}`;
@@ -1426,8 +1441,28 @@ function MealPlannerContent({ isProPlus = false }) {
     return '#EF9F27';
   }
 
+  /* ── Mobile helpers ───────────────────────── */
+  const mobileDayDate = addDays(weekStart, mobileDay);
+  const mobileDayLabel = mobileDayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const mobileDayTotals = dailyTotals[mobileDay] || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+  const mobileDayEntries = entries.filter((e) => e.day_of_week === mobileDay);
+
+  function getMobileDayStatus(dayIdx) {
+    const dayE = entries.filter((e) => e.day_of_week === dayIdx);
+    const filled = MEAL_TYPES.filter((mt) => dayE.some((e) => e.meal_type?.toLowerCase() === mt.toLowerCase()));
+    if (filled.length === 3) return 'full';
+    if (filled.length > 0) return 'partial';
+    return 'empty';
+  }
+
   return (
     <div className="mp-container">
+
+      {/* ═══════════════════════════════════════
+          DESKTOP LAYOUT (768px+)
+          ═══════════════════════════════════════ */}
+      <div className="mp-desktop">
+
       {/* Week Nav */}
       <div className="mp-week-nav">
         <div className="mp-week-nav__left">
@@ -1755,6 +1790,363 @@ function MealPlannerContent({ isProPlus = false }) {
         <Cookie size={16} />
         Anything else to add? Quick-log a snack
       </motion.button>
+
+      </div>{/* END mp-desktop */}
+
+
+      {/* ═══════════════════════════════════════
+          MOBILE LAYOUT (<768px)
+          ═══════════════════════════════════════ */}
+      <div className="mp-mobile">
+
+        {/* ── Mobile Week Nav ──────────────────── */}
+        <div className="mpm-week-nav">
+          <button className="mpm-week-nav__arrow" onClick={() => goWeek(-1)}>
+            <ChevronLeft size={18} />
+          </button>
+          <span className="mpm-week-nav__label">{weekLabel}</span>
+          <button className="mpm-week-nav__arrow" onClick={() => goWeek(1)}>
+            <ChevronRight size={18} />
+          </button>
+        </div>
+
+        {/* ── Mobile AI Suggest Button ─────────── */}
+        <div className="mpm-ai-row">
+          <motion.button
+            className="mpm-ai-btn"
+            onClick={isProPlus ? handleAiWeek : () => triggerUpgrade('ai_week', 'pro_plus')}
+            disabled={aiWeekLoading}
+            whileTap={{ scale: 0.97 }}
+          >
+            <Sparkles size={16} />
+            {aiWeekLoading ? 'Generating...' : 'AI suggest week'}
+          </motion.button>
+          {isProPlus && usage && (
+            <span className="mpm-ai-remaining">
+              {Math.max(0, (usage.aiSuggestionsLimit || 300) - (usage.aiSuggestionsUsed || 0))} requests remaining
+            </span>
+          )}
+        </div>
+
+        {/* ── Mobile Weekly Summary (collapsible) ── */}
+        <div className="mpm-week-summary">
+          <button
+            className="mpm-week-summary__toggle"
+            onClick={() => setWeekSummaryOpen((p) => !p)}
+          >
+            <span className="mpm-week-summary__oneliner">
+              Week of {fmtShort(weekStart)}–{fmtShort(weekEnd)}
+              {weeklyGoal && (
+                <span className="mpm-week-summary__cal">
+                  {' · '}{fmtNumber(Math.round(weekTotals.calories))} / {fmtNumber(Math.round(weeklyGoal.calories))} kcal
+                </span>
+              )}
+            </span>
+            {weekSummaryOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+
+          <AnimatePresence>
+            {weekSummaryOpen && macroBarData && (
+              <motion.div
+                className="mpm-week-summary__body"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+              >
+                <div className="mpm-week-summary__bars">
+                  {macroBarData.map((m) => {
+                    const pct = m.goal > 0 ? (m.actual / m.goal) * 100 : 0;
+                    const isOver = pct > 100;
+                    return (
+                      <div key={m.label} className="mp-macro-row">
+                        <span className="mp-macro-row__label">{m.label}</span>
+                        <div className="mp-macro-bar">
+                          <div
+                            className="mp-macro-bar__fill"
+                            style={{ width: `${Math.min(pct, 100)}%`, background: isOver ? '#EF9F27' : m.color }}
+                          />
+                        </div>
+                        <span className="mp-macro-row__value">
+                          <span style={{ color: isOver ? '#EF9F27' : '#fff', fontWeight: 500 }}>
+                            {fmtNumber(Math.round(m.actual))}
+                          </span>
+                          <span style={{ color: '#555' }}> / {fmtNumber(Math.round(m.goal))} {m.unit}</span>
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* ── Mobile Day Tabs ──────────────────── */}
+        <div className="mpm-day-tabs">
+          {DAY_NAMES.map((day, i) => {
+            const d = addDays(weekStart, i);
+            const isActive = mobileDay === i;
+            const isToday = isSameDay(d, today);
+            const status = getMobileDayStatus(i);
+            const dt = dailyTotals[i];
+
+            return (
+              <motion.button
+                key={day}
+                className={`mpm-day-tab ${isActive ? 'mpm-day-tab--active' : ''}`}
+                onClick={() => goMobileDay(i)}
+                whileTap={{ scale: 0.95 }}
+              >
+                {status !== 'empty' && (
+                  <span className={`mpm-day-tab__dot ${status === 'full' ? 'mpm-day-tab__dot--full' : 'mpm-day-tab__dot--partial'}`} />
+                )}
+                <span className="mpm-day-tab__name">{day}</span>
+                {isToday && <span className="mpm-day-tab__today">Today</span>}
+                <span className="mpm-day-tab__date">{d.getDate()}</span>
+                <span className="mpm-day-tab__cal">
+                  {dt.calories > 0 ? `${fmtNumber(Math.round(dt.calories))} kcal` : 'Empty'}
+                </span>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {/* ── Mobile Day Content ───────────────── */}
+        <AnimatePresence mode="wait" custom={swipeDir}>
+          <motion.div
+            key={`mobile-day-${mobileDay}-${fmtDate(weekStart)}`}
+            className="mpm-day-content"
+            custom={swipeDir}
+            initial={{ x: swipeDir * 40, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -swipeDir * 40, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.15}
+            onDragEnd={(_, info) => {
+              if (Math.abs(info.offset.x) > 50) {
+                if (info.offset.x < 0 && mobileDay < 4) goMobileDay(mobileDay + 1);
+                if (info.offset.x > 0 && mobileDay > 0) goMobileDay(mobileDay - 1);
+              }
+            }}
+          >
+            {/* Day header */}
+            <div className="mpm-day-header">
+              <span className="mpm-day-header__label">{mobileDayLabel}</span>
+              <div className="mpm-day-header__actions">
+                <button
+                  className="mpm-day-header__action-btn"
+                  onClick={() => toast('Swap coming soon')}
+                  title="Swap day"
+                >
+                  <RefreshCw size={16} />
+                </button>
+                <button
+                  className="mpm-day-header__action-btn"
+                  onClick={() => toast('Copy coming soon')}
+                  title="Copy day"
+                >
+                  <Copy size={16} />
+                </button>
+                {(() => {
+                  const todayDate = new Date();
+                  todayDate.setHours(0, 0, 0, 0);
+                  const isFuture = mobileDayDate > todayDate;
+                  const isLogged = loggedDays.has(mobileDay);
+
+                  return (
+                    <button
+                      className={`mpm-day-header__action-btn ${isLogged ? 'mpm-day-header__action-btn--logged' : 'mpm-day-header__action-btn--log'}`}
+                      onClick={() => !isFuture && handleLogDay(mobileDay)}
+                      disabled={isFuture}
+                      title={isLogged ? 'Logged' : 'Log day'}
+                    >
+                      {isLogged ? <Check size={16} /> : <ClipboardCheck size={16} />}
+                    </button>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Daily macro summary */}
+            <div className="mpm-macro-summary">
+              <div className="mpm-macro-summary__chips">
+                <div className="mpm-macro-chip">
+                  <span className="mpm-macro-chip__value" style={{ color: 'var(--accent)' }}>
+                    {fmtNumber(Math.round(mobileDayTotals.calories))}
+                  </span>
+                  <span className="mpm-macro-chip__label">kcal</span>
+                </div>
+                <div className="mpm-macro-chip">
+                  <span className="mpm-macro-chip__value" style={{ color: 'var(--accent)' }}>
+                    {Math.round(mobileDayTotals.protein)}g
+                  </span>
+                  <span className="mpm-macro-chip__label">protein</span>
+                </div>
+                <div className="mpm-macro-chip">
+                  <span className="mpm-macro-chip__value" style={{ color: 'var(--accent)' }}>
+                    {Math.round(mobileDayTotals.carbs)}g
+                  </span>
+                  <span className="mpm-macro-chip__label">carbs</span>
+                </div>
+                <div className="mpm-macro-chip">
+                  <span className="mpm-macro-chip__value" style={{ color: 'var(--accent)' }}>
+                    {Math.round(mobileDayTotals.fat)}g
+                  </span>
+                  <span className="mpm-macro-chip__label">fat</span>
+                </div>
+              </div>
+              {goalData && (
+                <div className="mpm-macro-summary__bar">
+                  <div
+                    className="mpm-macro-summary__bar-fill"
+                    style={{
+                      width: `${Math.min((mobileDayTotals.calories / goalData.calories) * 100, 100)}%`,
+                      background: mobileDayTotals.calories > goalData.calories ? '#EF9F27' : 'var(--accent)',
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Meal sections */}
+            {MEAL_TYPES.map((mealType) => {
+              const entry = getEntry(mobileDay, mealType);
+              const slotKey = `${mobileDay}-${mealType}`;
+              const isExpanded = expandedSlot === slotKey;
+              const isFav = entry ? !!favoriteNameMap[entry.meal_name] : false;
+
+              return (
+                <div key={mealType} className="mpm-meal-section">
+                  {/* Section header */}
+                  <div className="mpm-meal-section__header">
+                    <span className="mpm-meal-section__label">{mealType}</span>
+                    {entry && (
+                      <span className="mpm-meal-section__cal">{entry.calories} kcal</span>
+                    )}
+                  </div>
+
+                  {entry ? (
+                    /* ── Filled meal card ──────── */
+                    <div className="mpm-card">
+                      <div className="mpm-card__body">
+                        <div className="mpm-card__top">
+                          <span className="mpm-card__name">{entry.meal_name}</span>
+                          <motion.button
+                            className={`mpm-card__heart ${isFav ? 'mpm-card__heart--active' : ''}`}
+                            onClick={(e) => handleToggleFavorite(entry, e)}
+                            whileTap={{ scale: 0.85 }}
+                          >
+                            <Heart
+                              size={14}
+                              fill={isFav ? '#DB2777' : 'none'}
+                              stroke={isFav ? '#DB2777' : 'var(--border-light, #444)'}
+                            />
+                          </motion.button>
+                        </div>
+
+                        <div className="mpm-card__macros">
+                          <span className="mpm-card__macro-chip mpm-card__macro-chip--cal">Cal: {entry.calories}</span>
+                          <span className="mpm-card__macro-chip mpm-card__macro-chip--p">P: {entry.protein}g</span>
+                          <span className="mpm-card__macro-chip mpm-card__macro-chip--c">C: {entry.carbs}g</span>
+                          <span className="mpm-card__macro-chip mpm-card__macro-chip--f">F: {entry.fat}g</span>
+                        </div>
+
+                        {/* Expand/collapse ingredients */}
+                        {entry.ingredients && entry.ingredients.split(',').length > 1 && (
+                          <>
+                            <button
+                              className="mpm-card__expand"
+                              onClick={(e) => toggleExpandSlot(slotKey, e)}
+                            >
+                              {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                              <span>{isExpanded ? 'Hide ingredients' : 'Show ingredients'}</span>
+                            </button>
+
+                            <AnimatePresence>
+                              {isExpanded && (
+                                <motion.div
+                                  className="mpm-card__ingredients"
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                                >
+                                  {entry.ingredients.split(',').map((ing, idx) => (
+                                    <div key={idx} className="mpm-card__ingredient">
+                                      <span className="mpm-card__ingredient-dot" />
+                                      <span>{ing.trim()}</span>
+                                    </div>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Card action row */}
+                      <div className="mpm-card__actions">
+                        <button
+                          className="mpm-card__action-btn mpm-card__action-btn--swap"
+                          onClick={() => setSelectedSlot({ day: DAY_NAMES[mobileDay], mealType })}
+                        >
+                          <RefreshCw size={12} /> Swap meal
+                        </button>
+                        <button
+                          className="mpm-card__action-btn mpm-card__action-btn--delete"
+                          onClick={() => handleDeleteEntry(entry.id)}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── Empty meal cell ───────── */
+                    <motion.button
+                      className="mpm-empty"
+                      onClick={() => setSelectedSlot({ day: DAY_NAMES[mobileDay], mealType })}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Plus size={16} />
+                      <span>Add meal</span>
+                    </motion.button>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Mobile snack button */}
+            <motion.button
+              className="mpm-snack-btn"
+              onClick={() => setSnackOpen(true)}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Plus size={14} />
+              Anything else to add?
+            </motion.button>
+
+            {/* Clear week (if entries) */}
+            {entries.length > 0 && (
+              <button
+                className="mpm-clear-btn"
+                onClick={() => isY2K ? setY2kClearDialog(true) : handleClearWeek()}
+                disabled={clearing}
+              >
+                <Trash2 size={14} />
+                {clearing ? 'Clearing...' : 'Clear week'}
+              </button>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>{/* END mp-mobile */}
+
+
+      {/* ═══════════════════════════════════════
+          SHARED OVERLAYS
+          ═══════════════════════════════════════ */}
 
       {/* Snack Sheet */}
       <AnimatePresence>

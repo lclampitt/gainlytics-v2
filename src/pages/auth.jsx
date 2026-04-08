@@ -34,10 +34,18 @@ function AuthPage() {
         setMessage('Logged in successfully.');
         navigate('/home', { replace: true });
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        setStatus('success');
-        setMessage('Account created! Please check your email to confirm.');
+
+        // Supabase returns a user with empty identities if email already exists
+        // (instead of throwing an error, for security/anti-enumeration reasons)
+        if (data?.user?.identities?.length === 0) {
+          setStatus('error');
+          setMessage('An account with this email already exists. Please sign in instead.');
+        } else {
+          setStatus('success');
+          setMessage('Account created! Please check your email to confirm.');
+        }
       }
     } catch (err) {
       setStatus('error');

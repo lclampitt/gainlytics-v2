@@ -1260,57 +1260,617 @@
   color: var(--accent-light);
 }
 
-/* ── RESPONSIVE ──────────────────────────── */
-@media (max-width: 768px) {
-  .mp-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
+/* ════════════════════════════════════════════
+   DESKTOP / MOBILE VISIBILITY
+   ════════════════════════════════════════════ */
+.mp-mobile { display: none; }
 
-  .mp-row-label {
-    font-size: 13px;
-    padding: 8px 0 4px;
-  }
+@media (min-width: 768px) {
+  .mp-desktop { display: flex; flex-direction: column; gap: 16px; }
+  .mp-mobile  { display: none !important; }
+}
 
-  .mp-day-header {
-    flex-direction: row;
-    gap: 8px;
-    justify-content: center;
-  }
-
-  .mp-grid-corner {
-    display: none;
-  }
-
-  .mp-week-nav {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .mp-week-nav__left {
-    justify-content: center;
-  }
-
-  .mp-week-nav__right {
-    justify-content: center;
-  }
-
-  .mp-summary-bar {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
+@media (max-width: 767px) {
+  .mp-desktop { display: none !important; }
+  .mp-mobile  { display: flex; flex-direction: column; }
 
   .mp-panel {
     width: 100vw;
   }
+}
 
-  .mp-day-actions {
-    flex-wrap: wrap;
-  }
+/* ════════════════════════════════════════════
+   MOBILE MEAL PLANNER (mpm-*)
+   ════════════════════════════════════════════ */
 
-  .mp-daily-summary__top {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-  }
+/* ── Mobile Week Nav ─────────────────────── */
+.mpm-week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 0;
+}
+
+.mpm-week-nav__arrow {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mpm-week-nav__arrow:active {
+  border-color: var(--accent);
+  color: var(--accent-light);
+}
+
+.mpm-week-nav__label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* ── Mobile AI Suggest Button ────────────── */
+.mpm-ai-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px 0;
+}
+
+.mpm-ai-btn {
+  width: 100%;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease;
+}
+
+.mpm-ai-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mpm-ai-remaining {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Mobile Weekly Summary (collapsible) ─── */
+.mpm-week-summary {
+  margin: 8px 16px 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.mpm-week-summary__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mpm-week-summary__oneliner {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.mpm-week-summary__cal {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.mpm-week-summary__body {
+  overflow: hidden;
+  padding: 0 14px 12px;
+}
+
+.mpm-week-summary__bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Mobile Day Tabs ─────────────────────── */
+.mpm-day-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 6px;
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.mpm-day-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mpm-day-tab {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  min-width: 56px;
+  position: relative;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+}
+
+.mpm-day-tab__name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.mpm-day-tab__today {
+  font-size: 8px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.mpm-day-tab__date {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.mpm-day-tab__cal {
+  font-size: 9px;
+  color: var(--text-muted);
+  background: var(--bg-base);
+  border-radius: 99px;
+  padding: 1px 6px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.mpm-day-tab__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.mpm-day-tab__dot--full {
+  background: var(--accent);
+}
+
+.mpm-day-tab__dot--partial {
+  background: #EF9F27;
+}
+
+/* Active tab */
+.mpm-day-tab--active {
+  background: rgba(var(--accent-rgb), 0.08);
+  border-color: var(--accent);
+}
+
+.mpm-day-tab--active .mpm-day-tab__name {
+  color: var(--accent-light);
+}
+
+.mpm-day-tab--active .mpm-day-tab__date {
+  color: var(--accent-light);
+  font-weight: 700;
+}
+
+/* ── Mobile Day Content ──────────────────── */
+.mpm-day-content {
+  display: flex;
+  flex-direction: column;
+  touch-action: pan-y;
+}
+
+/* ── Mobile Day Header ───────────────────── */
+.mpm-day-header {
+  padding: 12px 16px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mpm-day-header__label {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.mpm-day-header__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mpm-day-header__action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.mpm-day-header__action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.mpm-day-header__action-btn--log {
+  border-color: var(--accent);
+  color: var(--accent-light);
+}
+
+.mpm-day-header__action-btn--logged {
+  background: rgba(var(--accent-rgb), 0.1);
+  border-color: var(--accent);
+  color: var(--accent-light);
+}
+
+/* ── Mobile Macro Summary ────────────────── */
+.mpm-macro-summary {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 0 16px 12px;
+}
+
+.mpm-macro-summary__chips {
+  display: flex;
+  justify-content: space-between;
+}
+
+.mpm-macro-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.mpm-macro-chip__value {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mpm-macro-chip__label {
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.mpm-macro-summary__bar {
+  height: 3px;
+  border-radius: 99px;
+  margin-top: 8px;
+  background: var(--bg-base);
+  overflow: hidden;
+}
+
+.mpm-macro-summary__bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease-out;
+}
+
+/* ── Mobile Meal Section ─────────────────── */
+.mpm-meal-section {
+  margin-bottom: 4px;
+}
+
+.mpm-meal-section__header {
+  padding: 0 16px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mpm-meal-section__label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mpm-meal-section__cal {
+  font-size: 11px;
+  color: var(--accent-light);
+}
+
+/* ── Mobile Empty Meal Cell ──────────────── */
+.mpm-empty {
+  margin: 0 16px 12px;
+  border: 1.5px dashed var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--bg-surface);
+  cursor: pointer;
+  min-height: 64px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.mpm-empty:active {
+  border-color: var(--accent);
+  border-style: solid;
+  background: rgba(var(--accent-rgb), 0.05);
+  color: var(--accent-light);
+}
+
+/* ── Mobile Filled Meal Card ─────────────── */
+.mpm-card {
+  margin: 0 16px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.mpm-card__body {
+  padding: 12px 14px;
+}
+
+.mpm-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.mpm-card__name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+  margin-right: 8px;
+  line-height: 1.3;
+}
+
+.mpm-card__heart {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s ease;
+}
+
+.mpm-card__heart--active {
+  border-color: #DB2777;
+}
+
+/* Macro chips */
+.mpm-card__macros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.mpm-card__macro-chip {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  font-weight: 500;
+}
+
+.mpm-card__macro-chip--cal,
+.mpm-card__macro-chip--p {
+  color: var(--accent-light);
+}
+
+.mpm-card__macro-chip--c,
+.mpm-card__macro-chip--f {
+  color: var(--text-secondary);
+}
+
+/* Expand/collapse ingredients */
+.mpm-card__expand {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding-top: 4px;
+  border: none;
+  background: none;
+  border-top: 1px solid var(--border);
+  width: 100%;
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--text-muted);
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease;
+}
+
+.mpm-card__expand:active {
+  color: var(--accent);
+}
+
+.mpm-card__ingredients {
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.mpm-card__ingredient {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.mpm-card__ingredient-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* Card action row */
+.mpm-card__actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-base);
+}
+
+.mpm-card__action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 6px;
+  padding: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.mpm-card__action-btn--swap {
+  flex: 1;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.mpm-card__action-btn--swap:active {
+  border-color: var(--accent);
+  color: var(--accent-light);
+}
+
+.mpm-card__action-btn--delete {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid rgba(170, 50, 50, 0.3);
+  background: transparent;
+  color: #666;
+}
+
+.mpm-card__action-btn--delete:active {
+  border-color: #aa3333;
+  color: #ff6666;
+}
+
+/* ── Mobile Snack Button ─────────────────── */
+.mpm-snack-btn {
+  margin: 4px 16px 8px;
+  width: calc(100% - 32px);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-muted);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.mpm-snack-btn:active {
+  border-color: var(--accent);
+  color: var(--accent-light);
+}
+
+/* ── Mobile Clear Week Button ────────────── */
+.mpm-clear-btn {
+  margin: 0 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.mpm-clear-btn:active {
+  border-color: var(--error, #ef4444);
+  color: var(--error, #ef4444);
+}
+
+.mpm-clear-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

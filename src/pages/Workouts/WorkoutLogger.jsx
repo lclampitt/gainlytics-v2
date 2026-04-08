@@ -348,21 +348,6 @@ export default function WorkoutLogger() {
                   </div>
                 </div>
 
-                {/* Add exercise row */}
-                <div className="wl-adder">
-                  <input
-                    type="text"
-                    className="input"
-                    value={newExercise}
-                    onChange={(e) => setNewExercise(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addExercise()}
-                    placeholder="Add an exercise…"
-                  />
-                  <motion.button className="btn btn-primary" onClick={addExercise} whileTap={{ scale: 0.97 }}>
-                    {isY2K ? '[ Add ]' : 'Add'}
-                  </motion.button>
-                </div>
-
                 {/* Exercise blocks */}
                 {exercises.map((ex, i) => (
                   <motion.div
@@ -409,6 +394,21 @@ export default function WorkoutLogger() {
                     </motion.button>
                   </motion.div>
                 ))}
+
+                {/* Add exercise row — placed after exercises so user doesn't scroll back up */}
+                <div className="wl-adder">
+                  <input
+                    type="text"
+                    className="input"
+                    value={newExercise}
+                    onChange={(e) => setNewExercise(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addExercise()}
+                    placeholder="Add an exercise…"
+                  />
+                  <motion.button className="btn btn-primary" onClick={addExercise} whileTap={{ scale: 0.97 }}>
+                    {isY2K ? '[ Add ]' : 'Add'}
+                  </motion.button>
+                </div>
 
                 {/* Feedback message */}
                 {message && <p className="wl-message">{message}</p>}
