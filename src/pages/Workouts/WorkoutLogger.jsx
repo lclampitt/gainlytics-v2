@@ -1,12 +1,16 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Trash2, Dumbbell, Bookmark, BookmarkCheck, Copy, Pencil, BookmarkPlus, X, Star } from 'lucide-react';
+import {
+  Lock, Trash2, Dumbbell, Bookmark, BookmarkCheck, Copy, Pencil,
+  BookmarkPlus, X, Star, Play, Clock, Search, Check, Plus, ChevronRight,
+} from 'lucide-react';
 import posthog from '../../lib/posthog';
 import { supabase } from '../../supabaseClient';
 import { useUpgrade } from '../../context/UpgradeContext';
 import { usePlan } from '../../hooks/usePlan';
 import { useTheme } from '../../hooks/useTheme';
 import { appToast as toast } from '../../utils/toast';
+import exerciseDB from '../../data/exercises.json';
 import '../../styles/WorkoutLogger.css';
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'https://gainlytics-1.onrender.com';
@@ -57,6 +61,23 @@ export default function WorkoutLogger() {
   const [copyPopover, setCopyPopover] = useState(null); // workout id or null
   const [copyDate, setCopyDate] = useState(new Date().toISOString().split('T')[0]);
   const formRef = useRef(null);
+
+  // ── Mobile state ──────────────────────────
+  const [mobileView, setMobileView] = useState('home'); // 'home' | 'session'
+  const [sessionExercises, setSessionExercises] = useState([]);
+  const [sessionName, setSessionName] = useState('');
+  const [sessionMuscleGroup, setSessionMuscleGroup] = useState('');
+  const [sessionTimer, setSessionTimer] = useState(0);
+  const [sessionStartTime, setSessionStartTime] = useState(null);
+  const [exerciseSearchOpen, setExerciseSearchOpen] = useState(false);
+  const [exerciseSearchQuery, setExerciseSearchQuery] = useState('');
+  const [exerciseBodyPartFilter, setExerciseBodyPartFilter] = useState('all');
+  const [completedSets, setCompletedSets] = useState({});
+  const [restTimer, setRestTimer] = useState(null);
+  const [restTimerDuration] = useState(90);
+  const [templatePreview, setTemplatePreview] = useState(null);
+  const [sessionFromTemplateId, setSessionFromTemplateId] = useState(null);
+  const [mobileExpanded, setMobileExpanded] = useState({});
 
   // Scroll to top when opening the logger
   useEffect(() => {
@@ -343,6 +364,199 @@ export default function WorkoutLogger() {
     }
   };
 
+  // ── Session timer ──────────────────────────
+  useEffect(() => {
+    if (!sessionStartTime) return;
+    const interval = setInterval(() => {
+      setSessionTimer(Math.floor((Date.now() - sessionStartTime) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sessionStartTime]);
+
+  // ── Rest timer countdown ──────────────────
+  useEffect(() => {
+    if (restTimer === null || restTimer <= 0) {
+      if (restTimer === 0) setRestTimer(null);
+      return;
+    }
+    const t = setTimeout(() => setRestTimer(restTimer - 1), 1000);
+    return () => clearTimeout(t);
+  }, [restTimer]);
+
+  // ── Mobile helper functions ───────────────
+  const formatDuration = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    if (m >= 60) {
+      const h = Math.floor(m / 60);
+      const rm = m % 60;
+      return `${h}h ${rm}m`;
+    }
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const startBlankSession = () => {
+    setSessionExercises([]);
+    setSessionName('');
+    setSessionMuscleGroup('');
+    setCompletedSets({});
+    setSessionStartTime(Date.now());
+    setSessionTimer(0);
+    setSessionFromTemplateId(null);
+    setMobileView('session');
+  };
+
+  const startSessionFromTemplate = (template) => {
+    const exs = (template.exercises || []).map((ex) => ({
+      name: ex.name,
+      sets: Array.from({ length: ex.sets || 3 }, () => ({
+        weight: ex.weight || '',
+        reps: ex.reps || '',
+        notes: '',
+      })),
+    }));
+    setSessionExercises(exs);
+    setSessionName(template.name);
+    setSessionMuscleGroup(template.muscle_group || '');
+    setCompletedSets({});
+    setSessionStartTime(Date.now());
+    setSessionTimer(0);
+    setSessionFromTemplateId(template.id);
+    setTemplatePreview(null);
+    setMobileView('session');
+  };
+
+  const addExerciseToSession = (exercise) => {
+    setSessionExercises((prev) => [
+      ...prev,
+      { name: exercise.name, sets: [{ weight: '', reps: '', notes: '' }] },
+    ]);
+    setExerciseSearchOpen(false);
+    setExerciseSearchQuery('');
+  };
+
+  const addSetToSession = (exIdx) => {
+    setSessionExercises((prev) => {
+      const updated = [...prev];
+      updated[exIdx] = {
+        ...updated[exIdx],
+        sets: [...updated[exIdx].sets, { weight: '', reps: '', notes: '' }],
+      };
+      return updated;
+    });
+  };
+
+  const updateSessionSet = (exIdx, setIdx, field, value) => {
+    setSessionExercises((prev) => {
+      const updated = [...prev];
+      updated[exIdx] = { ...updated[exIdx], sets: [...updated[exIdx].sets] };
+      updated[exIdx].sets[setIdx] = { ...updated[exIdx].sets[setIdx], [field]: value };
+      return updated;
+    });
+  };
+
+  const toggleSetComplete = (exIdx, setIdx) => {
+    const key = `${exIdx}-${setIdx}`;
+    setCompletedSets((prev) => {
+      const next = { ...prev };
+      if (next[key]) {
+        delete next[key];
+      } else {
+        next[key] = true;
+        setRestTimer(restTimerDuration);
+      }
+      return next;
+    });
+  };
+
+  const removeSessionExercise = (exIdx) => {
+    setSessionExercises((prev) => prev.filter((_, i) => i !== exIdx));
+    setCompletedSets((prev) => {
+      const next = {};
+      Object.keys(prev).forEach((key) => {
+        const [ei, si] = key.split('-').map(Number);
+        if (ei < exIdx) next[key] = true;
+        if (ei > exIdx) next[`${ei - 1}-${si}`] = true;
+      });
+      return next;
+    });
+  };
+
+  const finishSession = async () => {
+    if (sessionExercises.length === 0) {
+      toast.error('Add at least one exercise before finishing.');
+      return;
+    }
+    const name = sessionName.trim() || 'Quick Workout';
+    const duration = sessionTimer;
+    const workoutData = {
+      user_id: userId,
+      workout_date: new Date().toISOString().split('T')[0],
+      workout_name: name,
+      muscle_group: sessionMuscleGroup || null,
+      exercises: sessionExercises,
+    };
+    try {
+      const res = await fetch(`${API_BASE}/workouts/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(workoutData),
+      });
+      if (res.status === 403) { triggerUpgrade('workouts'); return; }
+      if (!res.ok) throw new Error(await res.text());
+      posthog.capture('workout_logged', { exercise_count: sessionExercises.length, duration_seconds: duration });
+      if (sessionFromTemplateId) {
+        incrementTemplateUseCount(sessionFromTemplateId);
+        updateTemplateWeights(sessionFromTemplateId, sessionExercises);
+        fetchTemplates();
+      }
+      toast.success(`${name} saved! ${formatDuration(duration)}`);
+      setMobileView('home');
+      setSessionStartTime(null);
+      setRestTimer(null);
+      fetchWorkouts();
+    } catch (err) {
+      toast.error(`Error: ${err.message}`);
+    }
+  };
+
+  const discardSession = () => {
+    if (sessionExercises.length > 0 && !window.confirm('Discard this workout?')) return;
+    setMobileView('home');
+    setSessionStartTime(null);
+    setSessionExercises([]);
+    setCompletedSets({});
+    setRestTimer(null);
+  };
+
+  // ── Exercise search data ──────────────────
+  const bodyParts = useMemo(() => {
+    const parts = new Set(exerciseDB.map((ex) => ex.bodyPart));
+    return ['all', ...Array.from(parts).sort()];
+  }, []);
+
+  const filteredExercises = useMemo(() => {
+    let list = exerciseDB;
+    if (exerciseBodyPartFilter !== 'all') {
+      list = list.filter((ex) => ex.bodyPart === exerciseBodyPartFilter);
+    }
+    if (exerciseSearchQuery.trim()) {
+      const q = exerciseSearchQuery.toLowerCase().trim();
+      list = list.filter((ex) => ex.name.toLowerCase().includes(q));
+    }
+    return list;
+  }, [exerciseSearchQuery, exerciseBodyPartFilter]);
+
+  const groupedExercises = useMemo(() => {
+    const groups = {};
+    filteredExercises.forEach((ex) => {
+      const letter = ex.name[0].toUpperCase();
+      if (!groups[letter]) groups[letter] = [];
+      groups[letter].push(ex);
+    });
+    return groups;
+  }, [filteredExercises]);
+
   // Load a workout from history into the editor
   const editWorkout = (workout) => {
     setWorkoutDate(workout.workout_date);
@@ -364,6 +578,9 @@ export default function WorkoutLogger() {
 
   return (
     <div className="wl">
+
+      {/* ═══════════ DESKTOP ═══════════ */}
+      <div className="wl-desktop">
 
       {/* ── Y2K FREE TIER USAGE COUNTER ── */}
       {isY2K && !isPro && workoutHistory.length > 0 && (
@@ -905,6 +1122,412 @@ export default function WorkoutLogger() {
           )}
         </>
       )}
+      </div>{/* end .wl-desktop */}
+
+      {/* ═══════════ MOBILE ═══════════ */}
+      <div className="wl-mobile">
+
+        {/* ── MOBILE HOME ── */}
+        {mobileView === 'home' && (
+          <div className="wlm-home">
+            {/* Quick Start */}
+            <motion.button
+              className="wlm-quick-start"
+              onClick={startBlankSession}
+              whileTap={{ scale: 0.97 }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <div className="wlm-quick-start__icon"><Play size={20} /></div>
+              <div className="wlm-quick-start__text">
+                <span className="wlm-quick-start__title">Quick Start</span>
+                <span className="wlm-quick-start__sub">Start an empty workout</span>
+              </div>
+              <ChevronRight size={18} className="wlm-quick-start__arrow" />
+            </motion.button>
+
+            {/* Free tier usage */}
+            {!isPro && workoutHistory.length > 0 && (
+              <div className="wlm-usage-bar">
+                <div className="wlm-usage-bar__track">
+                  <div
+                    className="wlm-usage-bar__fill"
+                    style={{ width: `${Math.min((workoutHistory.length / 10) * 100, 100)}%` }}
+                  />
+                </div>
+                <span className="wlm-usage-bar__text">
+                  {workoutHistory.length} / 10 free workouts
+                </span>
+              </div>
+            )}
+
+            {/* Templates */}
+            {templates.length > 0 && (
+              <motion.div
+                className="wlm-section"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: 0.05 }}
+              >
+                <h3 className="wlm-section__title">Templates</h3>
+                <div className="wlm-template-grid">
+                  {templates.map((tpl) => (
+                    <motion.button
+                      key={tpl.id}
+                      className="wlm-template-card"
+                      onClick={() => setTemplatePreview(tpl)}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      <div className="wlm-template-card__icon"><Dumbbell size={16} /></div>
+                      <span className="wlm-template-card__name">{tpl.name}</span>
+                      <span className="wlm-template-card__meta">
+                        {(tpl.exercises || []).length} exercise{(tpl.exercises || []).length !== 1 ? 's' : ''}
+                        {tpl.muscle_group ? ` · ${tpl.muscle_group}` : ''}
+                      </span>
+                      {tpl.use_count >= 5 && (
+                        <span className="wlm-template-card__badge"><Star size={9} /> Favorite</span>
+                      )}
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Recent Workouts */}
+            <motion.div
+              className="wlm-section"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: 0.1 }}
+            >
+              <h3 className="wlm-section__title">Recent Workouts</h3>
+              {workoutHistory.length === 0 ? (
+                <p className="wlm-empty">No workouts yet. Tap Quick Start to begin!</p>
+              ) : (
+                <div className="wlm-recent-list">
+                  {workoutHistory.slice(0, 8).map((w, idx) => (
+                    <React.Fragment key={w.id}>
+                      <motion.div
+                        className="wlm-recent-row"
+                        onClick={() => setMobileExpanded((p) => ({ ...p, [w.id]: !p[w.id] }))}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: idx * 0.03 }}
+                      >
+                        <div className="wlm-recent-row__left">
+                          <span className="wlm-recent-row__name">{w.workout_name}</span>
+                          <span className="wlm-recent-row__date">
+                            {formatDate(w.workout_date)}
+                            {w.muscle_group ? ` · ${w.muscle_group}` : ''}
+                          </span>
+                        </div>
+                        <span className="wlm-recent-row__count">
+                          {(w.exercises || []).length} ex
+                        </span>
+                      </motion.div>
+                      <AnimatePresence>
+                        {mobileExpanded[w.id] && (
+                          <motion.div
+                            className="wlm-recent-detail"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            {(w.exercises || []).map((ex, exIdx) => (
+                              <div key={exIdx} className="wlm-recent-detail__exercise">
+                                <span className="wlm-recent-detail__name">{ex.name}</span>
+                                <span className="wlm-recent-detail__sets">
+                                  {(ex.sets || []).length} set{(ex.sets || []).length !== 1 ? 's' : ''}
+                                  {ex.sets?.[0]?.weight ? ` @ ${ex.sets[0].weight} lbs` : ''}
+                                </span>
+                              </div>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+
+        {/* ── TEMPLATE PREVIEW SHEET ── */}
+        <AnimatePresence>
+          {templatePreview && (
+            <motion.div
+              className="wlm-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setTemplatePreview(null)}
+            >
+              <motion.div
+                className="wlm-sheet"
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="wlm-sheet__handle" />
+                <div className="wlm-sheet__header">
+                  <div>
+                    <h3 className="wlm-sheet__title">{templatePreview.name}</h3>
+                    <div className="wlm-sheet__meta">
+                      {templatePreview.muscle_group && <span>{templatePreview.muscle_group}</span>}
+                      <span>{(templatePreview.exercises || []).length} exercises</span>
+                      {templatePreview.use_count > 0 && <span>Used {templatePreview.use_count}x</span>}
+                    </div>
+                  </div>
+                  <button className="wlm-sheet__close" onClick={() => setTemplatePreview(null)}>
+                    <X size={20} />
+                  </button>
+                </div>
+                <div className="wlm-sheet__exercises">
+                  {(templatePreview.exercises || []).map((ex, i) => (
+                    <div key={i} className="wlm-sheet__exercise">
+                      <span className="wlm-sheet__exercise-name">{ex.name}</span>
+                      <span className="wlm-sheet__exercise-detail">
+                        {ex.sets || 3} sets{ex.reps ? ` × ${ex.reps}` : ''}
+                        {ex.weight ? ` @ ${ex.weight} lbs` : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <motion.button
+                  className="wlm-sheet__start-btn"
+                  onClick={() => startSessionFromTemplate(templatePreview)}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  <Play size={16} /> Start Workout
+                </motion.button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── ACTIVE SESSION ── */}
+        {mobileView === 'session' && (
+          <div className="wlm-session">
+            {/* Session header bar */}
+            <div className="wlm-session__header">
+              <div className="wlm-session__timer">
+                <Clock size={14} />
+                <span>{formatDuration(sessionTimer)}</span>
+              </div>
+              <input
+                className="wlm-session__name-input"
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+                placeholder="Workout name…"
+              />
+              <motion.button
+                className="wlm-session__finish-btn"
+                onClick={finishSession}
+                whileTap={{ scale: 0.97 }}
+              >
+                Finish
+              </motion.button>
+            </div>
+
+            {/* Muscle group pills */}
+            <div className="wlm-session__mg-row">
+              {MUSCLE_GROUPS.map((g) => (
+                <button
+                  key={g}
+                  className={`wlm-mg-pill ${sessionMuscleGroup === g ? 'wlm-mg-pill--active' : ''}`}
+                  onClick={() => setSessionMuscleGroup(sessionMuscleGroup === g ? '' : g)}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+
+            {/* Exercise blocks */}
+            <div className="wlm-session__body">
+              {sessionExercises.length === 0 && (
+                <div className="wlm-session__empty">
+                  <Dumbbell size={28} style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
+                  <p>Tap "Add Exercise" to get started</p>
+                </div>
+              )}
+              {sessionExercises.map((ex, exIdx) => (
+                <motion.div
+                  key={exIdx}
+                  className="wlm-ex-block"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="wlm-ex-block__header">
+                    <span className="wlm-ex-block__name">{ex.name}</span>
+                    <button className="wlm-ex-block__remove" onClick={() => removeSessionExercise(exIdx)}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                  <div className="wlm-ex-block__table">
+                    <div className="wlm-ex-block__thead">
+                      <span className="wlm-ex-col wlm-ex-col--set">SET</span>
+                      <span className="wlm-ex-col wlm-ex-col--weight">LBS</span>
+                      <span className="wlm-ex-col wlm-ex-col--reps">REPS</span>
+                      <span className="wlm-ex-col wlm-ex-col--check" />
+                    </div>
+                    {ex.sets.map((set, setIdx) => {
+                      const isDone = !!completedSets[`${exIdx}-${setIdx}`];
+                      return (
+                        <div key={setIdx} className={`wlm-ex-row ${isDone ? 'wlm-ex-row--done' : ''}`}>
+                          <span className="wlm-ex-col wlm-ex-col--set">{setIdx + 1}</span>
+                          <input
+                            type="number"
+                            className="wlm-ex-input"
+                            value={set.weight}
+                            onChange={(e) => updateSessionSet(exIdx, setIdx, 'weight', e.target.value)}
+                            placeholder="—"
+                          />
+                          <input
+                            type="number"
+                            className="wlm-ex-input"
+                            value={set.reps}
+                            onChange={(e) => updateSessionSet(exIdx, setIdx, 'reps', e.target.value)}
+                            placeholder="—"
+                          />
+                          <button
+                            className={`wlm-check-btn ${isDone ? 'wlm-check-btn--done' : ''}`}
+                            onClick={() => toggleSetComplete(exIdx, setIdx)}
+                          >
+                            <Check size={16} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button className="wlm-ex-block__add-set" onClick={() => addSetToSession(exIdx)}>
+                    + Add Set
+                  </button>
+                </motion.div>
+              ))}
+
+              {/* Add Exercise button */}
+              <motion.button
+                className="wlm-add-exercise-btn"
+                onClick={() => { setExerciseSearchOpen(true); setExerciseSearchQuery(''); setExerciseBodyPartFilter('all'); }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <Plus size={18} /> Add Exercise
+              </motion.button>
+
+              {/* Discard button */}
+              <button className="wlm-discard-btn" onClick={discardSession}>
+                Discard Workout
+              </button>
+            </div>
+
+            {/* Rest Timer Pill */}
+            <AnimatePresence>
+              {restTimer !== null && restTimer > 0 && (
+                <motion.div
+                  className="wlm-rest-pill"
+                  initial={{ y: 80, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 80, opacity: 0 }}
+                >
+                  <Clock size={14} />
+                  <span className="wlm-rest-pill__time">Rest {formatDuration(restTimer)}</span>
+                  <button className="wlm-rest-pill__dismiss" onClick={() => setRestTimer(null)}>
+                    <X size={14} />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
+        {/* ── EXERCISE SEARCH SHEET ── */}
+        <AnimatePresence>
+          {exerciseSearchOpen && (
+            <motion.div
+              className="wlm-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="wlm-search"
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+              >
+                <div className="wlm-search__header">
+                  <h3>Add Exercise</h3>
+                  <button onClick={() => setExerciseSearchOpen(false)}><X size={20} /></button>
+                </div>
+                <div className="wlm-search__input-row">
+                  <Search size={16} />
+                  <input
+                    type="text"
+                    value={exerciseSearchQuery}
+                    onChange={(e) => setExerciseSearchQuery(e.target.value)}
+                    placeholder="Search exercises…"
+                    autoFocus
+                  />
+                </div>
+                <div className="wlm-search__filters">
+                  {bodyParts.map((bp) => (
+                    <button
+                      key={bp}
+                      className={`wlm-bp-pill ${exerciseBodyPartFilter === bp ? 'wlm-bp-pill--active' : ''}`}
+                      onClick={() => setExerciseBodyPartFilter(bp)}
+                    >
+                      {bp === 'all' ? 'All' : bp.charAt(0).toUpperCase() + bp.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                <div className="wlm-search__list">
+                  {Object.keys(groupedExercises).sort().map((letter) => (
+                    <div key={letter} className="wlm-letter-group">
+                      <div className="wlm-letter-group__label">{letter}</div>
+                      {groupedExercises[letter].map((ex) => (
+                        <button
+                          key={ex.id}
+                          className="wlm-exercise-item"
+                          onClick={() => addExerciseToSession(ex)}
+                        >
+                          <div className="wlm-exercise-item__info">
+                            <span className="wlm-exercise-item__name">{ex.name}</span>
+                            <span className="wlm-exercise-item__meta">{ex.targetMuscle} · {ex.equipment}</span>
+                          </div>
+                          <Plus size={16} className="wlm-exercise-item__add" />
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                  {filteredExercises.length === 0 && (
+                    <p className="wlm-search__empty-msg">No exercises found</p>
+                  )}
+                </div>
+                {/* Custom exercise fallback */}
+                {exerciseSearchQuery.trim() && (
+                  <div className="wlm-search__custom">
+                    <button
+                      className="wlm-search__custom-btn"
+                      onClick={() => addExerciseToSession({ name: exerciseSearchQuery.trim() })}
+                    >
+                      <Plus size={14} /> Add "{exerciseSearchQuery.trim()}" as custom exercise
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+      </div>{/* end .wl-mobile */}
+
     </div>
   );
 }

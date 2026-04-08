@@ -690,3 +690,982 @@
     justify-content: flex-end;
   }
 }
+
+/* ============================================================
+   MOBILE WORKOUT EXPERIENCE
+   ============================================================ */
+
+/* Desktop / Mobile visibility */
+.wl-mobile { display: none; }
+
+@media (min-width: 768px) {
+  .wl-desktop { display: flex; flex-direction: column; gap: 24px; }
+  .wl-mobile  { display: none !important; }
+}
+
+@media (max-width: 767px) {
+  .wl-desktop { display: none !important; }
+  .wl-mobile  { display: flex; flex-direction: column; }
+}
+
+/* ── MOBILE HOME ───────────────────────── */
+.wlm-home {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 24px;
+}
+
+/* Quick Start button */
+.wlm-quick-start {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 18px 16px;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.12), rgba(var(--accent-rgb), 0.04));
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s ease;
+}
+
+.wlm-quick-start:active {
+  background: rgba(var(--accent-rgb), 0.18);
+}
+
+.wlm-quick-start__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.wlm-quick-start__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wlm-quick-start__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.wlm-quick-start__sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.wlm-quick-start__arrow {
+  color: var(--accent-light);
+  flex-shrink: 0;
+}
+
+/* Usage bar */
+.wlm-usage-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wlm-usage-bar__track {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.wlm-usage-bar__fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.wlm-usage-bar__text {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Section */
+.wlm-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wlm-section__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.wlm-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 16px 0;
+}
+
+/* Template grid */
+.wlm-template-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.wlm-template-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.wlm-template-card:active {
+  background: var(--bg-surface-2);
+  border-color: var(--accent);
+}
+
+.wlm-template-card__icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(var(--accent-rgb), 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-light);
+}
+
+.wlm-template-card__name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.wlm-template-card__meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.wlm-template-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+/* Recent workouts list */
+.wlm-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wlm-recent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.wlm-recent-row:active {
+  background: var(--bg-surface-2);
+}
+
+.wlm-recent-row__left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wlm-recent-row__name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wlm-recent-row__date {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.wlm-recent-row__count {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.wlm-recent-detail {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  margin-top: -4px;
+  padding: 8px 14px 12px;
+  overflow: hidden;
+}
+
+.wlm-recent-detail__exercise {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.wlm-recent-detail__exercise:last-child {
+  border-bottom: none;
+}
+
+.wlm-recent-detail__name {
+  font-size: 13px;
+  color: var(--accent-light);
+  font-weight: 500;
+}
+
+.wlm-recent-detail__sets {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── TEMPLATE PREVIEW SHEET ────────────── */
+.wlm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+}
+
+.wlm-sheet {
+  width: 100%;
+  max-height: 85vh;
+  background: var(--bg-surface);
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.wlm-sheet__handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  margin: 10px auto 0;
+}
+
+.wlm-sheet__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px 20px 0;
+  gap: 12px;
+}
+
+.wlm-sheet__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.wlm-sheet__meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.wlm-sheet__meta span {
+  background: rgba(var(--accent-rgb), 0.08);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.wlm-sheet__close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  flex-shrink: 0;
+}
+
+.wlm-sheet__exercises {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wlm-sheet__exercise {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.wlm-sheet__exercise:last-child {
+  border-bottom: none;
+}
+
+.wlm-sheet__exercise-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.wlm-sheet__exercise-detail {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.wlm-sheet__start-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% - 40px);
+  margin: 0 20px 20px;
+  padding: 14px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.wlm-sheet__start-btn:active {
+  background: var(--accent-dark, var(--accent));
+}
+
+/* ── ACTIVE SESSION ────────────────────── */
+.wlm-session {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 120px);
+  position: relative;
+}
+
+.wlm-session__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+  position: sticky;
+  top: 0;
+  background: var(--bg-base);
+  z-index: 10;
+}
+
+.wlm-session__timer {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent-light);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.wlm-session__name-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 4px 2px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.wlm-session__name-input:focus {
+  border-bottom-color: var(--accent);
+}
+
+.wlm-session__name-input::placeholder {
+  color: var(--text-muted);
+}
+
+.wlm-session__finish-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.wlm-session__finish-btn:active {
+  background: var(--accent-dark, var(--accent));
+}
+
+/* Muscle group pills */
+.wlm-session__mg-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.wlm-session__mg-row::-webkit-scrollbar { display: none; }
+
+.wlm-mg-pill {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.wlm-mg-pill--active {
+  background: rgba(var(--accent-rgb), 0.1);
+  border-color: var(--accent);
+  color: var(--accent-light);
+}
+
+/* Session body */
+.wlm-session__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  padding-bottom: 100px;
+}
+
+.wlm-session__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.wlm-session__empty p {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Exercise block in session */
+.wlm-ex-block {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.wlm-ex-block__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 0;
+}
+
+.wlm-ex-block__name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent-light);
+}
+
+.wlm-ex-block__remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  transition: color 0.15s ease;
+}
+
+.wlm-ex-block__remove:active {
+  color: var(--error, #ef4444);
+}
+
+/* Sets table */
+.wlm-ex-block__table {
+  padding: 8px 14px;
+}
+
+.wlm-ex-block__thead {
+  display: flex;
+  align-items: center;
+  padding: 0 0 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.wlm-ex-col {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.wlm-ex-col--set   { width: 36px; flex-shrink: 0; text-align: center; }
+.wlm-ex-col--weight { flex: 1; text-align: center; }
+.wlm-ex-col--reps   { flex: 1; text-align: center; }
+.wlm-ex-col--check  { width: 40px; flex-shrink: 0; }
+
+/* Set row */
+.wlm-ex-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.wlm-ex-row:last-child {
+  border-bottom: none;
+}
+
+.wlm-ex-row--done {
+  opacity: 0.5;
+}
+
+.wlm-ex-row--done .wlm-ex-input {
+  text-decoration: line-through;
+}
+
+.wlm-ex-row .wlm-ex-col--set {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Set input */
+.wlm-ex-input {
+  flex: 1;
+  max-width: 80px;
+  margin: 0 auto;
+  text-align: center;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 6px 4px;
+  outline: none;
+  -moz-appearance: textfield;
+  transition: border-color 0.15s ease;
+}
+
+.wlm-ex-input::-webkit-inner-spin-button,
+.wlm-ex-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.wlm-ex-input:focus {
+  border-color: var(--accent);
+}
+
+.wlm-ex-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+/* Check button */
+.wlm-check-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.wlm-check-btn:active {
+  transform: scale(0.9);
+}
+
+.wlm-check-btn--done {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Add set button */
+.wlm-ex-block__add-set {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--accent-light);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.wlm-ex-block__add-set:active {
+  background: rgba(var(--accent-rgb), 0.05);
+}
+
+/* Add Exercise button */
+.wlm-add-exercise-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--accent-light);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.wlm-add-exercise-btn:active {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.05);
+}
+
+/* Discard button */
+.wlm-discard-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 12px;
+  margin-top: 8px;
+  text-align: center;
+  transition: color 0.15s ease;
+}
+
+.wlm-discard-btn:active {
+  color: var(--error, #ef4444);
+}
+
+/* ── REST TIMER PILL ───────────────────── */
+.wlm-rest-pill {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--accent);
+  border-radius: 99px;
+  padding: 10px 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  font-variant-numeric: tabular-nums;
+}
+
+.wlm-rest-pill .lucide-clock {
+  color: var(--accent-light);
+}
+
+.wlm-rest-pill__time {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-light);
+}
+
+.wlm-rest-pill__dismiss {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  transition: color 0.15s ease;
+}
+
+.wlm-rest-pill__dismiss:active {
+  color: var(--text-primary);
+}
+
+/* ── EXERCISE SEARCH SHEET ─────────────── */
+.wlm-search {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-base);
+  display: flex;
+  flex-direction: column;
+}
+
+.wlm-search__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  flex-shrink: 0;
+}
+
+.wlm-search__header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.wlm-search__header button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+}
+
+.wlm-search__input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 20px;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.wlm-search__input-row svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.wlm-search__input-row input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+
+.wlm-search__input-row input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Body part filter pills */
+.wlm-search__filters {
+  display: flex;
+  gap: 6px;
+  padding: 12px 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+
+.wlm-search__filters::-webkit-scrollbar { display: none; }
+
+.wlm-bp-pill {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.wlm-bp-pill--active {
+  background: rgba(var(--accent-rgb), 0.1);
+  border-color: var(--accent);
+  color: var(--accent-light);
+}
+
+/* Exercise list */
+.wlm-search__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.wlm-letter-group {
+  margin-bottom: 4px;
+}
+
+.wlm-letter-group__label {
+  position: sticky;
+  top: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-light);
+  background: var(--bg-base);
+  padding: 6px 0;
+  z-index: 1;
+}
+
+.wlm-exercise-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.1s ease;
+}
+
+.wlm-exercise-item:active {
+  background: rgba(var(--accent-rgb), 0.05);
+}
+
+.wlm-exercise-item__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wlm-exercise-item__name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.wlm-exercise-item__meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.wlm-exercise-item__add {
+  color: var(--accent-light);
+  flex-shrink: 0;
+}
+
+.wlm-search__empty-msg {
+  font-size: 14px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 40px 0;
+}
+
+/* Custom exercise fallback */
+.wlm-search__custom {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.wlm-search__custom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 12px;
+  background: rgba(var(--accent-rgb), 0.08);
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-md);
+  color: var(--accent-light);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.wlm-search__custom-btn:active {
+  background: rgba(var(--accent-rgb), 0.15);
+}
