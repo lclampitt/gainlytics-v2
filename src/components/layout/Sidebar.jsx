@@ -46,8 +46,8 @@ const PRO_NAV_ITEMS = [
 
 const MOBILE_TABS = [
   { to: '/home',         icon: Home,            label: 'Home'     },
-  { to: '/workouts',     icon: Dumbbell,        label: 'Workouts' },
   { to: '/meal-planner', icon: UtensilsCrossed, label: 'Meals'    },
+  { to: '/workouts',     icon: Dumbbell,        label: 'Workouts' },
   { to: '/progress',     icon: TrendingUp,      label: 'Progress' },
 ];
 
