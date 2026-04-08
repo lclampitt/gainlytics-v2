@@ -1958,3 +1958,342 @@
   padding: 8px 0 0;
   font-family: inherit;
 }
+
+/* ── SWIPE TO REVEAL ──────────────────── */
+.wlm-swipe-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.wlm-swipe-container--row {
+  border-radius: var(--radius-md);
+}
+
+.wlm-swipe-content {
+  position: relative;
+  z-index: 1;
+  will-change: transform;
+  touch-action: pan-y;
+  background: var(--bg-surface);
+}
+
+.wlm-swipe-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  z-index: 0;
+}
+
+.wlm-swipe-actions--template {
+  width: 160px;
+}
+
+.wlm-swipe-actions--workout {
+  width: 80px;
+}
+
+.wlm-swipe-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #fff;
+}
+
+.wlm-swipe-action--edit {
+  background: var(--accent);
+  width: 80px;
+}
+
+.wlm-swipe-action--delete {
+  background: var(--error, #ef4444);
+  width: 80px;
+}
+
+/* ── SWIPE HINT ANIMATION ─────────────── */
+@keyframes swipeHint {
+  0%   { transform: translateX(0); }
+  30%  { transform: translateX(-40px); }
+  60%  { transform: translateX(0); }
+  100% { transform: translateX(0); }
+}
+
+.wlm-swipe-hint {
+  animation: swipeHint 1.2s ease-in-out 0.8s 1;
+}
+
+/* ── SECTION HINT TEXT ────────────────── */
+.wlm-section__hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: -4px 0 0;
+  opacity: 0.7;
+}
+
+/* ── EMPTY STATE PLACEHOLDER ──────────── */
+.wlm-empty-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 28px 16px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.wlm-empty-placeholder__icon {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.wlm-empty-placeholder__text {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  max-width: 220px;
+}
+
+.wlm-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.wlm-empty-state__icon {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
+.wlm-empty-state__text {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.wlm-empty-state__sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ── SHEET MENU (··· dropdown) ────────── */
+.wlm-sheet__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.wlm-sheet__menu-wrap {
+  position: relative;
+}
+
+.wlm-sheet__menu-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+}
+
+.wlm-sheet__dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 170px;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  z-index: 10;
+  overflow: hidden;
+}
+
+.wlm-sheet__dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.wlm-sheet__dropdown button:active {
+  background: var(--bg-hover);
+}
+
+.wlm-sheet__dropdown-danger {
+  color: var(--error, #ef4444) !important;
+}
+
+/* ── WORKOUT DETAIL SHEET EXTRAS ──────── */
+.wlm-sheet__exercise-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.wlm-sheet__exercise-block:last-child {
+  border-bottom: none;
+}
+
+.wlm-sheet__sets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 4px;
+}
+
+.wlm-sheet__set-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+}
+
+.wlm-sheet__set-num {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.wlm-sheet__set-data {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── SHEET FOOTER MULTI-BUTTON ─────────── */
+.wlm-sheet__footer--multi {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wlm-sheet__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.wlm-sheet__action-btn:active {
+  opacity: 0.85;
+}
+
+.wlm-sheet__action-btn--save {
+  background: var(--accent);
+  color: #fff;
+}
+
+.wlm-sheet__action-btn--delete {
+  background: none;
+  border: 1px solid var(--error, #ef4444);
+  color: var(--error, #ef4444);
+}
+
+/* ── CONFIRM DELETE DIALOG ─────────────── */
+.wlm-overlay--confirm {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.wlm-confirm {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+}
+
+.wlm-confirm__title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.wlm-confirm__message {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.wlm-confirm__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.wlm-confirm__cancel {
+  flex: 1;
+  padding: 12px;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.wlm-confirm__cancel:active {
+  background: var(--bg-hover);
+}
+
+.wlm-confirm__delete {
+  flex: 1;
+  padding: 12px;
+  background: var(--error, #ef4444);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.wlm-confirm__delete:active {
+  opacity: 0.85;
+}
