@@ -1418,6 +1418,25 @@
   background: rgba(var(--accent-rgb), 0.05);
 }
 
+/* Bottom finish button */
+.wlm-finish-btn-bottom {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.wlm-finish-btn-bottom:active {
+  background: var(--accent-dark, var(--accent));
+}
+
 /* Discard button */
 .wlm-discard-btn {
   background: none;
