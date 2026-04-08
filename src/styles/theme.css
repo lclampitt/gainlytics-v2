@@ -6,8 +6,9 @@
    ============================================================ */
 
 :root, [data-theme="dark"] {
-  /* iOS keyboard offset */
+  /* Mobile offsets */
   --keyboard-height: 0px;
+  --nav-height: calc(56px + env(safe-area-inset-bottom, 0px));
 
   /* Backgrounds */
   --bg-base:       #080c14;

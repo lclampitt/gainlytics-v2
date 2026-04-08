@@ -1067,7 +1067,7 @@
   position: sticky;
   bottom: 0;
   background: var(--bg-surface);
-  padding: 12px 20px calc(12px + var(--keyboard-height));
+  padding: 12px 20px calc(12px + var(--nav-height) + var(--keyboard-height));
   border-top: 1px solid var(--border);
   transition: padding-bottom 0.25s ease;
   flex-shrink: 0;
@@ -1208,7 +1208,7 @@
   flex-direction: column;
   gap: 12px;
   flex: 1;
-  padding-bottom: calc(100px + var(--keyboard-height));
+  padding-bottom: calc(24px + var(--nav-height) + var(--keyboard-height));
   transition: padding-bottom 0.25s ease;
 }
 
@@ -1441,7 +1441,7 @@
 /* ── REST TIMER PILL ───────────────────── */
 .wlm-rest-pill {
   position: fixed;
-  bottom: calc(80px + var(--keyboard-height));
+  bottom: calc(16px + var(--nav-height) + var(--keyboard-height));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -1653,7 +1653,7 @@
 
 /* Custom exercise fallback */
 .wlm-search__custom {
-  padding: 12px 20px calc(12px + var(--keyboard-height));
+  padding: 12px 20px calc(12px + var(--nav-height) + var(--keyboard-height));
   border-top: 1px solid var(--border);
   flex-shrink: 0;
   transition: padding-bottom 0.25s ease;
