@@ -1959,87 +1959,6 @@
   font-family: inherit;
 }
 
-/* ── SWIPE TO REVEAL ──────────────────── */
-.wlm-swipe-container {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius-md);
-}
-
-.wlm-swipe-container--row {
-  border-radius: var(--radius-md);
-}
-
-.wlm-swipe-content {
-  position: relative;
-  z-index: 1;
-  will-change: transform;
-  touch-action: pan-y;
-  background: var(--bg-surface);
-}
-
-.wlm-swipe-actions {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: stretch;
-  z-index: 0;
-}
-
-.wlm-swipe-actions--template {
-  width: 160px;
-}
-
-.wlm-swipe-actions--workout {
-  width: 80px;
-}
-
-.wlm-swipe-action {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  border: none;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  color: #fff;
-}
-
-.wlm-swipe-action--edit {
-  background: var(--accent);
-  width: 80px;
-}
-
-.wlm-swipe-action--delete {
-  background: var(--error, #ef4444);
-  width: 80px;
-}
-
-/* ── SWIPE HINT ANIMATION ─────────────── */
-@keyframes swipeHint {
-  0%   { transform: translateX(0); }
-  30%  { transform: translateX(-40px); }
-  60%  { transform: translateX(0); }
-  100% { transform: translateX(0); }
-}
-
-.wlm-swipe-hint {
-  animation: swipeHint 1.2s ease-in-out 0.8s 1;
-}
-
-/* ── SECTION HINT TEXT ────────────────── */
-.wlm-section__hint {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin: -4px 0 0;
-  opacity: 0.7;
-}
-
 /* ── EMPTY STATE PLACEHOLDER ──────────── */
 .wlm-empty-placeholder {
   display: flex;
@@ -2093,61 +2012,28 @@
   margin: 0;
 }
 
-/* ── SHEET MENU (··· dropdown) ────────── */
-.wlm-sheet__header-actions {
+/* ── SHEET DELETE BUTTON ──────────────── */
+.wlm-sheet__delete-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.wlm-sheet__menu-wrap {
-  position: relative;
-}
-
-.wlm-sheet__menu-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-}
-
-.wlm-sheet__dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  min-width: 170px;
-  background: var(--bg-surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  z-index: 10;
-  overflow: hidden;
-}
-
-.wlm-sheet__dropdown button {
-  display: flex;
-  align-items: center;
+  justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 12px 16px;
-  background: none;
-  border: none;
+  padding: 14px;
+  margin-top: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  background: rgba(220, 38, 38, 0.08);
+  font-size: 15px;
+  font-weight: 500;
+  color: #f87171;
   font-family: inherit;
-  font-size: 14px;
-  color: var(--text-primary);
   cursor: pointer;
-  text-align: left;
+  transition: background 0.15s ease;
 }
 
-.wlm-sheet__dropdown button:active {
-  background: var(--bg-hover);
-}
-
-.wlm-sheet__dropdown-danger {
-  color: var(--error, #ef4444) !important;
+.wlm-sheet__delete-btn:active {
+  background: rgba(220, 38, 38, 0.15);
 }
 
 /* ── WORKOUT DETAIL SHEET EXTRAS ──────── */
@@ -2218,12 +2104,6 @@
 .wlm-sheet__action-btn--save {
   background: var(--accent);
   color: #fff;
-}
-
-.wlm-sheet__action-btn--delete {
-  background: none;
-  border: 1px solid var(--error, #ef4444);
-  color: var(--error, #ef4444);
 }
 
 /* ── CONFIRM DELETE DIALOG ─────────────── */

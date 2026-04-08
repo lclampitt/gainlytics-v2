@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Lock, Trash2, Dumbbell, Bookmark, BookmarkCheck, Copy, Pencil,
+  Lock, Trash2, Dumbbell, Bookmark, BookmarkCheck, Copy,
   BookmarkPlus, X, Star, Play, Clock, Search, Check, Plus, ChevronRight,
-  MoreVertical,
 } from 'lucide-react';
 import posthog from '../../lib/posthog';
 import { supabase } from '../../supabaseClient';
@@ -71,9 +70,6 @@ export default function WorkoutLogger() {
   const [copyPopover, setCopyPopover] = useState(null); // workout id or null
   const [copyDate, setCopyDate] = useState(getLocalDateString());
   const formRef = useRef(null);
-  const swipeStartRef = useRef({ x: 0, y: 0, id: null, type: null, locked: false });
-  const swipeTranslateRef = useRef({});
-  const cardRefs = useRef({});
 
   // ── Mobile state ──────────────────────────
   const [mobileView, setMobileView] = useState('home'); // 'home' | 'session'
@@ -93,24 +89,8 @@ export default function WorkoutLogger() {
   const [saveNewTplMode, setSaveNewTplMode] = useState(false);
   const [saveNewTplName, setSaveNewTplName] = useState('');
   const [saveNewTplError, setSaveNewTplError] = useState('');
-  const [openSwipeId, setOpenSwipeId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [tplMenuOpen, setTplMenuOpen] = useState(null);
   const [workoutDetailSheet, setWorkoutDetailSheet] = useState(null);
-  const [swipeHintShown, setSwipeHintShown] = useState(() =>
-    localStorage.getItem('workout_swipe_hint_shown') === 'true'
-  );
-
-  // Mark swipe hint as shown after animation plays
-  useEffect(() => {
-    if (!swipeHintShown && (templates.length > 0 || workoutHistory.length > 0)) {
-      const timer = setTimeout(() => {
-        setSwipeHintShown(true);
-        localStorage.setItem('workout_swipe_hint_shown', 'true');
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [swipeHintShown, templates.length, workoutHistory.length]);
 
   // Scroll to top when opening the logger
   useEffect(() => {
@@ -659,89 +639,17 @@ export default function WorkoutLogger() {
     setSessionOriginalTemplate(null);
   };
 
-  // ── Swipe-to-reveal handlers ──────────────
-  const closeAllSwipes = useCallback(() => {
-    Object.keys(swipeTranslateRef.current).forEach((id) => {
-      const el = cardRefs.current[id];
-      if (el) {
-        el.style.transition = 'transform 0.25s ease';
-        el.style.transform = 'translateX(0)';
-        setTimeout(() => { if (el) el.style.transition = ''; }, 250);
-      }
-      swipeTranslateRef.current[id] = 0;
-    });
-    setOpenSwipeId(null);
-  }, []);
-
-  const handleSwipeStart = useCallback((e, id, type) => {
-    if (openSwipeId && openSwipeId !== id) closeAllSwipes();
-    const touch = e.touches[0];
-    swipeStartRef.current = { x: touch.clientX, y: touch.clientY, id, type, locked: false };
-  }, [openSwipeId, closeAllSwipes]);
-
-  const handleSwipeMove = useCallback((e, id, type) => {
-    const start = swipeStartRef.current;
-    if (start.id !== id) return;
-    const touch = e.touches[0];
-    const dx = touch.clientX - start.x;
-    const dy = touch.clientY - start.y;
-
-    if (!start.locked) {
-      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 5) {
-        swipeStartRef.current.id = null;
-        return;
-      }
-      if (Math.abs(dx) > 5) {
-        start.locked = true;
-        // Prevent vertical scrolling once horizontal swipe is locked
-        try { e.preventDefault(); } catch (_) { /* passive listener */ }
-      } else return;
-    }
-
-    const snapDist = type === 'template' ? -160 : -80;
-    const isOpen = openSwipeId === id;
-    const base = isOpen ? snapDist : 0;
-    let translate = base + dx;
-    translate = Math.max(snapDist - 20, Math.min(20, translate));
-
-    const el = cardRefs.current[id];
-    if (el) el.style.transform = `translateX(${translate}px)`;
-    swipeTranslateRef.current[id] = translate;
-  }, [openSwipeId]);
-
-  const handleSwipeEnd = useCallback((e, id, type) => {
-    const start = swipeStartRef.current;
-    if (start.id !== id) return;
-
-    const translate = swipeTranslateRef.current[id] || 0;
-    const snapDist = type === 'template' ? -160 : -80;
-    const threshold = snapDist / 2;
-    const el = cardRefs.current[id];
-    if (!el) return;
-
-    el.style.transition = 'transform 0.25s ease';
-    if (translate < threshold) {
-      el.style.transform = `translateX(${snapDist}px)`;
-      swipeTranslateRef.current[id] = snapDist;
-      setOpenSwipeId(id);
-    } else {
-      el.style.transform = 'translateX(0)';
-      swipeTranslateRef.current[id] = 0;
-      if (openSwipeId === id) setOpenSwipeId(null);
-    }
-    setTimeout(() => { if (el) el.style.transition = ''; }, 250);
-  }, [openSwipeId]);
-
   const handleConfirmDelete = async () => {
     if (!confirmDelete) return;
     if (confirmDelete.type === 'template') {
       await deleteTemplate(confirmDelete.id);
       if (templatePreview?.id === confirmDelete.id) setTemplatePreview(null);
+      toast.success(`${confirmDelete.name} deleted`);
     } else {
       await deleteWorkout(confirmDelete.id);
       if (workoutDetailSheet?.id === confirmDelete.id) setWorkoutDetailSheet(null);
+      toast.success('Workout deleted');
     }
-    closeAllSwipes();
     setConfirmDelete(null);
   };
 
@@ -1425,57 +1333,29 @@ export default function WorkoutLogger() {
               {templates.length === 0 ? (
                 <div className="wlm-empty-placeholder">
                   <BookmarkPlus size={20} className="wlm-empty-placeholder__icon" />
-                  <span className="wlm-empty-placeholder__text">Save a workout as a template to quickly start it again</span>
+                  <span className="wlm-empty-placeholder__text">No templates yet — complete a workout and press Finish to save it as a template</span>
                 </div>
               ) : (
-                <>
-                  {!swipeHintShown && (
-                    <p className="wlm-section__hint">Swipe left to edit or delete</p>
-                  )}
-                  <div className="wlm-template-grid">
-                    {templates.map((tpl, tplIdx) => (
-                      <div key={tpl.id} className="wlm-swipe-container">
-                        <div className="wlm-swipe-actions wlm-swipe-actions--template">
-                          <button
-                            className="wlm-swipe-action wlm-swipe-action--edit"
-                            onClick={() => { closeAllSwipes(); loadTemplate(tpl); }}
-                          >
-                            <Pencil size={16} />
-                            <span>Edit</span>
-                          </button>
-                          <button
-                            className="wlm-swipe-action wlm-swipe-action--delete"
-                            onClick={() => setConfirmDelete({ type: 'template', id: tpl.id, name: tpl.name })}
-                          >
-                            <Trash2 size={16} />
-                            <span>Delete</span>
-                          </button>
-                        </div>
-                        <div
-                          className={`wlm-template-card wlm-swipe-content${!swipeHintShown && tplIdx === 0 ? ' wlm-swipe-hint' : ''}`}
-                          ref={(el) => { cardRefs.current[tpl.id] = el; }}
-                          onClick={() => {
-                            if (openSwipeId === tpl.id) { closeAllSwipes(); return; }
-                            if (Math.abs(swipeTranslateRef.current[tpl.id] || 0) < 5) setTemplatePreview(tpl);
-                          }}
-                          onTouchStart={(e) => handleSwipeStart(e, tpl.id, 'template')}
-                          onTouchMove={(e) => handleSwipeMove(e, tpl.id, 'template')}
-                          onTouchEnd={(e) => handleSwipeEnd(e, tpl.id, 'template')}
-                        >
-                          <div className="wlm-template-card__icon"><Dumbbell size={16} /></div>
-                          <span className="wlm-template-card__name">{tpl.name}</span>
-                          <span className="wlm-template-card__meta">
-                            {(tpl.exercises || []).length} exercise{(tpl.exercises || []).length !== 1 ? 's' : ''}
-                            {tpl.muscle_group ? ` · ${tpl.muscle_group}` : ''}
-                          </span>
-                          {tpl.use_count >= 5 && (
-                            <span className="wlm-template-card__badge"><Star size={9} /> Favorite</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
+                <div className="wlm-template-grid">
+                  {templates.map((tpl) => (
+                    <motion.button
+                      key={tpl.id}
+                      className="wlm-template-card"
+                      onClick={() => setTemplatePreview(tpl)}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      <div className="wlm-template-card__icon"><Dumbbell size={16} /></div>
+                      <span className="wlm-template-card__name">{tpl.name}</span>
+                      <span className="wlm-template-card__meta">
+                        {(tpl.exercises || []).length} exercise{(tpl.exercises || []).length !== 1 ? 's' : ''}
+                        {tpl.muscle_group ? ` · ${tpl.muscle_group}` : ''}
+                      </span>
+                      {tpl.use_count >= 5 && (
+                        <span className="wlm-template-card__badge"><Star size={9} /> Favorite</span>
+                      )}
+                    </motion.button>
+                  ))}
+                </div>
               )}
             </motion.div>
 
@@ -1487,54 +1367,34 @@ export default function WorkoutLogger() {
               transition={{ duration: 0.25, delay: 0.1 }}
             >
               <h3 className="wlm-section__title">Recent Workouts</h3>
-              {workoutHistory.length > 0 && !swipeHintShown && (
-                <p className="wlm-section__hint">Swipe left to delete</p>
-              )}
               {workoutHistory.length === 0 ? (
                 <div className="wlm-empty-state">
                   <Dumbbell size={28} className="wlm-empty-state__icon" />
-                  <p className="wlm-empty-state__text">No workouts yet</p>
-                  <p className="wlm-empty-state__sub">Tap Quick Start to begin!</p>
+                  <p className="wlm-empty-state__text">No workouts logged yet</p>
+                  <p className="wlm-empty-state__sub">Tap Quick Start to begin</p>
                 </div>
               ) : (
                 <div className="wlm-recent-list">
                   {workoutHistory.slice(0, 8).map((w, idx) => (
-                    <div key={w.id} className="wlm-swipe-container wlm-swipe-container--row">
-                      <div className="wlm-swipe-actions wlm-swipe-actions--workout">
-                        <button
-                          className="wlm-swipe-action wlm-swipe-action--delete"
-                          onClick={() => setConfirmDelete({ type: 'workout', id: w.id, name: w.workout_name })}
-                        >
-                          <Trash2 size={16} />
-                          <span>Delete</span>
-                        </button>
-                      </div>
-                      <motion.div
-                        className={`wlm-recent-row wlm-swipe-content${!swipeHintShown && idx === 0 ? ' wlm-swipe-hint' : ''}`}
-                        ref={(el) => { cardRefs.current[w.id] = el; }}
-                        onClick={() => {
-                          if (openSwipeId === w.id) { closeAllSwipes(); return; }
-                          if (Math.abs(swipeTranslateRef.current[w.id] || 0) < 5) setWorkoutDetailSheet(w);
-                        }}
-                        onTouchStart={(e) => handleSwipeStart(e, w.id, 'workout')}
-                        onTouchMove={(e) => handleSwipeMove(e, w.id, 'workout')}
-                        onTouchEnd={(e) => handleSwipeEnd(e, w.id, 'workout')}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: idx * 0.03 }}
-                      >
-                        <div className="wlm-recent-row__left">
-                          <span className="wlm-recent-row__name">{w.workout_name}</span>
-                          <span className="wlm-recent-row__date">
-                            {formatDate(w.workout_date)}
-                            {w.muscle_group ? ` · ${w.muscle_group}` : ''}
-                          </span>
-                        </div>
-                        <span className="wlm-recent-row__count">
-                          {(w.exercises || []).length} ex
+                    <motion.div
+                      key={w.id}
+                      className="wlm-recent-row"
+                      onClick={() => setWorkoutDetailSheet(w)}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: idx * 0.03 }}
+                    >
+                      <div className="wlm-recent-row__left">
+                        <span className="wlm-recent-row__name">{w.workout_name}</span>
+                        <span className="wlm-recent-row__date">
+                          {formatDate(w.workout_date)}
+                          {w.muscle_group ? ` · ${w.muscle_group}` : ''}
                         </span>
-                      </motion.div>
-                    </div>
+                      </div>
+                      <span className="wlm-recent-row__count">
+                        {(w.exercises || []).length} ex
+                      </span>
+                    </motion.div>
                   ))}
                 </div>
               )}
@@ -1570,47 +1430,9 @@ export default function WorkoutLogger() {
                       {templatePreview.use_count > 0 && <span>Used {templatePreview.use_count}x</span>}
                     </div>
                   </div>
-                  <div className="wlm-sheet__header-actions">
-                    <div className="wlm-sheet__menu-wrap">
-                      <button
-                        className="wlm-sheet__menu-btn"
-                        onClick={() => setTplMenuOpen(tplMenuOpen === templatePreview.id ? null : templatePreview.id)}
-                      >
-                        <MoreVertical size={20} />
-                      </button>
-                      <AnimatePresence>
-                        {tplMenuOpen === templatePreview.id && (
-                          <motion.div
-                            className="wlm-sheet__dropdown"
-                            initial={{ opacity: 0, scale: 0.9, y: -4 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: -4 }}
-                            transition={{ duration: 0.12 }}
-                          >
-                            <button onClick={() => {
-                              setTplMenuOpen(null);
-                              setTemplatePreview(null);
-                              loadTemplate(templatePreview);
-                            }}>
-                              <Pencil size={14} /> Edit Template
-                            </button>
-                            <button
-                              className="wlm-sheet__dropdown-danger"
-                              onClick={() => {
-                                setTplMenuOpen(null);
-                                setConfirmDelete({ type: 'template', id: templatePreview.id, name: templatePreview.name });
-                              }}
-                            >
-                              <Trash2 size={14} /> Delete Template
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                    <button className="wlm-sheet__close" onClick={() => { setTemplatePreview(null); setTplMenuOpen(null); }}>
-                      <X size={20} />
-                    </button>
-                  </div>
+                  <button className="wlm-sheet__close" onClick={() => setTemplatePreview(null)}>
+                    <X size={20} />
+                  </button>
                 </div>
                 <div className="wlm-sheet__exercises">
                   {(templatePreview.exercises || []).map((ex, i) => (
@@ -1624,13 +1446,20 @@ export default function WorkoutLogger() {
                     </div>
                   ))}
                 </div>
-                <div className="wlm-sheet__footer">
+                <div className="wlm-sheet__footer wlm-sheet__footer--multi">
                   <motion.button
                     className="wlm-sheet__start-btn"
                     onClick={() => startSessionFromTemplate(templatePreview)}
                     whileTap={{ scale: 0.97 }}
                   >
                     <Play size={16} /> Start Workout
+                  </motion.button>
+                  <motion.button
+                    className="wlm-sheet__delete-btn"
+                    onClick={() => setConfirmDelete({ type: 'template', id: templatePreview.id, name: templatePreview.name })}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    <Trash2 size={16} /> Delete template
                   </motion.button>
                 </div>
               </motion.div>
@@ -1703,11 +1532,16 @@ export default function WorkoutLogger() {
                     <BookmarkPlus size={16} /> Save as Template
                   </motion.button>
                   <motion.button
-                    className="wlm-sheet__action-btn wlm-sheet__action-btn--delete"
-                    onClick={() => setConfirmDelete({ type: 'workout', id: workoutDetailSheet.id, name: workoutDetailSheet.workout_name })}
+                    className="wlm-sheet__delete-btn"
+                    onClick={() => setConfirmDelete({
+                      type: 'workout',
+                      id: workoutDetailSheet.id,
+                      name: workoutDetailSheet.workout_name,
+                      date: workoutDetailSheet.workout_date,
+                    })}
                     whileTap={{ scale: 0.97 }}
                   >
-                    <Trash2 size={16} /> Delete Workout
+                    <Trash2 size={16} /> Delete workout log
                   </motion.button>
                 </div>
               </motion.div>
@@ -2117,10 +1951,13 @@ export default function WorkoutLogger() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <h4 className="wlm-confirm__title">
-                  Delete {confirmDelete.type === 'template' ? 'Template' : 'Workout'}?
+                  Delete {confirmDelete.type === 'template' ? 'template' : 'workout'}?
                 </h4>
                 <p className="wlm-confirm__message">
-                  &ldquo;{confirmDelete.name}&rdquo; will be permanently deleted. This cannot be undone.
+                  {confirmDelete.type === 'template'
+                    ? (<>Delete &ldquo;{confirmDelete.name}&rdquo;? This cannot be undone.</>)
+                    : (<>{confirmDelete.name} on {formatDate(confirmDelete.date)} will be permanently removed.</>)
+                  }
                 </p>
                 <div className="wlm-confirm__actions">
                   <motion.button
