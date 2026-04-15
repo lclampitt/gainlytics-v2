@@ -1,545 +1,675 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Ruler, BarChart2, Dumbbell, BookOpen, Flame, Info, X, ArrowUpRight, Lock } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { motion } from 'framer-motion';
+import {
+  TrendingUp, CalendarDays, ChevronLeft, ChevronRight,
+  UtensilsCrossed, Dumbbell, Check,
+} from 'lucide-react';
+import {
+  ResponsiveContainer, PieChart, Pie, Cell, Sector,
+} from 'recharts';
 import posthog from '../lib/posthog';
 import { getStreak, invalidateStreakCache } from '../lib/streak';
 import { usePlan } from '../hooks/usePlan';
 import { useUpgrade } from '../context/UpgradeContext';
-import BentoCard from '../components/ui/BentoCard';
 import { supabase } from '../supabaseClient';
 import { useTheme } from '../hooks/useTheme';
 import '../styles/dashboard.css';
 
+/* ── Helpers ──────────────────────────────────────────────── */
+
+function fmtDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getGreeting(hour) {
+  if (hour >= 5 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 17) return 'Good afternoon';
+  if (hour >= 17 && hour < 21) return 'Good evening';
+  return 'Good night';
+}
+
+/** Animate a number from 0 → target. */
+function useCountUp(target, duration = 600) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (!target || target === 0) { setVal(0); return; }
+    let start = 0;
+    const step = target / (duration / 16);
+    const t = setInterval(() => {
+      start += step;
+      if (start >= target) { setVal(target); clearInterval(t); }
+      else setVal(Math.round(start));
+    }, 16);
+    return () => clearInterval(t);
+  }, [target, duration]);
+  return val;
+}
+
+/* Monday-based week start/end for "this week" workout count */
+function getWeekRange() {
+  const now = new Date();
+  const day = now.getDay();
+  const diffToMon = (day === 0 ? -6 : 1) - day;
+  const mon = new Date(now);
+  mon.setDate(now.getDate() + diffToMon);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  return { start: fmtDate(mon), end: fmtDate(sun) };
+}
+
+function formatChartDate(dateStr, rangeInDays) {
+  const d = new Date(dateStr + 'T00:00:00');
+  if (rangeInDays > 60) return d.toLocaleDateString('en-US', { month: 'short' });
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+/* ── Stagger variants ────────────────────────────────────── */
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+};
+
 /* ============================================================
-   CONSISTENCY CALENDAR
+   STAT CARD
    ============================================================ */
-function ConsistencyCalendar({ userId, isSpectrum, isRetro }) {
-  const STORAGE_KEY = 'macrovault_consistency_calendar_v1';
-  const today = new Date();
-
-  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
-  const [currentYear, setCurrentYear]   = useState(today.getFullYear());
-  const [activeDays, setActiveDays]     = useState({});
-  // eslint-disable-next-line no-unused-vars
-  const [ripple, setRipple]             = useState(null);
-
-  // Supabase data for dots + popovers
-  const [monthWorkouts,  setMonthWorkouts]  = useState({}); // { 'YYYY-MM-DD': [name, ...] }
-  const [monthNutrition, setMonthNutrition] = useState({}); // { 'YYYY-MM-DD': { calories, protein } }
-  const [popoverKey, setPopoverKey] = useState(null);
-  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
-  const [pinnedKey,  setPinnedKey]  = useState(null); // stays open until clicked away
-  const hideTimer = useRef(null);
-
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if (saved) setActiveDays(saved);
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(activeDays));
-  }, [activeDays]);
-
-  // Fetch workouts + food_logs for the visible month
-  useEffect(() => {
-    if (!userId) return;
-    const mm     = String(currentMonth + 1).padStart(2, '0');
-    const last   = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const first  = `${currentYear}-${mm}-01`;
-    const end    = `${currentYear}-${mm}-${String(last).padStart(2, '0')}`;
-
-    (async () => {
-      const [{ data: workouts }, { data: logs }] = await Promise.all([
-        supabase.from('workouts').select('workout_date, workout_name')
-          .eq('user_id', userId).gte('workout_date', first).lte('workout_date', end),
-        supabase.from('food_logs').select('logged_date, calories, protein_g')
-          .eq('user_id', userId).gte('logged_date', first).lte('logged_date', end),
-      ]);
-
-      const wMap = {};
-      (workouts || []).forEach((w) => {
-        if (!wMap[w.workout_date]) wMap[w.workout_date] = [];
-        wMap[w.workout_date].push(w.workout_name);
-      });
-      setMonthWorkouts(wMap);
-
-      const nMap = {};
-      (logs || []).forEach((l) => {
-        if (!nMap[l.logged_date]) nMap[l.logged_date] = { calories: 0, protein: 0 };
-        nMap[l.logged_date].calories += Number(l.calories)  || 0;
-        nMap[l.logged_date].protein  += Number(l.protein_g) || 0;
-      });
-      setMonthNutrition(nMap);
-    })();
-  }, [userId, currentMonth, currentYear]);
-
-  // Unpin + close on outside click (only when pinned)
-  useEffect(() => {
-    if (!pinnedKey) return;
-    const handle = (e) => {
-      if (!e.target.closest('.cal__popover') && !e.target.closest('.cal__info-btn')) {
-        setPinnedKey(null);
-        setPopoverKey(null);
-      }
-    };
-    document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
-  }, [pinnedKey]);
-
-  const formatKey = (y, m, d) =>
-    `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-
-  const toggleDay = (day) => {
-    const key = formatKey(currentYear, currentMonth, day);
-    setRipple(key);
-    setTimeout(() => setRipple(null), 400);
-    setActiveDays((prev) => {
-      const next = { ...prev };
-      next[key] ? delete next[key] : (next[key] = true);
-      return next;
-    });
-  };
-
-  function calcPos(el) {
-    const rect = el.getBoundingClientRect();
-    let top  = rect.bottom + 6;
-    let left = rect.left + rect.width / 2 - 110;
-    left = Math.max(8, Math.min(left, window.innerWidth - 228));
-    if (top + 180 > window.innerHeight) top = rect.top - 186;
-    return { top, left };
-  }
-
-  function handleInfoEnter(e, key) {
-    clearTimeout(hideTimer.current);
-    setPopoverPos(calcPos(e.currentTarget));
-    setPopoverKey(key);
-  }
-
-  function handleInfoLeave() {
-    if (pinnedKey) return;
-    hideTimer.current = setTimeout(() => setPopoverKey(null), 120);
-  }
-
-  function handlePopoverEnter() {
-    clearTimeout(hideTimer.current);
-  }
-
-  function handlePopoverLeave() {
-    if (pinnedKey) return;
-    hideTimer.current = setTimeout(() => setPopoverKey(null), 120);
-  }
-
-  function handleInfoClick(e, key) {
-    e.stopPropagation();
-    if (pinnedKey === key) {
-      setPinnedKey(null);
-      setPopoverKey(null);
-    } else {
-      setPinnedKey(key);
-      setPopoverPos(calcPos(e.currentTarget));
-      setPopoverKey(key);
-    }
-  }
-
-  const daysInMonth  = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const startWeekday = new Date(currentYear, currentMonth, 1).getDay();
-  const monthLabel   = new Date(currentYear, currentMonth, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
-
-  const activeCount = Object.keys(activeDays).filter((k) => {
-    const [y, m] = k.split('-').map(Number);
-    return y === currentYear && m - 1 === currentMonth;
-  }).length;
-  const consistency = daysInMonth > 0 ? Math.round((activeCount / daysInMonth) * 100) : 0;
-
-  const goBack = () => {
-    if (currentMonth === 0) { setCurrentYear((y) => y - 1); setCurrentMonth(11); }
-    else setCurrentMonth((m) => m - 1);
-  };
-  const goForward = () => {
-    if (currentMonth === 11) { setCurrentYear((y) => y + 1); setCurrentMonth(0); }
-    else setCurrentMonth((m) => m + 1);
-  };
-
-  const cells = [];
-  for (let i = 0; i < startWeekday; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
-  // Active popover data
-  const pwNames = popoverKey ? (monthWorkouts[popoverKey]  || []) : [];
-  const pNutr   = popoverKey ? (monthNutrition[popoverKey] || null) : null;
-  const pDay    = popoverKey ? Number(popoverKey.split('-')[2]) : null;
-  const pDate   = pDay
-    ? new Date(currentYear, currentMonth, pDay).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
-    : '';
-
+function StatCard({ label, rawValue, formatted, delta, deltaColor }) {
+  const animVal = useCountUp(rawValue);
+  const display = typeof formatted === 'function' ? formatted(animVal) : `${animVal.toLocaleString()}`;
   return (
-    <>
-      <div className="cal">
-        <div className="cal__top">
-          <div className="cal__nav">
-            <button onClick={goBack}>‹</button>
-            <span>{monthLabel}</span>
-            <button onClick={goForward}>›</button>
-          </div>
-          <span
-            className="cal__consistency"
-            style={(isSpectrum || isRetro) ? { background: 'var(--color-workouts-bg)', border: '1px solid var(--color-workouts)', color: 'var(--color-workouts-light)' } : undefined}
-          >{consistency}% consistent</span>
-        </div>
-        <div className="cal__weekdays">
-          {['S','M','T','W','T','F','S'].map((d, i) => <span key={i}>{d}</span>)}
-        </div>
-        <div className="cal__grid">
-          {cells.map((day, i) => {
-            if (!day) return <div key={i} className="cal__cell cal__cell--empty" />;
-            const key      = formatKey(currentYear, currentMonth, day);
-            const isActive = !!activeDays[key];
-            const hasData  = !!(monthWorkouts[key]?.length || monthNutrition[key]);
-            return (
-              <motion.button
-                key={i}
-                className={`cal__cell ${isActive ? 'cal__cell--active' : ''}`}
-                style={(isSpectrum || isRetro) && isActive ? { backgroundColor: 'var(--color-workouts)' } : undefined}
-                onClick={() => toggleDay(day)}
-                whileTap={{ scale: 0.8 }}
-              >
-                <span className="cal__day-num">{day}</span>
-                {hasData && <span className="cal__dot" style={(isSpectrum || isRetro) ? { backgroundColor: 'var(--color-workouts)' } : undefined} />}
-                {userId && (
-                  <span
-                    className="cal__info-btn"
-                    role="button"
-                    aria-label="View day history"
-                    onMouseEnter={(e) => handleInfoEnter(e, key)}
-                    onMouseLeave={handleInfoLeave}
-                    onClick={(e) => handleInfoClick(e, key)}
-                  >
-                    <Info size={18} />
-                  </span>
-                )}
-              </motion.button>
-            );
-          })}
-        </div>
-        <p className="cal__hint">Click a day to mark it active</p>
+    <motion.div className="hd-stat" variants={itemVariants}>
+      <div className="hd-stat__label">
+        <span className="hd-stat__dot" />
+        <span>{label}</span>
       </div>
-
-      {/* Popover rendered via portal so it escapes overflow:hidden */}
-      {createPortal(
-        <AnimatePresence>
-          {popoverKey && (
-            <motion.div
-              className="cal__popover"
-              style={{ top: popoverPos.top, left: popoverPos.left }}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.15, ease: 'easeOut' }}
-              onClick={(e) => e.stopPropagation()}
-              onMouseEnter={handlePopoverEnter}
-              onMouseLeave={handlePopoverLeave}
-            >
-              <div className="cal__popover-header">
-                <span>{pDate}</span>
-                <button className="cal__popover-close" onClick={() => setPopoverKey(null)}>
-                  <X size={12} />
-                </button>
-              </div>
-              <div className="cal__popover-section">
-                <span className="cal__popover-label">Workouts</span>
-                {pwNames.length > 0
-                  ? pwNames.map((n, idx) => <p key={idx} className="cal__popover-item">{n}</p>)
-                  : <p className="cal__popover-empty">No workouts logged.</p>}
-              </div>
-              <div className="cal__popover-section">
-                <span className="cal__popover-label">Nutrition</span>
-                {pNutr
-                  ? <>
-                      <p className="cal__popover-item">{Math.round(pNutr.calories)} kcal</p>
-                      <p className="cal__popover-item">{Math.round(pNutr.protein)}g protein</p>
-                    </>
-                  : <p className="cal__popover-empty">No nutrition logged.</p>}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
+      <div className="hd-stat__value">{display}</div>
+      {delta && (
+        <div className="hd-stat__delta" style={{ color: `var(${deltaColor || '--text-muted'})` }}>
+          {delta}
+        </div>
       )}
-    </>
+    </motion.div>
   );
 }
 
 /* ============================================================
-   DAILY CHECKLIST
+   TIME RANGE PILLS
    ============================================================ */
-function CheckCircle({ checked, checkColor, bgColor }) {
+function TimePills({ options, active, onChange }) {
   return (
-    <div
-      className={`dc__circle ${checked ? 'dc__circle--checked' : ''}`}
-      style={checked && bgColor ? { backgroundColor: bgColor } : undefined}
-    >
-      <AnimatePresence>
-        {checked && (
-          <motion.span
-            className="dc__checkmark"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            style={checkColor ? { color: checkColor } : undefined}
-          >
-            ✓
-          </motion.span>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-function DailyChecklist({ userId, isSpectrum, isRetro }) {
-  const navigate = useNavigate();
-  const confettiFired = useRef(false);
-
-  const spectrumColors = {
-    workout:   { check: 'var(--color-workouts)',       bg: 'var(--color-workouts-bg)' },
-    nutrition: { check: 'var(--color-calories)',        bg: 'var(--color-calories-bg)' },
-    progress:  { check: 'var(--color-progress-chart)',  bg: 'var(--color-progress-bg)' },
-  };
-
-  const items = [
-    { key: 'workout',   label: 'Log your workout',     route: '/workouts' },
-    { key: 'nutrition', label: 'Log your nutrition',   route: '/goalplanner' },
-    { key: 'progress',  label: 'Update your progress', route: '/progress' },
-  ];
-
-  const [checks,  setChecks]  = useState({ workout: false, nutrition: false, progress: false });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!userId) return;
-    const _td = new Date();
-    const today = `${_td.getFullYear()}-${String(_td.getMonth() + 1).padStart(2, '0')}-${String(_td.getDate()).padStart(2, '0')}`;
-
-    (async () => {
-      const [{ data: workouts }, { data: foodLogs }, { data: progressRows }] = await Promise.all([
-        supabase.from('workouts').select('id').eq('user_id', userId).eq('workout_date', today).limit(1),
-        supabase.from('food_logs').select('id').eq('user_id', userId).eq('logged_date', today).limit(1),
-        supabase.from('progress').select('id').eq('user_id', userId).eq('date', today).limit(1),
-      ]);
-      setChecks({
-        workout:   (workouts?.length   ?? 0) > 0,
-        nutrition: (foodLogs?.length   ?? 0) > 0,
-        progress:  (progressRows?.length ?? 0) > 0,
-      });
-      setLoading(false);
-    })();
-  }, [userId]);
-
-  const doneCount = Object.values(checks).filter(Boolean).length;
-  const allDone   = doneCount === 3;
-  const pct       = Math.round((doneCount / 3) * 100);
-
-  useEffect(() => {
-    if (allDone && !confettiFired.current) {
-      confettiFired.current = true;
-      confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors: isSpectrum ? ['#7C3AED', '#2563EB', '#EA580C', '#DB2777', '#1D9E75', '#EF9F27'] : ['var(--accent)', 'var(--accent-light)', '#fff'] });
-    }
-  }, [allDone, isSpectrum]);
-
-  if (loading) return <p className="dc__loading">Checking today…</p>;
-
-  return (
-    <div className="dc">
-      {allDone ? (
-        <p className="dc__all-done">All done for today!</p>
-      ) : (
-        <>
-          <p className="dc__progress-label">{doneCount} of 3 complete</p>
-          <div className="dc__bar-track">
-            <motion.div
-              className="dc__bar-fill"
-              animate={{ width: `${pct}%` }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-            />
-          </div>
-        </>
-      )}
-      <ul className="dc__list">
-        {items.map(({ key, label, route }) => (
-          <motion.li
-            key={key}
-            className={`dc__item ${checks[key] ? 'dc__item--done' : ''}`}
-            onClick={() => navigate(route)}
-            whileHover={{ backgroundColor: checks[key] ? 'var(--accent-bg)' : 'rgba(var(--accent-rgb),0.06)' }}
-            transition={{ duration: 0.15 }}
-          >
-            <CheckCircle
-              checked={checks[key]}
-              checkColor={(isSpectrum || isRetro) && checks[key] ? spectrumColors[key].check : undefined}
-              bgColor={(isSpectrum || isRetro) && checks[key] ? spectrumColors[key].bg : undefined}
-            />
-            <span className="dc__label">{label}</span>
-            <ArrowUpRight size={12} className="dc__arrow" />
-          </motion.li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-
-/* ============================================================
-   QUICK LINKS
-   ============================================================ */
-function QuickLinks({ isSpectrum }) {
-  const navigate = useNavigate();
-  const links = [
-    { label: 'Measurements', icon: Ruler,     route: '/measurements', spectrumColor: '#7C3AED' },
-    { label: 'Progress',      icon: BarChart2, route: '/progress',     spectrumColor: '#EF9F27' },
-    { label: 'Workouts',      icon: Dumbbell,  route: '/workouts',     spectrumColor: '#1D9E75' },
-    { label: 'Exercise Library', icon: BookOpen, route: '/exercises',  spectrumColor: '#5DCAA5' },
-  ];
-  return (
-    <div className="quick-links">
-      {links.map(({ label, icon: Icon, route, spectrumColor }) => (
-        <button key={route} className="quick-links__item" onClick={() => navigate(route)}>
-          <Icon size={20} className="quick-links__icon" style={isSpectrum ? { color: spectrumColor } : undefined} />
-          <span>{label}</span>
+    <div className="hd-pills">
+      {options.map((o) => (
+        <button
+          key={o.key}
+          className={`hd-pill ${active === o.key ? 'hd-pill--active' : ''}`}
+          onClick={() => onChange(o.key)}
+        >
+          {o.label}
         </button>
       ))}
     </div>
   );
 }
 
-
 /* ============================================================
-   STREAK BADGE
+   TODAY'S MEAL PLAN
    ============================================================ */
-function StreakBadge({ streak, isSpectrum, isRetro }) {
+const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'];
+
+function TodayMealPlan({ userId, onLogged }) {
+  const navigate = useNavigate();
+  const [meals, setMeals] = useState(null); // null = loading, [] = empty
+  const [logged, setLogged] = useState(new Set()); // set of meal_types already logged
+  const [logging, setLogging] = useState(null); // meal_type currently being logged
+
+  // Fetch today's planned meals
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+
+    (async () => {
+      const today = new Date();
+      const dow = today.getDay();
+      const dayIdx = dow === 0 ? -1 : dow === 6 ? -1 : dow - 1;
+
+      if (dayIdx < 0) { if (!cancelled) setMeals([]); return; }
+
+      const { data: plans } = await supabase
+        .from('meal_plans')
+        .select('id, week_start')
+        .eq('user_id', userId)
+        .order('week_start', { ascending: false })
+        .limit(5);
+
+      if (cancelled) return;
+      if (!plans?.length) { setMeals([]); return; }
+
+      const todayStr = fmtDate(today);
+      const plan = plans.find((p) => {
+        const ws = p.week_start;
+        const wsDate = new Date(ws + 'T00:00:00');
+        const weDate = new Date(wsDate);
+        weDate.setDate(weDate.getDate() + 4);
+        const weStr = fmtDate(weDate);
+        return todayStr >= ws && todayStr <= weStr;
+      });
+
+      if (!plan) { if (!cancelled) setMeals([]); return; }
+
+      const { data: entries } = await supabase
+        .from('meal_plan_entries')
+        .select('meal_type, meal_name, calories, protein, carbs, fat')
+        .eq('plan_id', plan.id)
+        .eq('day_of_week', dayIdx);
+
+      if (!cancelled) setMeals(entries || []);
+
+      // Check which meals are already logged today
+      if (entries?.length) {
+        const { data: logs } = await supabase
+          .from('food_logs')
+          .select('meal_name')
+          .eq('user_id', userId)
+          .eq('logged_date', todayStr)
+          .eq('notes', 'From meal planner');
+
+        if (!cancelled && logs?.length) {
+          const loggedNames = new Set(logs.map((l) => l.meal_name));
+          const alreadyLogged = new Set();
+          entries.forEach((e) => { if (loggedNames.has(e.meal_name)) alreadyLogged.add(e.meal_type); });
+          setLogged(alreadyLogged);
+        }
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  const handleLog = async (entry) => {
+    if (logged.has(entry.meal_type) || logging) return;
+    setLogging(entry.meal_type);
+
+    try {
+      const todayStr = fmtDate(new Date());
+
+      // Remove any existing meal-planner log for this specific meal today
+      await supabase
+        .from('food_logs')
+        .delete()
+        .eq('user_id', userId)
+        .eq('logged_date', todayStr)
+        .eq('meal_name', entry.meal_name)
+        .eq('notes', 'From meal planner');
+
+      const { error } = await supabase.from('food_logs').insert({
+        user_id: userId,
+        logged_date: todayStr,
+        meal_name: entry.meal_name,
+        calories: Number(entry.calories) || 0,
+        protein_g: Number(entry.protein) || 0,
+        carbs_g: Number(entry.carbs) || 0,
+        fat_g: Number(entry.fat) || 0,
+        notes: 'From meal planner',
+      });
+
+      if (error) throw error;
+      setLogged((prev) => new Set(prev).add(entry.meal_type));
+      if (onLogged) onLogged();
+    } catch (err) {
+      console.error('Log meal error:', err);
+    } finally {
+      setLogging(null);
+    }
+  };
+
+  if (meals === null) return null;
+
   return (
-    <motion.div
-      className="streak-badge"
-      style={(isSpectrum || isRetro) ? { color: 'var(--color-streak)' } : undefined}
-      animate={{ scale: [1, 1.05, 1] }}
-      transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
-    >
-      <Flame size={14} />
-      {streak > 0 ? `${streak}-day streak` : 'Start your streak!'}
+    <motion.div className="hd-card" variants={itemVariants}>
+      <div className="hd-card__head">
+        <span className="hd-card__title">Today's Meal Plan</span>
+        <button className="hd-link-btn" onClick={() => navigate('/meal-planner')}>
+          View full plan →
+        </button>
+      </div>
+
+      <div className="hd-meal-row">
+        {MEAL_TYPES.map((type) => {
+          const entry = meals.find((m) => m.meal_type === type);
+          const isLogged = logged.has(type);
+          const isLogging = logging === type;
+          return (
+            <div
+              key={type}
+              className={`hd-meal-cell ${!entry ? 'hd-meal-cell--empty' : ''}`}
+              onClick={!entry ? () => navigate('/meal-planner') : undefined}
+            >
+              <span className="hd-meal-label">{type.toUpperCase()}</span>
+              {entry ? (
+                <>
+                  <span className="hd-meal-name">{entry.meal_name}</span>
+                  <div className="hd-meal-macros">
+                    <span className="hd-meal-macro">Cal: {entry.calories ?? 0}</span>
+                    <span className="hd-meal-macro">P: {entry.protein ?? 0}g</span>
+                    <span className="hd-meal-macro">C: {entry.carbs ?? 0}g</span>
+                    <span className="hd-meal-macro">F: {entry.fat ?? 0}g</span>
+                  </div>
+                  <button
+                    className={`hd-meal-log-btn ${isLogged ? 'hd-meal-log-btn--logged' : ''}`}
+                    onClick={() => handleLog(entry)}
+                    disabled={isLogged || isLogging}
+                  >
+                    {isLogged ? (
+                      <><Check size={12} /> Logged</>
+                    ) : isLogging ? (
+                      'Logging...'
+                    ) : (
+                      'Log'
+                    )}
+                  </button>
+                </>
+              ) : (
+                <div className="hd-meal-add">
+                  <span className="hd-meal-add__icon">+</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </motion.div>
   );
 }
 
 /* ============================================================
-   DAILY MACROS CARD
+   MACRO SPLIT DONUT
    ============================================================ */
-const CIRC = 2 * Math.PI * 40;
+const MACRO_RANGES = [
+  { key: 'today', label: 'Today' },
+  { key: '7d', label: '7D' },
+  { key: '30d', label: '30D' },
+];
 
-function DailyMacrosCard({ caloriesLogged, calorieGoal, proteinLogged, proteinGoal, carbsLogged, carbsGoal, fatLogged, fatGoal, isSpectrum, isRetro }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { const id = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(id); }, []);
+function MacroDonut({ userId, todayNutrition, goalPlan }) {
+  const navigate = useNavigate();
+  const [range, setRange] = useState('today');
+  const [avgData, setAvgData] = useState(null);
+  const [donutTip, setDonutTip] = useState(null);
+  const [activeIdx, setActiveIdx] = useState(null);
 
-  const calPct    = calorieGoal > 0 ? Math.min(caloriesLogged / calorieGoal, 1) : 0;
-  const calOver   = calorieGoal != null && caloriesLogged > calorieGoal;
-  const ringOffset = mounted ? CIRC * (1 - calPct) : CIRC;
-  const ringColor  = calOver ? '#EF9F27' : (isSpectrum || isRetro) ? 'var(--color-calories)' : 'var(--accent)';
-  const ringTextColor = (isSpectrum || isRetro) ? 'var(--color-calories-light)' : 'var(--text-primary)';
+  useEffect(() => {
+    if (!userId || range === 'today') { setAvgData(null); return; }
+    const days = range === '7d' ? 7 : 30;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    const cutStr = fmtDate(cutoff);
 
-  const macros = [
-    { name: 'Protein', logged: proteinLogged, goal: proteinGoal, color: (isSpectrum || isRetro) ? 'var(--color-protein)' : 'var(--accent)' },
-    { name: 'Carbs',   logged: carbsLogged,   goal: carbsGoal,   color: (isSpectrum || isRetro) ? 'var(--color-carbs)' : 'var(--accent-light)' },
-    { name: 'Fat',     logged: fatLogged,     goal: fatGoal,     color: (isSpectrum || isRetro) ? 'var(--color-fat)' : 'var(--accent-dark)' },
-  ];
+    (async () => {
+      const { data } = await supabase
+        .from('food_logs')
+        .select('calories, protein_g, carbs_g, fat_g')
+        .eq('user_id', userId)
+        .gte('logged_date', cutStr);
+      if (data && data.length) {
+        const totals = data.reduce((a, r) => ({
+          cal: a.cal + (r.calories || 0),
+          pro: a.pro + (r.protein_g || 0),
+          carb: a.carb + (r.carbs_g || 0),
+          fat: a.fat + (r.fat_g || 0),
+        }), { cal: 0, pro: 0, carb: 0, fat: 0 });
+        // Get number of unique days to compute daily avg
+        const uniqueDays = new Set(data.map((_, i) => data[i].logged_date || i)).size;
+        const divisor = Math.max(uniqueDays, 1);
+        setAvgData({
+          calories: Math.round(totals.cal / divisor),
+          protein: Math.round(totals.pro / divisor),
+          carbs: Math.round(totals.carb / divisor),
+          fat: Math.round(totals.fat / divisor),
+        });
+      } else {
+        setAvgData({ calories: 0, protein: 0, carbs: 0, fat: 0 });
+      }
+    })();
+  }, [userId, range]);
 
-  const hasGoal = calorieGoal != null || proteinGoal != null;
+  const src = range === 'today' ? todayNutrition : avgData;
+  const cal = src?.calories || 0;
+  const pro = src?.protein || 0;
+  const carbs = src?.carbs || 0;
+  const fat = src?.fat || 0;
+  const goalCal = goalPlan?.calories || 2000;
+
+  const proKcal = pro * 4;
+  const carbKcal = carbs * 4;
+  const fatKcal = fat * 9;
+  const remaining = Math.max(0, goalCal - cal);
+  const isOver = cal > goalCal;
+
+  const donutData = [
+    { name: 'Protein', value: proKcal, grams: pro, goal: goalPlan?.protein, color: '#7F77DD', pct: Math.round(proKcal / Math.max(cal, 1) * 100) },
+    { name: 'Carbs', value: carbKcal, grams: carbs, goal: goalPlan?.carbs, color: 'var(--accent)', pct: Math.round(carbKcal / Math.max(cal, 1) * 100) },
+    { name: 'Fat', value: fatKcal, grams: fat, goal: goalPlan?.fat, color: '#D85A30', pct: Math.round(fatKcal / Math.max(cal, 1) * 100) },
+    { name: 'Remaining', value: remaining || 1, color: 'rgba(255,255,255,0.07)', isRemaining: true, remainingKcal: remaining },
+  ].filter((s) => s.value > 0);
+
+  const handlePieEnter = (_, index) => {
+    setActiveIdx(index);
+    const d = donutData[index];
+    setDonutTip({
+      visible: true,
+      name: d.name,
+      value: d.isRemaining ? `${d.remainingKcal} kcal` : `${d.grams}g`,
+      sub: d.isRemaining ? 'remaining' : d.goal ? `of ${d.goal}g goal \u00b7 ${d.pct}%` : `${d.pct}%`,
+      color: d.isRemaining ? '#EF9F27' : d.color,
+      x: 0, y: 0,
+    });
+  };
+
+  const handlePieLeave = () => {
+    setActiveIdx(null);
+    setDonutTip(null);
+  };
+
+  const handleDonutMouseMove = (e) => {
+    setDonutTip((prev) => prev ? { ...prev, x: e.clientX + 12, y: e.clientY - 12 } : null);
+  };
+
+  const centerLabel = range === 'today' ? 'kcal today' : 'kcal avg/day';
 
   return (
-    <div className="dm">
-      {/* Left — calorie ring */}
-      <div className="dm__ring-col">
-        <svg width="100" height="100" viewBox="0 0 100 100" aria-hidden="true">
-          {/* track */}
-          <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" strokeWidth="8" />
-          {/* progress arc */}
-          <circle
-            cx="50" cy="50" r="40" fill="none"
-            stroke={ringColor}
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={CIRC}
-            strokeDashoffset={ringOffset}
-            transform="rotate(-90 50 50)"
-            style={{ transition: 'stroke-dashoffset 0.8s ease-out, stroke 0.3s ease' }}
-          />
-          <text x="50" y="43" textAnchor="middle" fontSize="15" fontWeight="500" fill={ringTextColor} fontFamily="inherit">{caloriesLogged.toLocaleString()}</text>
-          <text x="50" y="60" textAnchor="middle" fontSize="9"  fill="var(--text-muted)" fontFamily="inherit">kcal</text>
-        </svg>
-        <p className="dm__ring-sub">
-          {calorieGoal != null ? `of ${calorieGoal.toLocaleString()} kcal goal` : 'No goal set'}
-        </p>
+    <motion.div className="hd-card" variants={itemVariants}>
+      <div className="hd-card__head">
+        <span className="hd-card__title">Macro split</span>
+        <div className="hd-pills">
+          {MACRO_RANGES.map((o) => (
+            <button
+              key={o.key}
+              className={`hd-pill ${range === o.key ? 'hd-pill--active' : ''}`}
+              onClick={() => setRange(o.key)}
+            >
+              {o.label}
+            </button>
+          ))}
+          <button
+            className="hd-pill hd-pill--accent"
+            onClick={() => navigate('/goalplanner', { state: { spotlight: 'nutrition' } })}
+          >
+            Log nutrition
+          </button>
+        </div>
       </div>
-
-      {/* Right — macro bars */}
-      <div className="dm__bars-col">
-        {macros.map(({ name, logged, goal, color }, i) => {
-          const pct  = goal > 0 ? Math.min((logged / goal) * 100, 100) : 0;
-          const over = goal != null && logged > goal;
-          return (
-            <div key={name} className="dm__bar-row">
-              <div className="dm__bar-header">
-                <span className="dm__bar-name">{name}</span>
-                <span className="dm__bar-values">{goal != null ? `${logged}g / ${goal}g` : '— / —'}</span>
-              </div>
-              <div className="dm__bar-track">
-                <motion.div
-                  className="dm__bar-fill"
-                  style={{ background: over ? '#EF9F27' : color }}
-                  initial={{ width: '0%' }}
-                  animate={{ width: mounted ? `${pct}%` : '0%' }}
-                  transition={{ duration: 0.6, delay: i * 0.1, ease: 'easeOut' }}
-                />
-              </div>
+      <div className="hd-donut-wrap" onMouseMove={handleDonutMouseMove} onMouseLeave={handlePieLeave}>
+        <div className="hd-donut-chart">
+          <ResponsiveContainer width={130} height={130}>
+            <PieChart>
+              <Pie
+                data={donutData}
+                dataKey="value"
+                cx="50%"
+                cy="50%"
+                innerRadius={40}
+                outerRadius={60}
+                strokeWidth={0}
+                paddingAngle={1}
+                activeIndex={activeIdx}
+                activeShape={(props) => (
+                  <Sector {...props} outerRadius={props.outerRadius + 5} />
+                )}
+                onMouseEnter={handlePieEnter}
+                onMouseLeave={handlePieLeave}
+              >
+                {donutData.map((entry, i) => (
+                  <Cell key={i} fill={entry.color} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="hd-donut-center">
+            <span className="hd-donut-center__val" style={isOver ? { color: '#EF9F27' } : undefined}>
+              {cal.toLocaleString()}
+            </span>
+            <span className="hd-donut-center__label">{centerLabel}</span>
+          </div>
+        </div>
+        <div className="hd-macro-legend">
+          {[
+            { name: 'Protein', g: pro, goal: goalPlan?.protein, color: '#7F77DD' },
+            { name: 'Carbs', g: carbs, goal: goalPlan?.carbs, color: 'var(--accent)' },
+            { name: 'Fat', g: fat, goal: goalPlan?.fat, color: '#D85A30' },
+          ].map(({ name, g, goal, color }) => (
+            <div key={name} className="hd-macro-legend__row">
+              <span className="hd-macro-legend__left">
+                <span className="hd-macro-legend__swatch" style={{ background: color }} />
+                {name}
+              </span>
+              <span className="hd-macro-legend__right">
+                <strong>{Math.round((name === 'Fat' ? g * 9 : g * 4) / Math.max(cal, 1) * 100)}%</strong>
+                <span className="hd-macro-legend__sub">{g}{goal ? ` / ${goal}g` : 'g'}</span>
+              </span>
             </div>
-          );
-        })}
-        {!hasGoal && <p className="dm__no-goal">Set a goal to track macros</p>}
+          ))}
+          <div className="hd-macro-legend__divider" />
+          <div className="hd-macro-legend__row">
+            <span className="hd-macro-legend__left">
+              <span className="hd-macro-legend__swatch" style={{ background: '#EF9F27' }} />
+              Remaining
+            </span>
+            <span className="hd-macro-legend__right">
+              <strong style={{ color: '#EF9F27' }}>{remaining}</strong>
+              <span className="hd-macro-legend__sub">kcal left</span>
+            </span>
+          </div>
+        </div>
       </div>
-    </div>
+      <div
+        className={`hd-donut-tooltip ${donutTip && donutTip.x ? 'hd-donut-tooltip--visible' : ''}`}
+        style={{ left: donutTip?.x ?? 0, top: donutTip?.y ?? 0 }}
+      >
+        <div className="hd-donut-tooltip__name">{donutTip?.name}</div>
+        <div className="hd-donut-tooltip__val" style={{ color: donutTip?.color }}>{donutTip?.value}</div>
+        {donutTip?.sub && <div className="hd-donut-tooltip__sub">{donutTip.sub}</div>}
+      </div>
+    </motion.div>
   );
 }
 
 /* ============================================================
-   DASHBOARD
+   CONSISTENCY CARD (bottom row)
+   ============================================================ */
+function ConsistencyCard({ userId, streak }) {
+  const today = new Date();
+  const todayKey = fmtDate(today);
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [nutritionDays, setNutritionDays] = useState({});
+  const [workoutDays, setWorkoutDays] = useState({});
+  const [tooltip, setTooltip] = useState(null);
+  const tooltipTimer = useRef(null);
+
+  useEffect(() => {
+    if (!userId) return;
+    const mm = String(viewMonth + 1).padStart(2, '0');
+    const last = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const first = `${viewYear}-${mm}-01`;
+    const end = `${viewYear}-${mm}-${String(last).padStart(2, '0')}`;
+    (async () => {
+      const [{ data: foods }, { data: workouts }] = await Promise.all([
+        supabase.from('food_logs').select('logged_date, calories')
+          .eq('user_id', userId).gte('logged_date', first).lte('logged_date', end),
+        supabase.from('workouts').select('workout_date, workout_name')
+          .eq('user_id', userId).gte('workout_date', first).lte('workout_date', end),
+      ]);
+      const nMap = {};
+      (foods || []).forEach((f) => {
+        if (!nMap[f.logged_date]) nMap[f.logged_date] = { calories: 0 };
+        nMap[f.logged_date].calories += Number(f.calories) || 0;
+      });
+      setNutritionDays(nMap);
+      const wMap = {};
+      (workouts || []).forEach((w) => { wMap[w.workout_date] = w.workout_name || 'Workout'; });
+      setWorkoutDays(wMap);
+    })();
+  }, [userId, viewMonth, viewYear]);
+
+  const goBack = () => {
+    if (viewMonth === 0) { setViewYear((y) => y - 1); setViewMonth(11); }
+    else setViewMonth((m) => m - 1);
+  };
+  const goForward = () => {
+    if (viewYear === today.getFullYear() && viewMonth === today.getMonth()) return;
+    if (viewMonth === 11) { setViewYear((y) => y + 1); setViewMonth(0); }
+    else setViewMonth((m) => m + 1);
+  };
+  const isCurrentMonth = viewYear === today.getFullYear() && viewMonth === today.getMonth();
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const startWeekday = new Date(viewYear, viewMonth, 1).getDay();
+  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  const cells = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  const getDayClass = (day) => {
+    const key = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const isToday = key === todayKey;
+    const isFuture = new Date(viewYear, viewMonth, day) > today;
+    const hasN = !!nutritionDays[key];
+    const hasW = !!workoutDays[key];
+    if (isFuture) return 'cw-day--future';
+    if (isToday && hasN && hasW) return 'cw-day--today cw-day--both';
+    if (isToday && (hasN || hasW)) return 'cw-day--today cw-day--partial';
+    if (isToday) return 'cw-day--today';
+    if (hasN && hasW) return 'cw-day--both';
+    if (hasN) return 'cw-day--nutrition';
+    if (hasW) return 'cw-day--workout';
+    return 'cw-day--empty';
+  };
+
+  const getDayIndicator = (day) => {
+    const key = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const hasN = !!nutritionDays[key];
+    const hasW = !!workoutDays[key];
+    if (hasN && hasW) return 'both';
+    if (hasN) return 'nutrition';
+    if (hasW) return 'workout';
+    return null;
+  };
+
+  const showTooltip = (day, e) => {
+    clearTimeout(tooltipTimer.current);
+    const key = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const hasN = !!nutritionDays[key];
+    const hasW = !!workoutDays[key];
+    if (!hasN && !hasW) { setTooltip(null); return; }
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltip({
+      x: rect.left + rect.width / 2,
+      y: rect.top - 4,
+      date: new Date(viewYear, viewMonth, day).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+      cal: hasN ? Math.round(nutritionDays[key].calories) : null,
+      workout: hasW ? workoutDays[key] : null,
+    });
+  };
+
+  const hideTooltip = () => {
+    clearTimeout(tooltipTimer.current);
+    tooltipTimer.current = setTimeout(() => setTooltip(null), 200);
+  };
+
+  let bothCount = 0, workoutCount = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    if (nutritionDays[key] && workoutDays[key]) bothCount++;
+    if (workoutDays[key]) workoutCount++;
+  }
+  const daysElapsed = isCurrentMonth ? today.getDate() : daysInMonth;
+  const completionPct = daysElapsed > 0 ? Math.round((bothCount / daysElapsed) * 100) : 0;
+
+  return (
+    <>
+      <motion.div className="hd-card" variants={itemVariants}>
+        <div className="hd-card__head">
+          <span className="hd-card__title">Consistency</span>
+          <div className="cw__nav">
+            <button onClick={goBack}><ChevronLeft size={14} /></button>
+            <span className="cw__month-label">{monthLabel}</span>
+            <button onClick={goForward} disabled={isCurrentMonth} style={isCurrentMonth ? { opacity: 0.3 } : undefined}>
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+        <div className="cw__weekdays">{['S','M','T','W','T','F','S'].map((d,i) => <span key={i}>{d}</span>)}</div>
+        <div className="cw__grid">
+          {cells.map((day, i) => {
+            if (!day) return <div key={i} className="cw-day cw-day--blank" />;
+            const cls = getDayClass(day);
+            const indicator = getDayIndicator(day);
+            return (
+              <div key={i} className={`cw-day ${cls}`} onMouseEnter={(e) => showTooltip(day, e)} onMouseLeave={hideTooltip} onClick={(e) => showTooltip(day, e)}>
+                <span className="cw-day__num">{day}</span>
+                {indicator === 'both' && <div className="cw-day__dots"><span className="cw-day__indicator" /><span className="cw-day__indicator" /></div>}
+                {(indicator === 'nutrition' || indicator === 'workout') && <span className="cw-day__indicator cw-day__indicator--single" />}
+              </div>
+            );
+          })}
+        </div>
+        <div className="cw__legend">
+          <div className="cw__legend-items">
+            <span className="cw__legend-item"><span className="cw__legend-dot cw__legend-dot--full" />Both</span>
+            <span className="cw__legend-item"><span className="cw__legend-dot cw__legend-dot--half" />Partial</span>
+            <span className="cw__legend-item"><span className="cw__legend-dot cw__legend-dot--none" />Missed</span>
+          </div>
+          <span className="cw__legend-stat">{completionPct}% this month</span>
+        </div>
+      </motion.div>
+      {tooltip && (
+        <div className="cw__tooltip" style={{ top: tooltip.y, left: tooltip.x, transform: 'translate(-50%, -100%)' }}>
+          <div className="cw__tooltip-date">{tooltip.date}</div>
+          {tooltip.cal != null ? (
+            <div className="cw__tooltip-row"><UtensilsCrossed size={10} /> {tooltip.cal.toLocaleString()} kcal</div>
+          ) : (
+            <div className="cw__tooltip-row cw__tooltip-row--muted">Not logged</div>
+          )}
+          {tooltip.workout ? (
+            <div className="cw__tooltip-row"><Dumbbell size={10} /> {tooltip.workout}</div>
+          ) : (
+            <div className="cw__tooltip-row cw__tooltip-row--muted">Not logged</div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ============================================================
+   DASHBOARD — main export
    ============================================================ */
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { triggerUpgrade } = useUpgrade();
   const { plan, isPro } = usePlan();
   const { isSpectrum, isRetro } = useTheme();
-  const hour     = new Date().getHours();
-  const today    = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const now = new Date();
+  const hour = now.getHours();
+  const todayStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const greeting = getGreeting(hour);
 
-  // Feature flag — reserved for future dashboard redesign
-  // eslint-disable-next-line no-unused-vars
-  const showNewDashboard = posthog.isFeatureEnabled('new_dashboard');
+  const [session, setSession] = useState(null);
+  const [streak, setStreak] = useState(0);
 
-  const [session, setSession]         = useState(null);
-  const [streak,  setStreak]          = useState(0);
-  const [caloriesLogged, setCalories] = useState(0);
-  const [proteinLogged, setProtein]   = useState(0);
-  const [carbsLogged, setCarbsLogged] = useState(0);
-  const [fatLogged, setFatLogged]     = useState(0);
-  const [calorieGoal, setCalorieGoal] = useState(null);
-  const [proteinGoal, setProteinGoal] = useState(null);
-  const [carbsGoal, setCarbsGoal]     = useState(null);
-  const [fatGoal, setFatGoal]         = useState(null);
+  // Nutrition state
+  const [todayNutrition, setTodayNutrition] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
+  const [goalPlan, setGoalPlan] = useState(null);
 
-  // Get session once on mount, then fetch streak
+  // Workout count this week
+  const [weekWorkouts, setWeekWorkouts] = useState(0);
+
+
+  // Session
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -555,114 +685,137 @@ export default function Dashboard() {
     return () => { mounted = false; };
   }, []);
 
-  // Fetch goals + today's food totals, then subscribe to live changes
-  useEffect(() => {
-    if (!session?.user?.id || !isPro) return;
-    const uid       = session.user.id;
-    const _d = new Date();
-    const todayDate = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}-${String(_d.getDate()).padStart(2, '0')}`;
+  const userId = session?.user?.id;
 
-    async function loadNutrition() {
+  // Fetch goals + today's food totals
+  useEffect(() => {
+    if (!userId) return;
+    const todayDate = fmtDate(new Date());
+
+    async function load() {
       const [{ data: goal }, { data: logs }] = await Promise.all([
-        supabase.from('goals').select('calories, protein, carbs, fat').eq('user_id', uid).maybeSingle(),
-        supabase.from('food_logs').select('calories, protein_g, carbs_g, fat_g').eq('user_id', uid).eq('logged_date', todayDate),
+        supabase.from('goals').select('calories, protein, carbs, fat').eq('user_id', userId).maybeSingle(),
+        supabase.from('food_logs').select('calories, protein_g, carbs_g, fat_g').eq('user_id', userId).eq('logged_date', todayDate),
       ]);
 
-      setCalorieGoal(goal?.calories ?? null);
-      setProteinGoal(goal?.protein  ?? null);
-      setCarbsGoal(goal?.carbs      ?? null);
-      setFatGoal(goal?.fat          ?? null);
-
-      if (logs) {
-        setCalories(Math.round(logs.reduce((s, r) => s + (r.calories  ?? 0), 0)));
-        setProtein(Math.round(logs.reduce((s, r)  => s + (r.protein_g ?? 0), 0)));
-        setCarbsLogged(Math.round(logs.reduce((s, r) => s + (r.carbs_g ?? 0), 0)));
-        setFatLogged(Math.round(logs.reduce((s, r)   => s + (r.fat_g   ?? 0), 0)));
-      } else {
-        setCalories(0); setProtein(0); setCarbsLogged(0); setFatLogged(0);
+      setGoalPlan(goal || null);
+      if (logs && logs.length) {
+        setTodayNutrition({
+          calories: Math.round(logs.reduce((s, r) => s + (r.calories || 0), 0)),
+          protein: Math.round(logs.reduce((s, r) => s + (r.protein_g || 0), 0)),
+          carbs: Math.round(logs.reduce((s, r) => s + (r.carbs_g || 0), 0)),
+          fat: Math.round(logs.reduce((s, r) => s + (r.fat_g || 0), 0)),
+        });
       }
     }
 
-    async function loadNutritionAndStreak() {
-      await loadNutrition();
-      invalidateStreakCache(uid);
-      const s = await getStreak(uid);
-      setStreak(s);
-    }
+    load();
 
-    loadNutritionAndStreak();
-
+    // Realtime subscription for live updates
     const channel = supabase
-      .channel(`food_logs_dashboard_${uid}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'food_logs', filter: `user_id=eq.${uid}` }, loadNutritionAndStreak)
+      .channel(`food_logs_dashboard_${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'food_logs', filter: `user_id=eq.${userId}` }, () => {
+        load();
+        invalidateStreakCache(userId);
+        getStreak(userId).then(setStreak);
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id, plan]);
+  }, [userId]);
+
+  // Fetch this week's workout count
+  useEffect(() => {
+    if (!userId) return;
+    const { start, end } = getWeekRange();
+    (async () => {
+      const { data } = await supabase
+        .from('workouts')
+        .select('id')
+        .eq('user_id', userId)
+        .gte('workout_date', start)
+        .lte('workout_date', end);
+      setWeekWorkouts(data?.length || 0);
+    })();
+  }, [userId]);
+
+
+  // Stat card computations
+  const calGoal = goalPlan?.calories;
+  const proGoal = goalPlan?.protein;
+  const calDelta = calGoal != null
+    ? todayNutrition.calories <= calGoal
+      ? { text: `${(calGoal - todayNutrition.calories).toLocaleString()} kcal remaining`, color: '--accent-light' }
+      : { text: `${(todayNutrition.calories - calGoal).toLocaleString()} kcal over`, color: '--warning' }
+    : null;
+
+  const proPct = proGoal ? todayNutrition.protein / proGoal : 0;
+  const proDelta = proGoal
+    ? proPct >= 0.9
+      ? { text: 'on track for goal', color: '--accent-light' }
+      : proPct >= 0.6
+        ? { text: `${proGoal - todayNutrition.protein}g to go`, color: '--warning' }
+        : { text: `${proGoal - todayNutrition.protein}g remaining`, color: '--text-muted' }
+    : null;
+
+  // Get user first name from session metadata
+  const firstName = session?.user?.user_metadata?.first_name
+    || session?.user?.user_metadata?.full_name?.split(' ')[0]
+    || '';
 
   return (
-    <div className="dashboard-v2">
-      {/* Greeting header */}
-      <div className="dashboard-v2__header">
+    <div className="hd">
+      {/* Page header */}
+      <div className="hd__header">
         <div>
-          <h1 className="dashboard-v2__greeting">{greeting}</h1>
-          <p className="dashboard-v2__date">{today}</p>
+          <h1 className="hd__greeting">{greeting}{firstName ? `, ${firstName}` : ''}</h1>
+          <p className="hd__date">{todayStr}</p>
         </div>
-        {streak > 1 && <StreakBadge streak={streak} isSpectrum={isSpectrum} isRetro={isRetro} />}
       </div>
 
-      {/* Bento grid */}
-      {(() => {
-        return (
-          <div className="bento-grid">
-            <BentoCard title="Consistency Calendar" span="wide" index={0}>
-              <ConsistencyCalendar userId={session?.user?.id} isSpectrum={isSpectrum} isRetro={isRetro} />
-            </BentoCard>
-
-            <BentoCard title="Daily checklist" index={1}>
-              <DailyChecklist userId={session?.user?.id} isSpectrum={isSpectrum} isRetro={isRetro} />
-            </BentoCard>
-
-            <BentoCard
-              title="Daily Macros"
-              action={{ label: 'Log nutrition', onClick: () => navigate('/goalplanner') }}
-              span="wide"
-              index={2}
-            >
-              <div style={{ position: 'relative' }}>
-                <div style={{ filter: !isPro ? 'blur(4px)' : 'none', pointerEvents: !isPro ? 'none' : 'auto', userSelect: !isPro ? 'none' : 'auto' }}>
-                  <DailyMacrosCard
-                    caloriesLogged={caloriesLogged}
-                    calorieGoal={calorieGoal}
-                    proteinLogged={proteinLogged}
-                    proteinGoal={proteinGoal}
-                    carbsLogged={carbsLogged}
-                    carbsGoal={carbsGoal}
-                    fatLogged={fatLogged}
-                    fatGoal={fatGoal}
-                    isSpectrum={isSpectrum}
-                    isRetro={isRetro}
-                  />
-                </div>
-                {!isPro && (
-                  <div className="dm__lock-overlay">
-                    <Lock size={18} style={{ color: 'var(--accent)' }} />
-                    <span className="dm__lock-label">Pro feature</span>
-                    <button className="dm__lock-btn" onClick={() => triggerUpgrade('goals')}>
-                      Upgrade to Pro
-                    </button>
-                  </div>
-                )}
-              </div>
-            </BentoCard>
-
-            <BentoCard title="Quick Access" index={3}>
-              <QuickLinks isSpectrum={isSpectrum} />
-            </BentoCard>
+      {/* Main content */}
+      <motion.div className="hd__main" variants={containerVariants} initial="hidden" animate="show">
+          {/* Stat cards row */}
+          <div className="hd-stats-row">
+            <StatCard
+              label="Calories"
+              rawValue={todayNutrition.calories}
+              formatted={(v) => v.toLocaleString()}
+              delta={calDelta?.text}
+              deltaColor={calDelta?.color}
+            />
+            <StatCard
+              label="Protein"
+              rawValue={todayNutrition.protein}
+              formatted={(v) => `${v}g`}
+              delta={proDelta?.text}
+              deltaColor={proDelta?.color}
+            />
+            <StatCard
+              label="Workouts"
+              rawValue={weekWorkouts}
+              formatted={(v) => `${v}`}
+              delta="this week"
+            />
+            <StatCard
+              label="Streak"
+              rawValue={streak}
+              formatted={(v) => `${v}d`}
+              delta={streak >= 7 ? 'keep it going' : 'day streak'}
+              deltaColor={streak >= 7 ? '--accent-light' : '--text-muted'}
+            />
           </div>
-        );
-      })()}
+
+          {/* Bottom row: left column (macro + meal plan) + right column (consistency) */}
+          <div className="hd-bottom-row">
+            <div className="hd-bottom-col">
+              <MacroDonut userId={userId} todayNutrition={todayNutrition} goalPlan={goalPlan} />
+              <TodayMealPlan userId={userId} />
+            </div>
+            <ConsistencyCard userId={userId} streak={streak} />
+          </div>
+
+      </motion.div>
     </div>
   );
 }

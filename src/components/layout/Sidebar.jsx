@@ -8,7 +8,6 @@ import {
   Calculator,
   Target,
   Dumbbell,
-  BarChart2,
   BookOpen,
   UtensilsCrossed,
   ChevronLeft,
@@ -26,23 +25,40 @@ import {
   Palette,
   Check,
   Plus,
+  PanelLeftClose,
+  PanelLeftOpen,
+  CalendarDays,
+  Zap,
 } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import SidebarThemeSwitcher from '../ui/SidebarThemeSwitcher';
 import './Sidebar.css';
 
-const FREE_NAV_ITEMS = [
-  { to: '/home',          label: 'Home',             icon: Home             },
-  { to: '/calculators',   label: 'Calculators',      icon: Calculator       },
-  { to: '/exercises',     label: 'Exercise Library',  icon: BookOpen         },
-  { to: '/measurements',  label: 'Measurements',     icon: Ruler            },
-];
+const HOME_NAV = { to: '/home', label: 'Home', icon: Home };
 
-const PRO_NAV_ITEMS = [
-  { to: '/workouts',      label: 'Workouts',         icon: Dumbbell,         tryFree: true },
-  { to: '/goalplanner',   label: 'Goal Planner',     icon: Target            },
-  { to: '/meal-planner',  label: 'Meal Planner',     icon: UtensilsCrossed   },
-  { to: '/progress',      label: 'Progress',         icon: BarChart2         },
+const NAV_GROUPS = [
+  {
+    label: 'ANALYZE',
+    items: [
+      { to: '/progress',     label: 'Progress',     icon: TrendingUp,  pro: true },
+      { to: '/measurements', label: 'Measurements', icon: Ruler },
+      { to: '/calculators',  label: 'Calculators',  icon: Calculator },
+    ],
+  },
+  {
+    label: 'PLAN',
+    items: [
+      { to: '/meal-planner', label: 'Meal Planner', icon: CalendarDays, pro: true },
+      { to: '/goalplanner',  label: 'Goal Planner', icon: Target,       pro: true },
+      { to: '/workouts',     label: 'Workouts',     icon: Zap,          pro: true, tryFree: true },
+    ],
+  },
+  {
+    label: 'LIBRARY',
+    items: [
+      { to: '/exercises', label: 'Exercise Library', icon: BookOpen },
+    ],
+  },
 ];
 
 const MOBILE_TABS_LEFT = [
@@ -120,7 +136,10 @@ const getMobileDotColor = (route, accent) => {
 };
 
 export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem('mv_sidebar_collapsed') === 'true'; } catch { return false; }
+  });
+  const [hoveredNav, setHoveredNav] = useState(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const [themeSheetOpen, setThemeSheetOpen] = useState(false);
@@ -132,6 +151,11 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
 
   // Close More sheet on route change
   useEffect(() => { setMoreOpen(false); setThemeSheetOpen(false); }, [location.pathname]);
+
+  // Persist sidebar collapsed state
+  useEffect(() => {
+    try { localStorage.setItem('mv_sidebar_collapsed', collapsed); } catch {}
+  }, [collapsed]);
   const { theme, toggle: toggleTheme, isDark, isSpectrum, isXpAqua, isMyspace, isY2kChrome, isRetro, accent, isY2K, uiMode, setAccent, setUiMode } = useTheme();
 
   const userEmail = session?.user?.email ?? '';
@@ -187,36 +211,37 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
         </AnimatePresence>
       </div>
 
-      {/* Y2K section label */}
-      {isY2K && !collapsed && <div className="sidebar__y2k-label">Navigation</div>}
-
-      {/* Nav — Free items */}
-      <nav className="sidebar__nav">
-        {FREE_NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
+      {/* Home — standalone at top, no section label */}
+      <nav className="sidebar__nav sidebar__nav--home">
+        {(() => {
+          const Icon = HOME_NAV.icon;
+          const itemKey = 'home';
           return (
             <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
+              key={itemKey}
+              to={HOME_NAV.to}
               className={({ isActive }) =>
                 `sidebar__nav-item ${isActive ? 'sidebar__nav-item--active' : ''}`
               }
-              title={collapsed ? item.label : undefined}
+              title={collapsed ? HOME_NAV.label : undefined}
               style={({ isActive }) => {
-                const sc = getNavColor(item.to, accent);
-                if (!isActive || !sc) return undefined;
-                return {
-                  background: sc.bg,
-                  borderLeftColor: sc.border,
-                  color: sc.text,
-                };
+                const sc = getNavColor(HOME_NAV.to, accent);
+                if (!isActive || !sc) return {};
+                return { color: sc.text };
               }}
+              onMouseEnter={() => collapsed && setHoveredNav(itemKey)}
+              onMouseLeave={() => setHoveredNav(null)}
             >
               {({ isActive }) => {
-                const sc = getNavColor(item.to, accent);
+                const sc = getNavColor(HOME_NAV.to, accent);
                 return (
                   <>
+                    {isActive && (
+                      <div
+                        className="sidebar__active-bg"
+                        style={sc ? { background: sc.bg, borderColor: sc.border } : undefined}
+                      />
+                    )}
                     <Icon size={18} className="sidebar__nav-icon" style={isActive && sc ? { color: sc.icon } : undefined} />
                     <AnimatePresence>
                       {!collapsed && (
@@ -227,103 +252,100 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
                           exit={{ opacity: 0 }}
                           transition={{ duration: 0.15 }}
                         >
-                          {item.label}
+                          {HOME_NAV.label}
                         </motion.span>
                       )}
                     </AnimatePresence>
-                  </>
-                );
-              }}
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      {/* Nav — Pro section */}
-      <div className={`sidebar__section-label${isY2K ? ' sidebar__section-label--y2k' : ''}`}>
-        <AnimatePresence>
-          {!collapsed ? (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              style={(isSpectrum || isRetro) ? { color: 'var(--accent)' } : undefined}
-            >
-              {isY2K ? '⭐ Pro Features' : 'PRO'}
-            </motion.span>
-          ) : (
-            <motion.div
-              className="sidebar__section-divider"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            />
-          )}
-        </AnimatePresence>
-      </div>
-      <nav className="sidebar__nav sidebar__nav--pro">
-        {PRO_NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              className={({ isActive }) =>
-                `sidebar__nav-item ${isActive ? 'sidebar__nav-item--active' : ''}`
-              }
-              title={collapsed ? item.label : undefined}
-              style={({ isActive }) => {
-                const sc = getNavColor(item.to, accent);
-                if (!isActive || !sc) return undefined;
-                return {
-                  background: sc.bg,
-                  borderLeftColor: sc.border,
-                  color: sc.text,
-                };
-              }}
-            >
-              {({ isActive }) => {
-                const sc = getNavColor(item.to, accent);
-                return (
-                  <>
-                    <Icon size={18} className="sidebar__nav-icon" style={isActive && sc ? { color: sc.icon } : undefined} />
-                    <AnimatePresence>
-                      {!collapsed && (
-                        <motion.span
-                          className="sidebar__nav-label"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.15 }}
-                        >
-                          {item.label}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                    {!isPro && !collapsed && (
-                      item.tryFree ? (
-                        <span className="sidebar__try-free-badge">Try free</span>
-                      ) : (
-                        <Lock size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginLeft: 'auto' }} title="Pro feature" />
-                      )
+                    {collapsed && hoveredNav === itemKey && (
+                      <div className="sidebar__tooltip">{HOME_NAV.label}</div>
                     )}
                   </>
                 );
               }}
             </NavLink>
           );
-        })}
+        })()}
       </nav>
+
+      {/* Grouped navigation */}
+      {NAV_GROUPS.map((group) => (
+        <React.Fragment key={group.label}>
+          {!collapsed && (
+            <div className="sidebar__group-label">{group.label}</div>
+          )}
+          {collapsed && (
+            <div className="sidebar__section-divider" style={{ margin: '8px auto' }} />
+          )}
+          <nav className="sidebar__nav sidebar__nav--grouped">
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const itemKey = `${group.label}-${item.label}`;
+                return (
+                  <NavLink
+                    key={itemKey}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      `sidebar__nav-item ${isActive ? 'sidebar__nav-item--active' : ''}`
+                    }
+                    title={collapsed ? item.label : undefined}
+                    style={({ isActive }) => {
+                      const sc = getNavColor(item.to, accent);
+                      if (!isActive || !sc) return {};
+                      return { color: sc.text };
+                    }}
+                    onMouseEnter={() => collapsed && setHoveredNav(itemKey)}
+                    onMouseLeave={() => setHoveredNav(null)}
+                  >
+                    {({ isActive }) => {
+                      const sc = getNavColor(item.to, accent);
+                      return (
+                        <>
+                          {isActive && (
+                            <div
+                              className="sidebar__active-bg"
+                              style={sc ? { background: sc.bg, borderColor: sc.border } : undefined}
+                            />
+                          )}
+                          <Icon size={18} className="sidebar__nav-icon" style={isActive && sc ? { color: sc.icon } : undefined} />
+                          <AnimatePresence>
+                            {!collapsed && (
+                              <motion.span
+                                className="sidebar__nav-label"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.15 }}
+                              >
+                                {item.label}
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
+                          {item.pro && !isPro && !collapsed && (
+                            item.tryFree ? (
+                              <span className="sidebar__try-free-badge">Try free</span>
+                            ) : (
+                              <Lock size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginLeft: 'auto' }} title="Pro feature" />
+                            )
+                          )}
+                          {collapsed && hoveredNav === itemKey && (
+                            <div className="sidebar__tooltip">{item.label}</div>
+                          )}
+                        </>
+                      );
+                    }}
+                  </NavLink>
+                );
+              })}
+            </nav>
+          </React.Fragment>
+      ))}
 
       {/* Spacer */}
       <div className="sidebar__spacer" />
 
       {/* Theme toggle — pinned above Settings (hidden for retro themes) */}
       {!isRetro && (
-        <div style={{ padding: '0 8px 2px' }}>
+        <div style={{ padding: '0 14px 2px' }}>
           <button
             className="sidebar__theme-toggle"
             onClick={toggleTheme}
@@ -356,52 +378,19 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
         />
       )}
 
-      {/* Settings — pinned above user section */}
-      <div style={{ padding: '0 8px 4px' }}>
-        <NavLink
-          to="/settings"
-          className={({ isActive }) =>
-            `sidebar__nav-item ${isActive ? 'sidebar__nav-item--active' : ''}`
-          }
-          title={collapsed ? 'Settings' : undefined}
-          style={({ isActive }) => {
-            const sc = getNavColor('/settings', accent);
-            if (!isActive || !sc) return undefined;
-            return {
-              background: sc.bg,
-              borderLeftColor: sc.border,
-              color: sc.text,
-            };
-          }}
-        >
-          {({ isActive }) => {
-            const sc = getNavColor('/settings', accent);
-            return (
-              <>
-                <Settings size={18} className="sidebar__nav-icon" style={isActive && sc ? { color: sc.icon } : undefined} />
-                <AnimatePresence>
-                  {!collapsed && (
-                    <motion.span
-                      className="sidebar__nav-label"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.15 }}
-                    >
-                      Settings
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </>
-            );
-          }}
-        </NavLink>
-      </div>
+      {/* Divider */}
+      <div className="sidebar__divider" />
 
-      {/* User section */}
-      <div className="sidebar__user">
+      {/* User row */}
+      <div
+        className={`sidebar__user-row ${collapsed ? 'sidebar__user-row--collapsed' : ''}`}
+        onClick={() => navigate('/settings')}
+        role="button"
+        tabIndex={0}
+        title={collapsed ? displayName : 'Settings'}
+      >
         <div className="sidebar__avatar" style={isSpectrum ? { background: 'linear-gradient(135deg, #7C3AED, #DB2777)' } : isXpAqua ? { background: 'linear-gradient(135deg, #00BFFF, #39FF14)' } : isMyspace ? { background: 'linear-gradient(135deg, #FF00FF, #8800FF)' } : isY2kChrome ? { background: 'linear-gradient(135deg, #888888, #FFD700)' } : undefined}>
-          <User size={14} />
+          {initials}
         </div>
         <AnimatePresence>
           {!collapsed && (
@@ -423,31 +412,25 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
             </motion.div>
           )}
         </AnimatePresence>
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.button
-              className="sidebar__logout"
-              onClick={handleLogout}
-              title="Sign out"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              <LogOut size={15} />
-            </motion.button>
-          )}
-        </AnimatePresence>
-        {collapsed && (
+        {!collapsed && (
           <button
-            className="sidebar__logout sidebar__logout--collapsed"
-            onClick={handleLogout}
+            className="sidebar__logout"
+            onClick={(e) => { e.stopPropagation(); handleLogout(); }}
             title="Sign out"
           >
             <LogOut size={15} />
           </button>
         )}
       </div>
+      {collapsed && (
+        <button
+          className="sidebar__logout sidebar__logout--collapsed"
+          onClick={handleLogout}
+          title="Sign out"
+        >
+          <LogOut size={15} />
+        </button>
+      )}
 
       {/* Theme color dots (expanded only) */}
       {!collapsed && (
@@ -460,13 +443,15 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
       )}
 
       {/* Collapse toggle */}
-      <button
-        className="sidebar__collapse-btn"
-        onClick={() => setCollapsed((c) => !c)}
-        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-      </button>
+      <div className="sidebar__collapse-wrap">
+        <button
+          className="sidebar__collapse-btn"
+          onClick={() => setCollapsed((c) => !c)}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <PanelLeftOpen size={12} /> : <PanelLeftClose size={12} />}
+        </button>
+      </div>
     </div>
   );
 

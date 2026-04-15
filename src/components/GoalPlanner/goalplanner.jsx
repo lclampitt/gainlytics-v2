@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Target } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { appToast as toast } from '../../utils/toast';
 import posthog from '../../lib/posthog';
 import { supabase } from '../../supabaseClient';
@@ -289,17 +289,25 @@ function GoalPlannerGate() {
 function GoalPlannerContent({ compact = false }) {
   const { isSpectrum, isRetro, isY2K } = useTheme();
 
-  // Spotlight via query param
+  // Spotlight via query param or navigation state
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const nutritionRef = useRef(null);
   const [spotlight, setSpotlight] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get('spotlight') === 'nutrition') {
+    const fromParam = searchParams.get('spotlight') === 'nutrition';
+    const fromState = location.state?.spotlight === 'nutrition';
+    if (fromParam || fromState) {
       setSpotlight(true);
-      // Remove the param from URL so it doesn't persist on refresh
-      searchParams.delete('spotlight');
-      setSearchParams(searchParams, { replace: true });
+      if (fromParam) {
+        searchParams.delete('spotlight');
+        setSearchParams(searchParams, { replace: true });
+      }
+      // Clear navigation state so it doesn't persist on back/forward
+      if (fromState) {
+        window.history.replaceState({}, '');
+      }
 
       // Auto-scroll after a brief delay to let the DOM render
       const timer = setTimeout(() => {

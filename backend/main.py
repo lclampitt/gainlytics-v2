@@ -1439,3 +1439,6 @@ Return ONLY the JSON array."""
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI week suggestion error: {str(e)}")
+
+
+# -------------------------------------------------
