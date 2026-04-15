@@ -85,22 +85,62 @@ function parseServingGrams(str) {
 }
 
 // Normalize an Open Food Facts product into the shape we render.
+// Falls back through every energy field OFF might provide so branded
+// products (Oreo, etc.) don't get silently dropped.
 function formatOffProduct(p) {
-  const nutriments = p.nutriments || {};
+  const n = p.nutriments || {};
   const servingGrams = parseServingGrams(p.serving_size) || 100;
-  const per100 = {
-    calories: Number(nutriments['energy-kcal_100g']) || 0,
-    protein: Number(nutriments.proteins_100g) || 0,
-    carbs: Number(nutriments.carbohydrates_100g) || 0,
-    fat: Number(nutriments.fat_100g) || 0,
-  };
+
+  // Calories per 100g: try kcal keys first, then convert kJ (energy_100g) ÷ 4.184.
+  let cal100 =
+    Number(n['energy-kcal_100g']) ||
+    Number(n['energy-kcal']) ||
+    0;
+  if (!cal100) {
+    const kj =
+      Number(n['energy-kj_100g']) ||
+      Number(n['energy-kj']) ||
+      Number(n.energy_100g) ||
+      Number(n.energy) ||
+      0;
+    if (kj) cal100 = kj / 4.184;
+  }
+  // Serving-only fallback: scale serving values up to per-100g.
+  if (!cal100) {
+    const calServ =
+      Number(n['energy-kcal_serving']) ||
+      (Number(n['energy-kj_serving']) ? Number(n['energy-kj_serving']) / 4.184 : 0);
+    if (calServ && servingGrams) cal100 = (calServ * 100) / servingGrams;
+  }
+
+  const protein100 =
+    Number(n.proteins_100g) ||
+    (Number(n.proteins_serving) && servingGrams
+      ? (Number(n.proteins_serving) * 100) / servingGrams
+      : 0);
+  const carbs100 =
+    Number(n.carbohydrates_100g) ||
+    (Number(n.carbohydrates_serving) && servingGrams
+      ? (Number(n.carbohydrates_serving) * 100) / servingGrams
+      : 0);
+  const fat100 =
+    Number(n.fat_100g) ||
+    (Number(n.fat_serving) && servingGrams
+      ? (Number(n.fat_serving) * 100) / servingGrams
+      : 0);
+
   return {
     id: p.code || `${p.product_name}-${Math.random()}`,
     name: (p.product_name || '').trim() || 'Unknown product',
     brand: ((p.brands || '').split(',')[0] || '').trim(),
     servingGrams,
     servingLabel: p.serving_size || `${servingGrams}g`,
-    per100,
+    per100: {
+      calories: cal100 || 0,
+      protein: protein100 || 0,
+      carbs: carbs100 || 0,
+      fat: fat100 || 0,
+    },
   };
 }
 
@@ -390,13 +430,24 @@ function SlotPanel({
     setFoodLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&json=true&page_size=10`;
-        const res = await fetch(url);
-        const data = await res.json();
+        const fields =
+          'code,product_name,brands,serving_size,nutriments';
+        const v2 = `https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(query)}&page_size=20&fields=${fields}`;
+        let data;
+        try {
+          const res = await fetch(v2);
+          data = await res.json();
+        } catch {
+          const legacy = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&json=true&page_size=20`;
+          const res2 = await fetch(legacy);
+          data = await res2.json();
+        }
         if (cancelled) return;
         const products = (data.products || [])
-          .filter((p) => p.product_name && p.nutriments && p.nutriments['energy-kcal_100g'] != null)
-          .map(formatOffProduct);
+          .filter((p) => p.product_name && p.nutriments)
+          .map(formatOffProduct)
+          .filter((p) => p.per100.calories > 0)
+          .slice(0, 15);
         setFoodResults(products);
         setFoodSearched(true);
       } catch (err) {
