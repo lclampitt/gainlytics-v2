@@ -398,42 +398,88 @@
   cursor: default;
 }
 
-/* ── Mobile: stack nutrition logger inputs ──────── */
+/* ── Mobile: compact nutrition logger cards ──────── */
 @media (max-width: 640px) {
   .gp-log-card {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  .gp-log-card .gp-macro-grid {
-    grid-template-columns: 1fr;
+    padding: 14px 16px;
     gap: 10px;
+    border-radius: var(--radius-md);
   }
 
-  .gp-log-card .gp-field--full {
-    grid-column: span 1;
+  .gp-log-card .gp-section-label {
+    font-size: 11px;
   }
 
   .gp-log-card .fs-tabs {
-    width: 100%;
+    padding: 3px;
+    margin-bottom: 0;
   }
 
   .gp-log-card .fs-tabs__tab {
-    flex: 1 1 50%;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .gp-log-card .gp-macro-grid {
+    gap: 8px 10px;
+  }
+
+  .gp-log-card .gp-field__label {
+    font-size: 11px;
   }
 
   .gp-log-input {
-    min-height: 48px;
+    padding: 8px 10px;
+    font-size: 13px;
+    min-height: 36px;
   }
 
   .gp-log-meal-input {
-    width: 100%;
+    margin-top: 6px;
   }
 
   .gp-log-btn {
-    width: 100%;
-    align-self: stretch;
-    min-height: 48px;
+    margin-top: 8px;
+    padding: 7px 14px;
+    font-size: 12px;
+  }
+
+  /* Today's log list card */
+  .gp-log-entries {
+    gap: 6px;
+    min-height: 40px;
+  }
+
+  .gp-log-entry {
+    padding: 7px 10px;
+    gap: 8px;
+  }
+
+  .gp-log-entry__label {
+    font-size: 12px;
+  }
+
+  .gp-log-entry__time,
+  .gp-log-entry__macros {
+    font-size: 10px;
+  }
+
+  .gp-log-entry__cal {
+    font-size: 12px;
+  }
+
+  .gp-log-empty {
+    font-size: 12px;
+    padding: 14px 0;
+  }
+
+  .gp-log-totals {
+    padding-top: 9px;
+    font-size: 12px;
+  }
+
+  .gp-log-totals__label {
+    font-size: 10px;
   }
 }
 
