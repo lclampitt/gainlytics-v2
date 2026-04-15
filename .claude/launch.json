@@ -9,10 +9,9 @@
     },
     {
       "name": "dev-preview",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["start"],
-      "port": 3456,
-      "env": { "PORT": "3456", "BROWSER": "none" }
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "set PORT=3456&& set BROWSER=none&& npm start"],
+      "port": 3456
     }
   ]
 }

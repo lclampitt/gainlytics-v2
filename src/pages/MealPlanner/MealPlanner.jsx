@@ -72,6 +72,42 @@ function fmtNumber(n) {
   return n.toLocaleString('en-US');
 }
 
+/* ── Open Food Facts helpers ──────────────────────── */
+// Parse a serving_size string like "30 g", "1 bar (30 g)", "250ml" into grams.
+// Returns null if no gram value can be extracted.
+function parseServingGrams(str) {
+  if (!str || typeof str !== 'string') return null;
+  const match = str.match(/(\d+(?:[.,]\d+)?)\s*g\b/i);
+  if (match) return parseFloat(match[1].replace(',', '.'));
+  return null;
+}
+
+// Normalize an Open Food Facts product into the shape we render.
+function formatOffProduct(p) {
+  const nutriments = p.nutriments || {};
+  const servingGrams = parseServingGrams(p.serving_size) || 100;
+  const per100 = {
+    calories: Number(nutriments['energy-kcal_100g']) || 0,
+    protein: Number(nutriments.proteins_100g) || 0,
+    carbs: Number(nutriments.carbohydrates_100g) || 0,
+    fat: Number(nutriments.fat_100g) || 0,
+  };
+  return {
+    id: p.code || `${p.product_name}-${Math.random()}`,
+    name: (p.product_name || '').trim() || 'Unknown product',
+    brand: ((p.brands || '').split(',')[0] || '').trim(),
+    servingGrams,
+    servingLabel: p.serving_size || `${servingGrams}g`,
+    per100,
+  };
+}
+
+// Round macro to one decimal for grams, integer for kcal.
+function roundMacro(v, decimals = 1) {
+  const f = Math.pow(10, decimals);
+  return Math.round(v * f) / f;
+}
+
 /* ── Cell stagger animation ──────────────────────── */
 const cellVariants = {
   hidden: { opacity: 0, y: 6 },
@@ -124,6 +160,16 @@ function SlotPanel({
   const [savedMeals, setSavedMeals] = useState([]);
   const [savedSearch, setSavedSearch] = useState('');
   const [loadingSaved, setLoadingSaved] = useState(false);
+
+  /* ── Food Search (Open Food Facts) ────────── */
+  const [foodQuery, setFoodQuery] = useState('');
+  const [foodResults, setFoodResults] = useState([]);
+  const [foodLoading, setFoodLoading] = useState(false);
+  const [foodSearched, setFoodSearched] = useState(false);
+  const [selectedFood, setSelectedFood] = useState(null); // formatted product
+  const [foodServings, setFoodServings] = useState(1);
+  const [foodWeight, setFoodWeight] = useState(100);
+  const [addingFood, setAddingFood] = useState(false);
 
   // Manual form
   const [form, setForm] = useState({
@@ -320,6 +366,111 @@ function SlotPanel({
     m.meal_name?.toLowerCase().includes(savedSearch.toLowerCase())
   );
 
+  /* ── Debounced food search (Open Food Facts) ── */
+  useEffect(() => {
+    if (tab !== 'food') return;
+    const query = foodQuery.trim();
+    if (!query) {
+      setFoodResults([]);
+      setFoodSearched(false);
+      return;
+    }
+    let cancelled = false;
+    setFoodLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&json=true&page_size=10`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (cancelled) return;
+        const products = (data.products || [])
+          .filter((p) => p.product_name && p.nutriments && p.nutriments['energy-kcal_100g'] != null)
+          .map(formatOffProduct);
+        setFoodResults(products);
+        setFoodSearched(true);
+      } catch (err) {
+        if (!cancelled) {
+          setFoodResults([]);
+          setFoodSearched(true);
+        }
+      } finally {
+        if (!cancelled) setFoodLoading(false);
+      }
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [foodQuery, tab]);
+
+  // When user picks a product, prefill servings=1 and weight=servingGrams
+  function handleSelectFood(product) {
+    setSelectedFood(product);
+    setFoodServings(1);
+    setFoodWeight(product.servingGrams);
+  }
+
+  function handleBackToFoodSearch() {
+    setSelectedFood(null);
+  }
+
+  // Handle servings change → recompute weight
+  function handleServingsChange(val) {
+    const n = parseFloat(val);
+    if (Number.isNaN(n) || n < 0) return;
+    setFoodServings(n);
+    if (selectedFood) {
+      setFoodWeight(roundMacro(n * selectedFood.servingGrams, 1));
+    }
+  }
+
+  // Handle weight change → standalone (does not update servings)
+  function handleWeightChange(val) {
+    const n = parseFloat(val);
+    if (Number.isNaN(n) || n < 0) return;
+    setFoodWeight(n);
+  }
+
+  // Live macros based on current weightInGrams
+  const liveFoodMacros = useMemo(() => {
+    if (!selectedFood) return null;
+    const w = Number(foodWeight) || 0;
+    const p100 = selectedFood.per100;
+    return {
+      calories: Math.round((p100.calories * w) / 100),
+      protein: roundMacro((p100.protein * w) / 100),
+      carbs: roundMacro((p100.carbs * w) / 100),
+      fat: roundMacro((p100.fat * w) / 100),
+    };
+  }, [selectedFood, foodWeight]);
+
+  async function handleAddSelectedFood() {
+    if (!selectedFood || !liveFoodMacros) return;
+    setAddingFood(true);
+    try {
+      const displayName = selectedFood.brand
+        ? `${selectedFood.brand} — ${selectedFood.name}`
+        : selectedFood.name;
+      // Store servings/weight info in ingredients field so it's preserved
+      const servingsStr = foodServings === 1 ? '1 serving' : `${foodServings} servings`;
+      const ingredients = `${servingsStr} × ${Number(foodWeight)}g`;
+      await onAddMeal({
+        meal_name: displayName,
+        ingredients,
+        calories: liveFoodMacros.calories,
+        protein: liveFoodMacros.protein,
+        carbs: liveFoodMacros.carbs,
+        fat: liveFoodMacros.fat,
+      });
+      toast.success('Food added to plan');
+      onClose();
+    } catch (err) {
+      toast.error('Failed to add food.');
+    } finally {
+      setAddingFood(false);
+    }
+  }
+
   /* ── Manual Entry Submit ─────────────────── */
   async function handleManualSubmit(e) {
     e.preventDefault();
@@ -423,6 +574,7 @@ function SlotPanel({
             {[
               { key: 'ai', label: 'AI Suggest' },
               { key: 'saved', label: 'Saved Meals' },
+              { key: 'food', label: 'Food Search' },
               { key: 'manual', label: 'Manual Entry' },
             ].map(({ key, label }) => (
               <button
@@ -611,6 +763,157 @@ function SlotPanel({
                     </motion.div>
                   ))}
                 </AnimatePresence>
+              )}
+            </div>
+          )}
+
+          {/* ─── Food Search Tab ─── */}
+          {tab === 'food' && (
+            <div className="mp-food" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {!selectedFood ? (
+                <>
+                  {/* Search input */}
+                  <div className="mp-search">
+                    <Search size={14} className="mp-search__icon" />
+                    <input
+                      type="text"
+                      className="input mp-search__input"
+                      placeholder="Search branded foods (e.g. Oreos, Oikos yogurt)..."
+                      value={foodQuery}
+                      onChange={(e) => setFoodQuery(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Loading / empty / results */}
+                  {foodLoading ? (
+                    <div className="mp-food__loading">
+                      <Loader size={16} className="mp-food__spinner" />
+                      <span>Searching...</span>
+                    </div>
+                  ) : !foodQuery.trim() ? (
+                    <div className="mp-empty-state">
+                      <p style={{ margin: 0 }}>
+                        Start typing to search the Open Food Facts database for branded foods.
+                      </p>
+                    </div>
+                  ) : foodSearched && foodResults.length === 0 ? (
+                    <div className="mp-empty-state">
+                      <p style={{ margin: 0 }}>No foods match "{foodQuery}". Try a different search.</p>
+                    </div>
+                  ) : (
+                    <AnimatePresence>
+                      {foodResults.map((p, i) => {
+                        const servingCal = Math.round((p.per100.calories * p.servingGrams) / 100);
+                        const servingP = roundMacro((p.per100.protein * p.servingGrams) / 100);
+                        const servingC = roundMacro((p.per100.carbs * p.servingGrams) / 100);
+                        const servingF = roundMacro((p.per100.fat * p.servingGrams) / 100);
+                        return (
+                          <motion.button
+                            key={p.id}
+                            className="mp-food-result"
+                            onClick={() => handleSelectFood(p)}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ delay: i * 0.03, duration: 0.2 }}
+                          >
+                            <div className="mp-food-result__info">
+                              {p.brand && (
+                                <span className="mp-food-result__brand">{p.brand}</span>
+                              )}
+                              <span className="mp-food-result__name">{p.name}</span>
+                              <span className="mp-food-result__serving">
+                                {p.servingLabel} · {servingCal} kcal
+                              </span>
+                            </div>
+                            <div className="mp-food-result__macros">
+                              <span className="mp-macro-chip">P: {servingP}g</span>
+                              <span className="mp-macro-chip">C: {servingC}g</span>
+                              <span className="mp-macro-chip">F: {servingF}g</span>
+                            </div>
+                          </motion.button>
+                        );
+                      })}
+                    </AnimatePresence>
+                  )}
+                </>
+              ) : (
+                /* ── Food detail view ── */
+                <motion.div
+                  className="mp-food-detail"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <button className="mp-food-detail__back" onClick={handleBackToFoodSearch}>
+                    <ChevronLeft size={14} /> Back to results
+                  </button>
+
+                  <div className="mp-food-detail__header">
+                    {selectedFood.brand && (
+                      <span className="mp-food-detail__brand">{selectedFood.brand}</span>
+                    )}
+                    <span className="mp-food-detail__name">{selectedFood.name}</span>
+                    <span className="mp-food-detail__subtext">
+                      Serving size: {selectedFood.servingLabel}
+                    </span>
+                  </div>
+
+                  <div className="mp-food-detail__inputs">
+                    <div className="mp-form__field">
+                      <label className="mp-form__label">Servings</label>
+                      <input
+                        type="number"
+                        className="input"
+                        min="0"
+                        step="0.5"
+                        value={foodServings}
+                        onChange={(e) => handleServingsChange(e.target.value)}
+                      />
+                    </div>
+                    <div className="mp-form__field">
+                      <label className="mp-form__label">Weight (g)</label>
+                      <input
+                        type="number"
+                        className="input"
+                        min="0"
+                        step="1"
+                        value={foodWeight}
+                        onChange={(e) => handleWeightChange(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {liveFoodMacros && (
+                    <div className="mp-food-detail__macros">
+                      <div className="mp-food-detail__macro">
+                        <span className="mp-food-detail__macro-val">{liveFoodMacros.calories}</span>
+                        <span className="mp-food-detail__macro-label">kcal</span>
+                      </div>
+                      <div className="mp-food-detail__macro">
+                        <span className="mp-food-detail__macro-val">{liveFoodMacros.protein}g</span>
+                        <span className="mp-food-detail__macro-label">protein</span>
+                      </div>
+                      <div className="mp-food-detail__macro">
+                        <span className="mp-food-detail__macro-val">{liveFoodMacros.carbs}g</span>
+                        <span className="mp-food-detail__macro-label">carbs</span>
+                      </div>
+                      <div className="mp-food-detail__macro">
+                        <span className="mp-food-detail__macro-val">{liveFoodMacros.fat}g</span>
+                        <span className="mp-food-detail__macro-label">fat</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    className="mp-form__submit"
+                    onClick={handleAddSelectedFood}
+                    disabled={addingFood || !liveFoodMacros || Number(foodWeight) <= 0}
+                  >
+                    {addingFood ? 'Adding...' : `Add to ${slot.mealType}`}
+                  </button>
+                </motion.div>
               )}
             </div>
           )}
