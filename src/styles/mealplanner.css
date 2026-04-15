@@ -644,6 +644,27 @@
   color: var(--text-primary);
 }
 
+/* Mobile-only back arrow (hidden on desktop) */
+.mp-panel__back {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  margin-right: 4px;
+  border-radius: 4px;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--transition-fast);
+}
+
+.mp-panel__back:hover,
+.mp-panel__back:active {
+  color: var(--text-primary);
+}
+
 .mp-panel__body {
   flex: 1;
   padding: 20px 24px;
@@ -1446,6 +1467,19 @@
 
   .mp-panel {
     width: 100vw;
+  }
+
+  .mp-panel__header {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .mp-panel__back {
+    display: inline-flex;
+  }
+
+  .mp-panel__header .mp-panel__close {
+    display: none;
   }
 }
 

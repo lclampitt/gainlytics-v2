@@ -398,6 +398,45 @@
   cursor: default;
 }
 
+/* ── Mobile: stack nutrition logger inputs ──────── */
+@media (max-width: 640px) {
+  .gp-log-card {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .gp-log-card .gp-macro-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .gp-log-card .gp-field--full {
+    grid-column: span 1;
+  }
+
+  .gp-log-card .fs-tabs {
+    width: 100%;
+  }
+
+  .gp-log-card .fs-tabs__tab {
+    flex: 1 1 50%;
+  }
+
+  .gp-log-input {
+    min-height: 48px;
+  }
+
+  .gp-log-meal-input {
+    width: 100%;
+  }
+
+  .gp-log-btn {
+    width: 100%;
+    align-self: stretch;
+    min-height: 48px;
+  }
+}
+
 .gp-log-entries {
   display: flex;
   flex-direction: column;

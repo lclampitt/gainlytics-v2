@@ -561,6 +561,14 @@ function SlotPanel({
       >
         {/* Header */}
         <div className="mp-panel__header">
+          <button
+            type="button"
+            className="mp-panel__back"
+            onClick={onClose}
+            aria-label="Back"
+          >
+            <ChevronLeft size={24} />
+          </button>
           <h3 className="mp-panel__title">
             {dayLabel} — {slot.mealType}
           </h3>
