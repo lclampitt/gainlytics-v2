@@ -11,6 +11,24 @@ function parseServingGrams(str) {
   return null;
 }
 
+/**
+ * Normalize a user search string for Open Food Facts.
+ *
+ * iOS "smart punctuation" auto-converts a typed ' into U+2019 (’), which
+ * OFF's tokenizer doesn't match against its indexed products. Even a
+ * straight apostrophe is treated as part of the token, so `Dave's` fails
+ * to match `DAVE'S KILLER BREAD`. Replacing every apostrophe variant with
+ * a space lets OFF tokenize on whitespace and match each word — the same
+ * way a bare `Dave` query already does.
+ */
+function normalizeSearchQuery(q) {
+  return q
+    .replace(/[\u2018\u2019\u201A\u201B\u02BC\u055A\u0060\u00B4]/g, "'")
+    .replace(/'/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function formatOffProduct(p) {
   const n = p.nutriments || {};
   const servingGrams = parseServingGrams(p.serving_size) || 100;
@@ -98,7 +116,7 @@ export default function FoodSearch({
 
   /* Debounced fetch */
   useEffect(() => {
-    const q = query.trim();
+    const q = normalizeSearchQuery(query);
     if (!q) {
       setResults([]);
       setSearched(false);
