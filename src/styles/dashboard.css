@@ -393,10 +393,24 @@
   height: 130px;
 }
 
-/* Let hovered slices translate slightly outside the 130×130 viewport
-   without being clipped by the SVG's default overflow. */
+/* Let the lifted active slice extend slightly outside the 130×130
+   viewport without being clipped by the SVG's default overflow. */
 .hd-donut-chart svg {
   overflow: visible;
+}
+
+/* The active slice wrapper: Recharts swaps this <g> in on hover via
+   activeShape. Since the element mounts fresh (nothing to transition
+   from), we use a keyframe to ease the outward translate along the
+   slice's angular midpoint — dx/dy are provided as CSS vars from the
+   React component so each slice lifts in its own direction. */
+.hd-donut-active-slice {
+  animation: hd-donut-slice-lift 180ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes hd-donut-slice-lift {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(var(--slice-dx, 0), var(--slice-dy, 0)); }
 }
 
 .hd-donut-center {

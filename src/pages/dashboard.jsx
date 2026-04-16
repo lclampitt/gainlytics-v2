@@ -461,32 +461,27 @@ function MacroDonut({ userId, todayNutrition, goalPlan, isY2K }) {
     ? (activeSlice.isRemaining ? 'var(--warning, #EF9F27)' : activeSlice.color)
     : undefined;
 
-  /* Custom slice renderer:
-     - Translates the active slice outward ~7px along its angular midpoint
-       (cos/sin midAngle). Recharts angles follow the math convention where
-       0° = right and 90° = up, so we negate sin for SVG's y-down axis.
-     - Dims non-active slices to 0.5 opacity while one is hovered.
-     - CSS transitions on the <g> wrapper keep the motion smooth on both
-       enter and leave without Recharts re-rendering the geometry. */
-  const SLICE_PUSH_PX = 7;
+  /* Active-slice renderer:
+     - Restores the outward-lift hover that existed before the polish
+       edits. The slice translates outward along its angular midpoint
+       (cos/sin midAngle; sin is negated for SVG's y-down axis).
+     - Recharts swaps this element in on hover via activeShape, so we
+       can't use CSS `transition` (there's no prior state). Instead we
+       run a 180ms cubic-bezier keyframe that eases the translate from
+       0 to (dx, dy) as the element mounts — the lift now arrives with
+       a curve instead of popping instantly. */
+  const SLICE_LIFT_PX = 6;
   const RADIAN = Math.PI / 180;
-  const renderSlice = (sectorProps) => {
-    const { startAngle, endAngle, index } = sectorProps;
-    const midAngle = (startAngle + endAngle) / 2;
-    const isActive = activeIdx === index;
-    const isDimmed = activeIdx != null && !isActive;
-    const dx = isActive ? Math.cos(midAngle * RADIAN) * SLICE_PUSH_PX : 0;
-    const dy = isActive ? -Math.sin(midAngle * RADIAN) * SLICE_PUSH_PX : 0;
+  const renderActiveSlice = (props) => {
+    const midAngle = (props.startAngle + props.endAngle) / 2;
+    const dx = Math.cos(midAngle * RADIAN) * SLICE_LIFT_PX;
+    const dy = -Math.sin(midAngle * RADIAN) * SLICE_LIFT_PX;
     return (
       <g
-        style={{
-          transform: `translate(${dx}px, ${dy}px)`,
-          opacity: isDimmed ? 0.5 : 1,
-          transition:
-            'transform 180ms cubic-bezier(0.4, 0, 0.2, 1), opacity 180ms ease',
-        }}
+        className="hd-donut-active-slice"
+        style={{ '--slice-dx': `${dx}px`, '--slice-dy': `${dy}px` }}
       >
-        <Sector {...sectorProps} />
+        <Sector {...props} />
       </g>
     );
   };
@@ -532,7 +527,8 @@ function MacroDonut({ userId, todayNutrition, goalPlan, isY2K }) {
                 outerRadius={60}
                 strokeWidth={0}
                 paddingAngle={1}
-                shape={renderSlice}
+                activeIndex={activeIdx}
+                activeShape={renderActiveSlice}
                 onMouseEnter={handlePieEnter}
                 onMouseLeave={handlePieLeave}
               >
