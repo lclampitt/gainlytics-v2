@@ -449,6 +449,48 @@ function MacroDonut({ userId, todayNutrition, goalPlan, isY2K }) {
 
   const centerLabel = range === 'today' ? 'kcal today' : 'kcal avg/day';
 
+  /* Hovered-slice data drives the center cross-fade */
+  const activeSlice = activeIdx != null ? donutData[activeIdx] : null;
+  const activeCenterVal = activeSlice
+    ? (activeSlice.isRemaining ? `${activeSlice.remainingKcal}` : `${activeSlice.grams}g`)
+    : '';
+  const activeCenterLabel = activeSlice
+    ? (activeSlice.isRemaining ? 'kcal remaining' : activeSlice.name)
+    : '';
+  const activeCenterColor = activeSlice
+    ? (activeSlice.isRemaining ? 'var(--warning, #EF9F27)' : activeSlice.color)
+    : undefined;
+
+  /* Custom slice renderer:
+     - Translates the active slice outward ~7px along its angular midpoint
+       (cos/sin midAngle). Recharts angles follow the math convention where
+       0° = right and 90° = up, so we negate sin for SVG's y-down axis.
+     - Dims non-active slices to 0.5 opacity while one is hovered.
+     - CSS transitions on the <g> wrapper keep the motion smooth on both
+       enter and leave without Recharts re-rendering the geometry. */
+  const SLICE_PUSH_PX = 7;
+  const RADIAN = Math.PI / 180;
+  const renderSlice = (sectorProps) => {
+    const { startAngle, endAngle, index } = sectorProps;
+    const midAngle = (startAngle + endAngle) / 2;
+    const isActive = activeIdx === index;
+    const isDimmed = activeIdx != null && !isActive;
+    const dx = isActive ? Math.cos(midAngle * RADIAN) * SLICE_PUSH_PX : 0;
+    const dy = isActive ? -Math.sin(midAngle * RADIAN) * SLICE_PUSH_PX : 0;
+    return (
+      <g
+        style={{
+          transform: `translate(${dx}px, ${dy}px)`,
+          opacity: isDimmed ? 0.5 : 1,
+          transition:
+            'transform 180ms cubic-bezier(0.4, 0, 0.2, 1), opacity 180ms ease',
+        }}
+      >
+        <Sector {...sectorProps} />
+      </g>
+    );
+  };
+
   return (
     <motion.div className="hd-card" variants={itemVariants}>
       {isY2K && (
@@ -490,10 +532,7 @@ function MacroDonut({ userId, todayNutrition, goalPlan, isY2K }) {
                 outerRadius={60}
                 strokeWidth={0}
                 paddingAngle={1}
-                activeIndex={activeIdx}
-                activeShape={(props) => (
-                  <Sector {...props} outerRadius={props.outerRadius + 5} />
-                )}
+                shape={renderSlice}
                 onMouseEnter={handlePieEnter}
                 onMouseLeave={handlePieLeave}
               >
@@ -504,10 +543,33 @@ function MacroDonut({ userId, todayNutrition, goalPlan, isY2K }) {
             </PieChart>
           </ResponsiveContainer>
           <div className="hd-donut-center">
-            <span className="hd-donut-center__val" style={isOver ? { color: 'var(--warning, #EF9F27)' } : undefined}>
-              {cal.toLocaleString()}
-            </span>
-            <span className="hd-donut-center__label">{centerLabel}</span>
+            <div
+              className={`hd-donut-center__layer ${
+                activeIdx == null ? 'hd-donut-center__layer--visible' : ''
+              }`}
+            >
+              <span
+                className="hd-donut-center__val"
+                style={isOver ? { color: 'var(--warning, #EF9F27)' } : undefined}
+              >
+                {cal.toLocaleString()}
+              </span>
+              <span className="hd-donut-center__label">{centerLabel}</span>
+            </div>
+            <div
+              className={`hd-donut-center__layer ${
+                activeIdx != null ? 'hd-donut-center__layer--visible' : ''
+              }`}
+              aria-hidden={activeIdx == null}
+            >
+              <span
+                className="hd-donut-center__val"
+                style={activeCenterColor ? { color: activeCenterColor } : undefined}
+              >
+                {activeCenterVal}
+              </span>
+              <span className="hd-donut-center__label">{activeCenterLabel}</span>
+            </div>
           </div>
         </div>
         <div className="hd-macro-legend">

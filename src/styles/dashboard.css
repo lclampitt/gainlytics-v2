@@ -393,6 +393,12 @@
   height: 130px;
 }
 
+/* Let hovered slices translate slightly outside the 130×130 viewport
+   without being clipped by the SVG's default overflow. */
+.hd-donut-chart svg {
+  overflow: visible;
+}
+
 .hd-donut-center {
   position: absolute;
   top: 50%;
@@ -400,6 +406,23 @@
   transform: translate(-50%, -50%);
   text-align: center;
   pointer-events: none;
+  display: grid;
+}
+
+/* Two center layers occupy the same grid cell and cross-fade: one shows
+   the total kcal, the other shows the hovered macro. Grid sizing keeps
+   the box width stable as the active layer's content changes. */
+.hd-donut-center__layer {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.hd-donut-center__layer--visible {
+  opacity: 1;
 }
 
 .hd-donut-center__val {
@@ -482,11 +505,14 @@
   pointer-events: none;
   white-space: nowrap;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  /* Asymmetric fade: 100ms out when hover ends. */
+  transition: opacity 100ms ease;
 }
 
 .hd-donut-tooltip--visible {
   opacity: 1;
+  /* Asymmetric fade: 150ms in when hover begins. */
+  transition: opacity 150ms ease;
 }
 
 .hd-donut-tooltip__name {
