@@ -2095,3 +2095,361 @@
   transform: translateY(1px);
   box-shadow: none;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   PAGE: HOME / DASHBOARD — Y2K OVERRIDES
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Reusable Y2K titlebar for Dashboard cards ── */
+.hd-y2k-titlebar {
+  height: 22px;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent) 50%, #3344aa),
+    color-mix(in srgb, var(--accent) 25%, #1a2266)
+  );
+  border-bottom: 1px solid #223388;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -16px -16px 14px;
+  border-radius: 4px 4px 0 0;
+}
+
+.hd-y2k-titlebar span {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--accent-light);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* ── Stat card title bars ── */
+.hd-y2k-chip-bar {
+  height: 18px;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent) 50%, #3344aa),
+    color-mix(in srgb, var(--accent) 25%, #1a2266)
+  );
+  border-bottom: 1px solid #223388;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  margin: -12px -14px 8px;
+  border-radius: 4px 4px 0 0;
+}
+
+.hd-y2k-chip-bar span {
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--accent-light);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* ── Greeting + date ── */
+[data-ui-mode="y2k"] .hd__greeting {
+  font-family: 'Courier New', Courier, monospace !important;
+  font-weight: 700;
+  color: var(--accent-light);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+  letter-spacing: 0.04em;
+}
+
+[data-ui-mode="y2k"] .hd__date {
+  font-family: 'Courier New', Courier, monospace !important;
+  color: #4466aa;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+}
+
+/* ── Stat cards ── */
+[data-ui-mode="y2k"] .hd-stat {
+  background: linear-gradient(180deg, #1a2a4a, #0d1830) !important;
+  border: 2px inset #334466 !important;
+  border-radius: 4px !important;
+  box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+
+[data-ui-mode="y2k"] .hd-stat__label span:last-child {
+  font-family: 'Courier New', Courier, monospace;
+  color: #4466aa;
+  font-weight: 700;
+}
+
+[data-ui-mode="y2k"] .hd-stat__dot {
+  background: var(--accent-light) !important;
+  box-shadow: 0 0 4px var(--accent-light);
+}
+
+[data-ui-mode="y2k"] .hd-stat__value {
+  font-family: 'Courier New', Courier, monospace !important;
+  font-weight: 700 !important;
+  color: var(--accent-light) !important;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+[data-ui-mode="y2k"] .hd-stat__delta {
+  font-family: 'Courier New', Courier, monospace !important;
+  font-weight: 600;
+  font-size: 10px !important;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+}
+
+/* ── Main card wrapper (Macro split, Meal plan, Consistency) ── */
+[data-ui-mode="y2k"] .hd-card {
+  background: linear-gradient(180deg, #0a1220, #060c18) !important;
+  border: 2px inset #334466 !important;
+  border-radius: 4px !important;
+  box-shadow: inset 2px 2px 6px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+
+[data-ui-mode="y2k"] .hd-card__title {
+  font-family: 'Courier New', Courier, monospace !important;
+  font-weight: 700 !important;
+  color: var(--accent-light) !important;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 12px !important;
+}
+
+[data-ui-mode="y2k"] .hd-link-btn {
+  font-family: 'Courier New', Courier, monospace !important;
+  font-weight: 700;
+  color: var(--accent-light) !important;
+  background: linear-gradient(180deg, #1a2a4a, #0d1830) !important;
+  border: 1px outset #4466aa !important;
+  padding: 3px 8px !important;
+  border-radius: 3px !important;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+  font-size: 10px !important;
+  text-transform: uppercase;
+}
+
+[data-ui-mode="y2k"] .hd-link-btn:active {
+  border: 1px inset #4466aa !important;
+  transform: translateY(1px);
+}
+
+/* ── Pills (time range + action buttons) ── */
+[data-ui-mode="y2k"] .hd-pill {
+  font-family: 'Courier New', Courier, monospace !important;
+  font-weight: 700;
+  background: linear-gradient(180deg, #1a2a4a, #0d1830) !important;
+  border: 1px outset #4466aa !important;
+  color: #8899cc !important;
+  border-radius: 3px !important;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+  font-size: 10px !important;
+  text-transform: uppercase;
+}
+
+[data-ui-mode="y2k"] .hd-pill--active {
+  background: linear-gradient(180deg, #2a3a6a, #1a2a4a) !important;
+  border: 1px inset #4466aa !important;
+  color: var(--accent-light) !important;
+}
+
+[data-ui-mode="y2k"] .hd-pill--accent {
+  background: linear-gradient(180deg, #3344aa, #1a2266) !important;
+  border: 1px outset #5566cc !important;
+  color: var(--accent-light) !important;
+}
+
+/* ── Meal cells ── */
+[data-ui-mode="y2k"] .hd-meal-cell {
+  background: linear-gradient(180deg, #0d1830, #060c18) !important;
+  border: 1px inset #334466 !important;
+  border-radius: 3px !important;
+}
+
+[data-ui-mode="y2k"] .hd-meal-cell--empty {
+  background: linear-gradient(180deg, #0a1220, #060c18) !important;
+  border: 1px dashed #334466 !important;
+}
+
+[data-ui-mode="y2k"] .hd-meal-label {
+  font-family: 'Courier New', Courier, monospace !important;
+  color: #4466aa !important;
+  font-weight: 700;
+  font-size: 9px !important;
+  letter-spacing: 0.1em;
+}
+
+[data-ui-mode="y2k"] .hd-meal-name {
+  font-family: 'Courier New', Courier, monospace !important;
+  color: var(--accent-light) !important;
+  font-weight: 700;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+}
+
+[data-ui-mode="y2k"] .hd-meal-macro {
+  font-family: 'Courier New', Courier, monospace !important;
+  color: #8899cc !important;
+  font-size: 10px !important;
+}
+
+[data-ui-mode="y2k"] .hd-meal-log-btn {
+  font-family: 'Courier New', Courier, monospace !important;
+  font-weight: 700;
+  background: linear-gradient(180deg, #2a3a6a, #1a2a4a) !important;
+  border: 1px outset #4466aa !important;
+  color: var(--accent-light) !important;
+  border-radius: 3px !important;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+  font-size: 10px !important;
+  text-transform: uppercase;
+}
+
+[data-ui-mode="y2k"] .hd-meal-log-btn--logged {
+  background: linear-gradient(180deg, #1a4a2a, #0d2a1a) !important;
+  border: 1px inset #336644 !important;
+  color: #66cc88 !important;
+}
+
+[data-ui-mode="y2k"] .hd-meal-add__icon {
+  font-family: 'Courier New', Courier, monospace !important;
+  color: #4466aa !important;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+}
+
+/* ── Donut center label ── */
+[data-ui-mode="y2k"] .hd-donut-center__val {
+  font-family: 'Courier New', Courier, monospace !important;
+  font-weight: 700 !important;
+  color: var(--accent-light) !important;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+[data-ui-mode="y2k"] .hd-donut-center__label {
+  font-family: 'Courier New', Courier, monospace !important;
+  color: #4466aa !important;
+  text-transform: uppercase;
+  font-size: 9px !important;
+  letter-spacing: 0.08em;
+}
+
+/* ── Macro legend ── */
+[data-ui-mode="y2k"] .hd-macro-legend__left {
+  font-family: 'Courier New', Courier, monospace !important;
+  color: #8899cc !important;
+  font-weight: 700;
+  font-size: 11px !important;
+  text-transform: uppercase;
+}
+
+[data-ui-mode="y2k"] .hd-macro-legend__right strong {
+  font-family: 'Courier New', Courier, monospace !important;
+  color: var(--accent-light) !important;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+}
+
+[data-ui-mode="y2k"] .hd-macro-legend__sub {
+  font-family: 'Courier New', Courier, monospace !important;
+  color: #4466aa !important;
+  font-size: 10px !important;
+}
+
+[data-ui-mode="y2k"] .hd-macro-legend__divider {
+  border-color: #334466 !important;
+}
+
+/* ── Consistency calendar ── */
+[data-ui-mode="y2k"] .cw__month-label {
+  font-family: 'Courier New', Courier, monospace !important;
+  color: var(--accent-light) !important;
+  font-weight: 700;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px !important;
+}
+
+[data-ui-mode="y2k"] .cw__nav button {
+  background: linear-gradient(180deg, #1a2a4a, #0d1830) !important;
+  border: 1px outset #4466aa !important;
+  border-radius: 3px !important;
+  color: var(--accent-light) !important;
+}
+
+[data-ui-mode="y2k"] .cw__nav button:active {
+  border: 1px inset #4466aa !important;
+}
+
+[data-ui-mode="y2k"] .cw__weekdays span {
+  font-family: 'Courier New', Courier, monospace !important;
+  color: #4466aa !important;
+  font-weight: 700;
+  font-size: 10px !important;
+  text-transform: uppercase;
+}
+
+[data-ui-mode="y2k"] .cw-day {
+  border-radius: 3px !important;
+}
+
+[data-ui-mode="y2k"] .cw-day__num {
+  font-family: 'Courier New', Courier, monospace !important;
+  font-weight: 700;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+}
+
+[data-ui-mode="y2k"] .cw-day--empty {
+  background: linear-gradient(180deg, #0d1830, #060c18) !important;
+  border: 1px inset #223355 !important;
+  color: #334466 !important;
+}
+
+[data-ui-mode="y2k"] .cw-day--nutrition {
+  background: linear-gradient(180deg, #2a3a6a, #1a2a4a) !important;
+  border: 1px outset #4466aa !important;
+  color: var(--accent-light) !important;
+}
+
+[data-ui-mode="y2k"] .cw-day--workout {
+  background: linear-gradient(180deg, #6a3a2a, #4a2a1a) !important;
+  border: 1px outset #aa6644 !important;
+  color: #ffcc88 !important;
+}
+
+[data-ui-mode="y2k"] .cw-day--both {
+  background: linear-gradient(180deg, #2a6a3a, #1a4a2a) !important;
+  border: 1px outset #44aa66 !important;
+  color: #88ffaa !important;
+}
+
+[data-ui-mode="y2k"] .cw-day--today {
+  border: 2px solid var(--accent-light) !important;
+  box-shadow: 0 0 4px var(--accent-light);
+}
+
+[data-ui-mode="y2k"] .cw-day--future {
+  background: transparent !important;
+  border: 1px dashed #223355 !important;
+  color: #223355 !important;
+}
+
+[data-ui-mode="y2k"] .cw__legend-item {
+  font-family: 'Courier New', Courier, monospace !important;
+  color: #8899cc !important;
+  font-weight: 700;
+  font-size: 10px !important;
+  text-transform: uppercase;
+}
+
+[data-ui-mode="y2k"] .cw__legend-stat {
+  font-family: 'Courier New', Courier, monospace !important;
+  color: var(--accent-light) !important;
+  font-weight: 700;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+  font-size: 10px !important;
+  text-transform: uppercase;
+}
