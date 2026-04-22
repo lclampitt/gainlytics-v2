@@ -4,7 +4,7 @@ import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion
 import {
   Lock, Trash2, Dumbbell, Bookmark, BookmarkCheck, Copy,
   BookmarkPlus, X, Star, Play, Clock, Search, Check, Plus, ChevronRight, ChevronLeft,
-  GripVertical,
+  GripVertical, Loader2,
 } from 'lucide-react';
 import posthog from '../../lib/posthog';
 import { supabase } from '../../supabaseClient';
@@ -309,21 +309,30 @@ export default function WorkoutLogger() {
       })),
     }));
 
-    const { error } = await supabase.from('workout_templates').insert({
-      user_id: userId,
-      name,
-      muscle_group: workout.muscle_group || '',
-      exercises: exerciseData,
-    });
+    /* Wrap the Supabase call in try/catch so mobile network blips
+       (airplane mode, flaky wifi) surface as a visible error toast
+       instead of silently failing — previously only in-band
+       Supabase errors were caught, thrown fetch errors were not. */
+    try {
+      const { error } = await supabase.from('workout_templates').insert({
+        user_id: userId,
+        name,
+        muscle_group: workout.muscle_group || '',
+        exercises: exerciseData,
+      });
 
-    if (error) {
-      toast.error(`Failed to save template: ${error.message}`);
-      return;
+      if (error) {
+        toast.error(`Failed to save template: ${error.message}`);
+        return;
+      }
+      toast.success('Template saved successfully');
+      setSaveTemplatePopover(null);
+      setTemplateName('');
+      fetchTemplates();
+    } catch (err) {
+      console.error('saveAsTemplate failed:', err);
+      toast.error(err?.message ? `Failed to save template: ${err.message}` : 'Failed to save template');
     }
-    toast.success('Template saved successfully');
-    setSaveTemplatePopover(null);
-    setTemplateName('');
-    fetchTemplates();
   };
 
   const deleteTemplate = async (templateId) => {
@@ -1026,6 +1035,25 @@ export default function WorkoutLogger() {
     return () => clearTimeout(t);
   }, [recentFinish, clearRecentFinish]);
 
+  /* Live countdown for the Resume card subtext ("You can resume your
+     workout for the next X minutes"). Ticks every 15s — any finer and
+     we re-render the home view unnecessarily. Only runs while the
+     card is actually visible. */
+  const [resumeMinutesLeft, setResumeMinutesLeft] = useState(() => {
+    if (!recentFinish?.finished_at) return 0;
+    return Math.max(0, Math.ceil((RESUME_WINDOW_MS - (Date.now() - recentFinish.finished_at)) / 60000));
+  });
+  useEffect(() => {
+    if (!showResumeCard || !recentFinish?.finished_at) return;
+    const tick = () => {
+      const remMs = RESUME_WINDOW_MS - (Date.now() - recentFinish.finished_at);
+      setResumeMinutesLeft(Math.max(0, Math.ceil(remMs / 60000)));
+    };
+    tick();
+    const id = setInterval(tick, 15000);
+    return () => clearInterval(id);
+  }, [showResumeCard, recentFinish]);
+
   const handleConfirmDelete = async () => {
     if (!confirmDelete) return;
     if (confirmDelete.type === 'template') {
@@ -1658,7 +1686,9 @@ export default function WorkoutLogger() {
                 <div className="wlm-resume-card__text">
                   <span className="wlm-resume-card__title">Finished too early?</span>
                   <span className="wlm-resume-card__sub">
-                    Pick up where you left off — your previous log will be overwritten.
+                    {resumeMinutesLeft > 1
+                      ? `You can resume your workout for the next ${resumeMinutesLeft} minutes`
+                      : 'You can resume your workout for the next minute'}
                   </span>
                 </div>
                 <div className="wlm-resume-card__actions">
@@ -1925,7 +1955,7 @@ export default function WorkoutLogger() {
                 </div>
                 {workoutDetailSheet.notes && workoutDetailSheet.notes.trim() && (
                   <div className="wlm-sheet__notes">
-                    <span className="wlm-sheet__notes-label">Notes</span>
+                    <span className="wlm-sheet__notes-label">Session notes</span>
                     <p className="wlm-sheet__notes-body">{workoutDetailSheet.notes}</p>
                   </div>
                 )}
@@ -2029,7 +2059,13 @@ export default function WorkoutLogger() {
                 disabled={isFinishing}
                 whileTap={{ scale: 0.97 }}
               >
-                {isFinishing ? 'Saving…' : 'Finish'}
+                {isFinishing ? (
+                  <>
+                    <Loader2 size={14} className="wlm-spin" /> Saving…
+                  </>
+                ) : (
+                  'Finish'
+                )}
               </motion.button>
             </div>
 
@@ -2095,7 +2131,7 @@ export default function WorkoutLogger() {
               {sessionExercises.length > 0 && (
                 <div className="wlm-session-notes">
                   <label htmlFor="wlm-session-notes-ta" className="wlm-session-notes__label">
-                    Notes <span className="wlm-session-notes__hint">(optional)</span>
+                    Session notes
                   </label>
                   <textarea
                     id="wlm-session-notes-ta"
@@ -2116,13 +2152,17 @@ export default function WorkoutLogger() {
                         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                       }, 350);
                     }}
-                    placeholder="How did this workout feel? PRs, form cues, anything worth remembering…"
+                    placeholder="How did this session feel? Note energy levels, form, anything…"
                     rows={3}
                     maxLength={SESSION_NOTES_MAX}
                   />
-                  <div className="wlm-session-notes__counter">
-                    {sessionNotes.length}/{SESSION_NOTES_MAX}
-                  </div>
+                  {/* Counter only appears once the user has written a substantial
+                      amount (200+ chars) so we don't nag for short notes. */}
+                  {sessionNotes.length >= 200 && (
+                    <div className="wlm-session-notes__counter">
+                      {sessionNotes.length}/{SESSION_NOTES_MAX}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2137,7 +2177,13 @@ export default function WorkoutLogger() {
                 disabled={isFinishing}
                 whileTap={{ scale: 0.97 }}
               >
-                {isFinishing ? 'Saving…' : 'Finish Workout'}
+                {isFinishing ? (
+                  <>
+                    <Loader2 size={16} className="wlm-spin" /> Saving…
+                  </>
+                ) : (
+                  'Finish Workout'
+                )}
               </motion.button>
 
               {/* Discard button */}
@@ -2413,29 +2459,67 @@ export default function WorkoutLogger() {
         {/* ── END WORKOUT CONFIRMATION ──
             Required user-confirmation before finishing a session.
             Prevents accidental endings from scroll-gesture touchend
-            events that used to fire on the finish button. */}
+            events that used to fire on the finish button.
+
+            Rendered as a slide-up bottom sheet on mobile (<768px)
+            and a centered fade-scale modal on desktop — the two
+            presentations share the same DOM and share state; only
+            CSS (and the Framer Motion variants below) differ. */}
         <AnimatePresence>
-          {endWorkoutConfirm && (
+          {endWorkoutConfirm && (() => {
+            /* Recompute each time the sheet is mounted so a rotate /
+               resize between opens picks up the correct breakpoint. */
+            const isMobileViewport = typeof window !== 'undefined'
+              && window.matchMedia('(max-width: 767px)').matches;
+            const sheetInitial = isMobileViewport
+              ? { y: '100%' }
+              : { opacity: 0, scale: 0.92 };
+            const sheetAnimate = isMobileViewport
+              ? { y: 0 }
+              : { opacity: 1, scale: 1 };
+            const sheetExit = isMobileViewport
+              ? { y: '100%' }
+              : { opacity: 0, scale: 0.92 };
+            return (
             <motion.div
+              key="end-workout-confirm"
               className="wlm-overlay wlm-overlay--confirm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
               onClick={() => { if (!isFinishing) setEndWorkoutConfirm(false); }}
             >
               <motion.div
                 className="wlm-confirm wlm-confirm--end-workout"
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ duration: 0.15 }}
+                initial={sheetInitial}
+                animate={sheetAnimate}
+                exit={sheetExit}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                 onClick={(e) => e.stopPropagation()}
               >
+                {/* Mobile drag-handle pill (hidden on desktop via CSS) */}
+                <span className="wlm-confirm__handle" aria-hidden="true" />
                 <h4 className="wlm-confirm__title">End workout?</h4>
                 <p className="wlm-confirm__message">
-                  Are you sure you want to finish this workout? Your progress will be saved.
+                  Are you sure you want to finish? Your progress will be saved.
                 </p>
                 <div className="wlm-confirm__actions">
+                  <motion.button
+                    type="button"
+                    className="wlm-confirm__primary"
+                    onClick={finishSession}
+                    disabled={isFinishing}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    {isFinishing ? (
+                      <>
+                        <Loader2 size={16} className="wlm-spin" /> Saving…
+                      </>
+                    ) : (
+                      'Finish workout'
+                    )}
+                  </motion.button>
                   <motion.button
                     type="button"
                     className="wlm-confirm__cancel wlm-confirm__btn--keep-going"
@@ -2445,19 +2529,11 @@ export default function WorkoutLogger() {
                   >
                     Keep going
                   </motion.button>
-                  <motion.button
-                    type="button"
-                    className="wlm-confirm__primary"
-                    onClick={finishSession}
-                    disabled={isFinishing}
-                    whileTap={{ scale: 0.97 }}
-                  >
-                    {isFinishing ? 'Saving…' : 'Finish workout'}
-                  </motion.button>
                 </div>
               </motion.div>
             </motion.div>
-          )}
+            );
+          })()}
         </AnimatePresence>
 
         {/* ── SAVE AS TEMPLATE BOTTOM SHEET (mobile) ──

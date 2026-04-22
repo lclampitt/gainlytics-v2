@@ -1145,7 +1145,9 @@
   position: sticky;
   bottom: 0;
   background: var(--bg-surface);
-  padding: 12px 20px calc(12px + var(--nav-height) + var(--keyboard-height));
+  /* Add safe-area-inset-bottom so iOS home-indicator / notches don't
+     obscure the Save/Confirm button and swallow taps. */
+  padding: 12px 20px calc(12px + var(--nav-height) + var(--keyboard-height) + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border);
   transition: padding-bottom 0.25s ease;
   flex-shrink: 0;
@@ -1230,6 +1232,10 @@
 }
 
 .wlm-session__finish-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background: var(--accent);
   color: #fff;
   border: none;
@@ -1242,6 +1248,15 @@
   white-space: nowrap;
   flex-shrink: 0;
   transition: background 0.15s ease;
+  /* Mobile: prevent scroll-gesture touchend from being interpreted
+     as a tap. Only confirmed clicks should open the confirmation. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wlm-session__finish-btn:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
 }
 
 .wlm-session__finish-btn:active {
@@ -1536,6 +1551,10 @@
 
 /* Bottom finish button */
 .wlm-finish-btn-bottom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
   padding: 14px;
   background: var(--accent);
@@ -1547,6 +1566,33 @@
   font-family: inherit;
   cursor: pointer;
   transition: background 0.15s ease;
+  /* Mobile: stop fast flick/scroll from generating synthetic
+     click events on the button while scrolling through exercises. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wlm-finish-btn-bottom:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+/* Spinning icon used inside finish / confirm buttons while a
+   save is in flight. Kept simple (transform rotate) so it respects
+   prefers-reduced-motion (fallback: static icon). */
+.wlm-spin {
+  animation: wlm-spin-rot 0.9s linear infinite;
+}
+
+@keyframes wlm-spin-rot {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wlm-spin {
+    animation: none;
+  }
 }
 
 .wlm-finish-btn-bottom:active {
@@ -2198,6 +2244,10 @@
   font-family: inherit;
   cursor: pointer;
   transition: opacity 0.15s ease;
+  /* Mobile: 48px min touch target + stop flick-to-tap conversion */
+  min-height: 48px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .wlm-sheet__action-btn:active {
@@ -2285,6 +2335,10 @@
    end-workout confirmation sheet. Shares sizing with .wlm-confirm__delete
    so the two buttons line up in a 2-column row. */
 .wlm-confirm__primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   flex: 1;
   padding: 12px;
   background: var(--accent);
@@ -2308,6 +2362,12 @@
   cursor: not-allowed;
 }
 
+/* Mobile drag-handle pill — decorative, indicates sheet is draggable.
+   Hidden on desktop (where the confirm is a centered modal). */
+.wlm-confirm__handle {
+  display: none;
+}
+
 /* ── Minimum mobile touch targets (48px) ────────────────
    Applied to both finish buttons and confirm-sheet actions
    so accidental misses are less likely on small screens. */
@@ -2318,13 +2378,102 @@
   min-height: 48px;
 }
 
+/* ── MOBILE: End-workout confirm as bottom sheet ────────
+   Below 768px, the confirm dialog is presented as a
+   slide-up bottom sheet with drag handle + stacked
+   buttons. Desktop presentation is unchanged. */
+@media (max-width: 767px) {
+  /* Overlay aligns to bottom instead of center so the sheet
+     hugs the bottom edge. */
+  .wlm-overlay--confirm {
+    align-items: flex-end;
+    justify-content: stretch;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.6);
+  }
+
+  .wlm-confirm--end-workout {
+    width: 100%;
+    max-width: 100%;
+    background: #151820;
+    border: none;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    padding: 14px 24px calc(24px + env(safe-area-inset-bottom, 0px));
+    text-align: center;
+  }
+
+  .wlm-confirm--end-workout .wlm-confirm__handle {
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: 0 auto 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+  }
+
+  .wlm-confirm--end-workout .wlm-confirm__title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 8px;
+  }
+
+  .wlm-confirm--end-workout .wlm-confirm__message {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0 0 24px;
+    line-height: 1.5;
+  }
+
+  /* Stack buttons vertically; Finish (primary) above Keep going. */
+  .wlm-confirm--end-workout .wlm-confirm__actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .wlm-confirm--end-workout .wlm-confirm__primary {
+    width: 100%;
+    height: 52px;
+    padding: 0;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    background: #1D9E75;
+    color: #fff;
+  }
+
+  .wlm-confirm--end-workout .wlm-confirm__cancel {
+    width: 100%;
+    height: 52px;
+    padding: 0;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.7);
+    border: none;
+  }
+}
+
 .wlm-finish-btn-bottom {
   min-height: 48px;
 }
 
 @media (max-width: 767px) {
+  /* 48px minimum touch target on mobile per iOS HIG / Android MD */
   .wlm-session__finish-btn {
-    min-height: 40px;
+    min-height: 48px;
+  }
+
+  /* Extra padding-bottom so the scrollable exercise list never sits
+     directly behind the finish button / bottom nav — fast flick
+     scrolls can otherwise register as a tap on whatever is pinned
+     to the viewport bottom. */
+  .wlm-session__body {
+    padding-bottom: calc(48px + var(--nav-height) + var(--keyboard-height) + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -2353,15 +2502,15 @@
   margin: 16px 0 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 
 .wlm-session-notes__label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-secondary, rgba(255, 255, 255, 0.72));
+  color: rgba(255, 255, 255, 0.4);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
   display: flex;
   align-items: baseline;
   gap: 6px;
@@ -2370,19 +2519,19 @@
 .wlm-session-notes__hint {
   font-size: 11px;
   font-weight: 400;
-  color: var(--text-muted, rgba(255, 255, 255, 0.45));
+  color: rgba(255, 255, 255, 0.4);
   text-transform: none;
   letter-spacing: normal;
 }
 
 .wlm-session-notes__input {
   width: 100%;
-  min-height: 84px;
-  padding: 10px 12px;
-  background: var(--surface-2, rgba(255, 255, 255, 0.04));
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
-  border-radius: var(--radius-md, 10px);
-  color: var(--text-primary, #fff);
+  min-height: 80px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #fff;
   font-size: 14px;
   font-family: inherit;
   line-height: 1.45;
@@ -2393,7 +2542,7 @@
 .wlm-session-notes__input:focus {
   outline: none;
   border-color: var(--accent, #19c29b);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .wlm-session-notes__input::placeholder {
@@ -2402,8 +2551,9 @@
 
 .wlm-session-notes__counter {
   align-self: flex-end;
+  margin-top: 6px;
   font-size: 11px;
-  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+  color: rgba(255, 255, 255, 0.4);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2412,22 +2562,22 @@
   padding: 12px 20px 8px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .wlm-sheet__notes-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted, rgba(255, 255, 255, 0.45));
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .wlm-sheet__notes-body {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.45);
   white-space: pre-wrap;
   font-style: italic;
 }
