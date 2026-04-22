@@ -2280,3 +2280,422 @@
 .wlm-confirm__delete:active {
   opacity: 0.85;
 }
+
+/* Primary (teal) confirm action — used by "Finish workout" in the
+   end-workout confirmation sheet. Shares sizing with .wlm-confirm__delete
+   so the two buttons line up in a 2-column row. */
+.wlm-confirm__primary {
+  flex: 1;
+  padding: 12px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.wlm-confirm__primary:active {
+  opacity: 0.85;
+}
+
+.wlm-confirm__primary:disabled,
+.wlm-confirm__cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Minimum mobile touch targets (48px) ────────────────
+   Applied to both finish buttons and confirm-sheet actions
+   so accidental misses are less likely on small screens. */
+.wlm-confirm__cancel,
+.wlm-confirm__delete,
+.wlm-confirm__primary,
+.wlm-confirm__btn--keep-going {
+  min-height: 48px;
+}
+
+.wlm-finish-btn-bottom {
+  min-height: 48px;
+}
+
+@media (max-width: 767px) {
+  .wlm-session__finish-btn {
+    min-height: 40px;
+  }
+}
+
+/* ── SAVE AS TEMPLATE BOTTOM SHEET (mobile) ──────────────
+   Reuses .wlm-sheet / .wlm-overlay styles; this variant just
+   tightens up the header/body padding for a compact input sheet. */
+.wlm-sheet--compact {
+  max-height: none;
+}
+
+.wlm-save-template-sheet__body {
+  padding: 16px 20px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wlm-save-template-sheet__body .wl-popover__input {
+  width: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SESSION NOTES (active workout, mobile)
+   ─────────────────────────────────────────────────────────────── */
+.wlm-session-notes {
+  margin: 16px 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wlm-session-notes__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.72));
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.wlm-session-notes__hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted, rgba(255, 255, 255, 0.45));
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.wlm-session-notes__input {
+  width: 100%;
+  min-height: 84px;
+  padding: 10px 12px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-md, 10px);
+  color: var(--text-primary, #fff);
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.45;
+  resize: vertical;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.wlm-session-notes__input:focus {
+  outline: none;
+  border-color: var(--accent, #19c29b);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.wlm-session-notes__input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.wlm-session-notes__counter {
+  align-self: flex-end;
+  font-size: 11px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Saved note, mobile detail sheet ────────────────────── */
+.wlm-sheet__notes {
+  padding: 12px 20px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wlm-sheet__notes-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, rgba(255, 255, 255, 0.45));
+}
+
+.wlm-sheet__notes-body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: pre-wrap;
+  font-style: italic;
+}
+
+/* ─── Saved note, desktop expanded history ──────────────── */
+.wl-history-notes {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 2px solid var(--accent, #19c29b);
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  white-space: pre-wrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   10-minute RESUME card (mobile home view)
+   ─────────────────────────────────────────────────────────────── */
+.wlm-resume-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 0 0 12px;
+  background: linear-gradient(
+    90deg,
+    rgba(25, 194, 155, 0.16) 0%,
+    rgba(25, 194, 155, 0.06) 100%
+  );
+  border: 1px solid rgba(25, 194, 155, 0.4);
+  border-radius: 12px;
+  color: var(--text-primary, #fff);
+}
+
+.wlm-resume-card__text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.wlm-resume-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-light, #35d8b1);
+  line-height: 1.3;
+}
+
+.wlm-resume-card__sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+.wlm-resume-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.wlm-resume-card__resume {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent, #19c29b);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  min-height: 36px;
+  transition: filter 0.15s ease;
+}
+
+.wlm-resume-card__resume:hover { filter: brightness(1.05); }
+.wlm-resume-card__resume:active { filter: brightness(0.95); }
+
+.wlm-resume-card__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.wlm-resume-card__dismiss:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+@media (max-width: 420px) {
+  .wlm-resume-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wlm-resume-card__actions {
+    justify-content: space-between;
+  }
+
+  .wlm-resume-card__resume {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Edit-workout bottom sheet (mobile)
+   ─────────────────────────────────────────────────────────────── */
+.wlm-sheet--edit {
+  max-height: 90vh;
+}
+
+.wlm-edit-sheet__body {
+  padding: 14px 20px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  max-height: 62vh;
+}
+
+.wlm-edit-sheet__field-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, rgba(255, 255, 255, 0.55));
+  margin: 6px 0 -2px;
+}
+
+.wlm-edit-sheet__input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-md, 10px);
+  color: var(--text-primary, #fff);
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.4;
+  transition: border-color 0.15s ease;
+}
+
+.wlm-edit-sheet__input:focus {
+  outline: none;
+  border-color: var(--accent, #19c29b);
+}
+
+.wlm-edit-sheet__textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.wlm-edit-sheet__exercises {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.wlm-edit-sheet__exercise {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+}
+
+.wlm-edit-sheet__exercise-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wlm-edit-sheet__exercise-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.wlm-edit-sheet__set-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wlm-edit-sheet__set-row {
+  display: grid;
+  grid-template-columns: 48px 1fr auto 1fr 32px;
+  align-items: center;
+  gap: 6px;
+}
+
+.wlm-edit-sheet__set-label {
+  font-size: 11px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.wlm-edit-sheet__set-input {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  color: var(--text-primary, #fff);
+  font-size: 14px;
+  font-family: inherit;
+  text-align: center;
+  min-height: 36px;
+}
+
+.wlm-edit-sheet__set-input:focus {
+  outline: none;
+  border-color: var(--accent, #19c29b);
+}
+
+.wlm-edit-sheet__set-x {
+  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+  font-size: 13px;
+  text-align: center;
+}
+
+.wlm-edit-sheet__set-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.wlm-edit-sheet__set-delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Edit action in the detail sheet footer — neutral styling
+   so it sits between Save-as-Template and the destructive Delete. */
+.wlm-sheet__action-btn--edit {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary, #fff);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+}
+
+.wlm-sheet__action-btn--edit:hover {
+  background: rgba(255, 255, 255, 0.1);
+}

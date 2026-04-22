@@ -1105,6 +1105,7 @@ class WorkoutSaveRequest(BaseModel):
     workout_date: str
     workout_name: str
     exercises: List[Any]
+    notes: Optional[str] = None
 
 @app.post("/workouts/save")
 async def save_workout(body: WorkoutSaveRequest):
@@ -1127,6 +1128,7 @@ async def save_workout(body: WorkoutSaveRequest):
             "workout_date":  body.workout_date,
             "workout_name":  body.workout_name,
             "exercises":     body.exercises,
+            "notes":         body.notes,
         }).execute()
         if posthog_client:
             try:

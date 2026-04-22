@@ -11,6 +11,11 @@ import { supabase } from '../../supabaseClient';
 import { useUpgrade } from '../../context/UpgradeContext';
 import { usePlan } from '../../hooks/usePlan';
 import { useTheme } from '../../hooks/useTheme';
+import {
+  readActiveWorkout,
+  saveActiveWorkout,
+  clearActiveWorkout,
+} from '../../hooks/useActiveWorkout';
 import { appToast as toast } from '../../utils/toast';
 import exerciseDB from '../../data/exercises.json';
 import '../../styles/WorkoutLogger.css';
@@ -20,6 +25,12 @@ import '../../styles/WorkoutLogger.css';
    (completedSets) without relying on mutable array indexes. */
 let _exUidCounter = 0;
 const newExId = () => `ex-${Date.now()}-${++_exUidCounter}`;
+
+/* Resume-card window: if a workout finished less than this long ago
+   and is still present in history, the mobile home view shows a
+   "Finished too early? Resume workout" card that reopens the row as
+   an active session. */
+const RESUME_WINDOW_MS = 10 * 60 * 1000;
 
 /**
  * One exercise card rendered as a Framer Motion Reorder.Item. Drag is
@@ -189,6 +200,8 @@ export default function WorkoutLogger() {
   const [sessionMuscleGroup, setSessionMuscleGroup] = useState('');
   const [sessionTimer, setSessionTimer] = useState(0);
   const [sessionStartTime, setSessionStartTime] = useState(null);
+  const [sessionNotes, setSessionNotes] = useState('');
+  const SESSION_NOTES_MAX = 500;
   const [exerciseSearchOpen, setExerciseSearchOpen] = useState(false);
   const [exerciseSearchQuery, setExerciseSearchQuery] = useState('');
   const [exerciseBodyPartFilter, setExerciseBodyPartFilter] = useState('all');
@@ -201,6 +214,27 @@ export default function WorkoutLogger() {
   const [saveNewTplName, setSaveNewTplName] = useState('');
   const [isFinishing, setIsFinishing] = useState(false);
   const finishInFlight = useRef(false);
+  const [endWorkoutConfirm, setEndWorkoutConfirm] = useState(false);
+  /* When the user resumes a just-finished workout, finishSession
+     updates the existing row instead of inserting a new one — so the
+     "Resume" flow never leaves duplicates in the history list. */
+  const [resumedFromWorkoutId, setResumedFromWorkoutId] = useState(null);
+  /* Tracks the most recent finish for the 10-minute Resume card on
+     the mobile home view. Seeded from localStorage so it survives
+     a refresh and persists the Resume affordance cross-page. */
+  const RECENT_FINISH_KEY = 'macrovault_recent_finish';
+  const [recentFinish, setRecentFinish] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.localStorage.getItem(RECENT_FINISH_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
+  /* Edit-in-place sheet — loads an existing workout into a compact
+     editor. Separate state from `editingWorkoutId` (which drives the
+     desktop form flow) so the mobile sheet can edit without taking
+     over the whole log form. */
+  const [editWorkoutSheet, setEditWorkoutSheet] = useState(null);
   const [saveNewTplError, setSaveNewTplError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [workoutDetailSheet, setWorkoutDetailSheet] = useState(null);
@@ -286,7 +320,7 @@ export default function WorkoutLogger() {
       toast.error(`Failed to save template: ${error.message}`);
       return;
     }
-    toast.success(`${name} saved as template`);
+    toast.success('Template saved successfully');
     setSaveTemplatePopover(null);
     setTemplateName('');
     fetchTemplates();
@@ -543,6 +577,73 @@ export default function WorkoutLogger() {
     return () => clearInterval(interval);
   }, [sessionStartTime]);
 
+  /* ── Restore active session on mount ──
+     If the user navigated away and came back (or refreshed the tab)
+     while a workout was in progress, re-hydrate the session state
+     from localStorage. Only run once per user-id so we don't clobber
+     the user's current work if they switch between tabs. */
+  const restoredOnceRef = useRef(false);
+  useEffect(() => {
+    if (!userId || restoredOnceRef.current) return;
+    const snap = readActiveWorkout(userId);
+    if (!snap) {
+      restoredOnceRef.current = true;
+      return;
+    }
+    restoredOnceRef.current = true;
+    // Re-hydrate. start time persists as ISO string; convert back to ms.
+    const startMs = snap.session_start_time
+      ? new Date(snap.session_start_time).getTime()
+      : Date.now();
+    setSessionExercises(Array.isArray(snap.session_exercises) ? snap.session_exercises : []);
+    setSessionName(snap.session_name || '');
+    setSessionMuscleGroup(snap.session_muscle_group || '');
+    setSessionNotes(snap.session_notes || '');
+    setSessionTimer(Math.floor((Date.now() - startMs) / 1000));
+    setSessionStartTime(startMs);
+    setCompletedSets(snap.completed_sets || {});
+    setMobileView('session');
+  }, [userId]);
+
+  /* ── Persist active session to localStorage ──
+     Save a fresh snapshot whenever any piece of the session changes.
+     We also heartbeat every 30s so the `updated_at` timestamp stays
+     current and the 4-hour freshness window doesn't expire on a long
+     workout where the user is just tapping Check for set completion. */
+  useEffect(() => {
+    if (!userId) return;
+    if (mobileView !== 'session' || !sessionStartTime) return;
+
+    const write = () => {
+      saveActiveWorkout({
+        user_id: userId,
+        session_name: sessionName,
+        session_muscle_group: sessionMuscleGroup,
+        session_exercises: sessionExercises,
+        session_timer: Math.floor((Date.now() - sessionStartTime) / 1000),
+        session_start_time: new Date(sessionStartTime).toISOString(),
+        session_notes: sessionNotes,
+        completed_sets: completedSets,
+        mobile_view: mobileView,
+      });
+    };
+
+    // Immediate write on state change
+    write();
+    // Heartbeat so long idle stretches don't age out of the recovery window
+    const heartbeat = setInterval(write, 30000);
+    return () => clearInterval(heartbeat);
+  }, [
+    userId,
+    mobileView,
+    sessionStartTime,
+    sessionName,
+    sessionMuscleGroup,
+    sessionExercises,
+    sessionNotes,
+    completedSets,
+  ]);
+
   // ── iOS keyboard offset (visualViewport API) ──
   useEffect(() => {
     if (!window.visualViewport) return;
@@ -611,6 +712,7 @@ export default function WorkoutLogger() {
     setSessionExercises([]);
     setSessionName('');
     setSessionMuscleGroup('');
+    setSessionNotes('');
     setCompletedSets({});
     setSessionStartTime(Date.now());
     setSessionTimer(0);
@@ -629,6 +731,7 @@ export default function WorkoutLogger() {
     setSessionExercises(exs);
     setSessionName(template.name);
     setSessionMuscleGroup(template.muscle_group || '');
+    setSessionNotes('');
     setCompletedSets({});
     setSessionStartTime(Date.now());
     setSessionTimer(0);
@@ -713,11 +816,9 @@ export default function WorkoutLogger() {
   };
 
   const finishSession = async () => {
-    /* iOS quirk: when an input is focused (weight/reps), tapping the
-       Finish button blurs the input, dismisses the keyboard, and the
-       resulting reflow can cancel the synthetic click. We also guard
-       via a ref+state so double-taps and the simultaneous
-       onTouchEnd+onClick wiring can't submit twice. */
+    /* Ref+state guard: the confirmation sheet routes users through
+       an explicit "Finish workout" tap, but we still guard against
+       double-submits if the button is pressed twice in quick succession. */
     if (finishInFlight.current) return;
     if (sessionExercises.length === 0) {
       toast.error('Add at least one exercise before finishing.');
@@ -731,33 +832,61 @@ export default function WorkoutLogger() {
     }
     const name = sessionName.trim() || 'Quick Workout';
     const duration = sessionTimer;
+    const trimmedNotes = sessionNotes.trim();
     const workoutData = {
       user_id: userId,
       workout_date: getLocalDateString(),
       workout_name: name,
       muscle_group: sessionMuscleGroup || null,
       exercises: sessionExercises,
+      notes: trimmedNotes ? trimmedNotes : null,
     };
     try {
-      const res = await fetch(`${API_BASE}/workouts/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(workoutData),
-      });
-      if (res.status === 403) { triggerUpgrade('workouts'); finishInFlight.current = false; setIsFinishing(false); return; }
-      if (!res.ok) throw new Error(await res.text());
+      // ── Main save — this is the only await that gates navigation ──
+      let savedWorkoutId = null;
+      if (resumedFromWorkoutId) {
+        // Resumed workout → overwrite the existing row instead of
+        // inserting a new one. Skips the free-tier limit check
+        // because the row already exists (not a new log).
+        const { error: updErr } = await supabase
+          .from('workouts')
+          .update({
+            workout_date: workoutData.workout_date,
+            workout_name: workoutData.workout_name,
+            muscle_group: workoutData.muscle_group,
+            exercises: workoutData.exercises,
+            notes: workoutData.notes,
+          })
+          .eq('id', resumedFromWorkoutId);
+        if (updErr) throw new Error(updErr.message || 'Failed to update workout');
+        savedWorkoutId = resumedFromWorkoutId;
+      } else {
+        const res = await fetch(`${API_BASE}/workouts/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(workoutData),
+        });
+        if (res.status === 403) { triggerUpgrade('workouts'); finishInFlight.current = false; setIsFinishing(false); return; }
+        if (!res.ok) throw new Error(await res.text());
+        const saved = await res.json().catch(() => null);
+        savedWorkoutId = saved?.id || null;
+      }
+
+      // Fire analytics in the background — do not gate navigation on it
       posthog.capture('workout_logged', { exercise_count: sessionExercises.length, duration_seconds: duration });
 
-      // Template update logic
+      // Template bookkeeping — all writes fire in parallel in the background.
+      // Use Promise.all so we don't pay N sequential round-trips.
+      let showUpdateSheet = null;
+      let showAutoUpdateToast = false;
       if (sessionFromTemplateId && sessionOriginalTemplate) {
-        incrementTemplateUseCount(sessionFromTemplateId);
         const templatePref = localStorage.getItem('template_auto_update') || 'ask';
         const changes = detectTemplateChanges(sessionExercises, sessionOriginalTemplate);
+        const bgWrites = [incrementTemplateUseCount(sessionFromTemplateId)];
 
         if (changes.length > 0 && templatePref === 'always') {
-          updateTemplateWeights(sessionFromTemplateId, sessionExercises);
-          toast.success('Template updated automatically');
-          fetchTemplates();
+          bgWrites.push(updateTemplateWeights(sessionFromTemplateId, sessionExercises));
+          showAutoUpdateToast = true;
         } else if (changes.length > 0 && templatePref === 'ask') {
           const exerciseData = sessionExercises.map((ex) => ({
             name: ex.name,
@@ -767,22 +896,47 @@ export default function WorkoutLogger() {
               reps: s.reps || '',
             })),
           }));
-          setTemplateUpdateSheet({
+          showUpdateSheet = {
             templateId: sessionFromTemplateId,
             templateName: sessionOriginalTemplate.name,
             changes,
             exerciseData,
-          });
-          fetchTemplates();
-        } else {
-          fetchTemplates();
+          };
         }
+
+        // Fire all template writes in parallel, then refresh the list —
+        // all detached from the main path so the user navigates instantly.
+        Promise.all(bgWrites)
+          .then(() => fetchTemplates())
+          .catch((err) => console.error('Template bg write failed:', err));
       }
 
+      // ── Navigate immediately — before list refetches complete ──
       toast.success(`${name} saved! ${formatDuration(duration)}`);
+      if (showAutoUpdateToast) toast.success('Template updated automatically');
+      if (showUpdateSheet) setTemplateUpdateSheet(showUpdateSheet);
       setMobileView('home');
       setSessionStartTime(null);
       setSessionOriginalTemplate(null);
+      setSessionNotes('');
+      setEndWorkoutConfirm(false);
+      setResumedFromWorkoutId(null);
+      // Stash a recent-finish marker so the 10-minute Resume card
+      // appears on the home view. We only persist the id + time; the
+      // actual workout data is re-fetched from supabase on resume so
+      // we always hydrate from the source of truth.
+      if (savedWorkoutId) {
+        const marker = { workout_id: savedWorkoutId, finished_at: Date.now() };
+        try {
+          window.localStorage.setItem(RECENT_FINISH_KEY, JSON.stringify(marker));
+        } catch { /* ignore */ }
+        setRecentFinish(marker);
+      }
+      // Session done — drop the recovery snapshot so the banner/
+      // indicator clear immediately on return to the home view.
+      clearActiveWorkout();
+      // Workout list refresh runs in the background — the home view
+      // will update when it returns; we don't block navigation on it.
       fetchWorkouts();
     } catch (err) {
       toast.error(`Error: ${err.message}`);
@@ -799,7 +953,78 @@ export default function WorkoutLogger() {
     setSessionExercises([]);
     setCompletedSets({});
     setSessionOriginalTemplate(null);
+    setSessionNotes('');
+    setResumedFromWorkoutId(null);
+    clearActiveWorkout();
   };
+
+  /* Dismiss the 10-minute Resume card without resuming. */
+  const clearRecentFinish = useCallback(() => {
+    try { window.localStorage.removeItem(RECENT_FINISH_KEY); } catch { /* ignore */ }
+    setRecentFinish(null);
+  }, []);
+
+  /* Resume a just-finished workout. We hydrate session state from
+     the saved row and set `resumedFromWorkoutId` so the next
+     finishSession UPDATES that row instead of inserting a new one. */
+  const resumeLastWorkout = useCallback(() => {
+    if (!recentFinish?.workout_id) return;
+    const w = workoutHistory.find((x) => x.id === recentFinish.workout_id);
+    if (!w) {
+      toast.error("Couldn't find that workout — it may have been deleted.");
+      clearRecentFinish();
+      return;
+    }
+    // Attach stable _id so the Reorder.Item keys stay consistent.
+    const exs = (w.exercises || []).map((ex) => ({
+      _id: newExId(),
+      name: ex.name,
+      sets: Array.isArray(ex.sets)
+        ? ex.sets.map((s) => ({
+            weight: s.weight || '',
+            reps: s.reps || '',
+            notes: s.notes || '',
+          }))
+        : [{ weight: '', reps: '', notes: '' }],
+    }));
+    setSessionExercises(exs);
+    setSessionName(w.workout_name || '');
+    setSessionMuscleGroup(w.muscle_group || '');
+    setSessionNotes(w.notes || '');
+    setCompletedSets({});
+    setSessionStartTime(Date.now());
+    setSessionTimer(0);
+    setSessionFromTemplateId(null);
+    setSessionOriginalTemplate(null);
+    setResumedFromWorkoutId(w.id);
+    setMobileView('session');
+    // Keep the Resume marker until the workout is re-finished —
+    // if the user backs out without finishing, they still have the
+    // Resume card available.
+  }, [recentFinish, workoutHistory, clearRecentFinish]);
+
+  /* True when the most recent finish is < RESUME_WINDOW_MS old AND
+     the workout row is still in history (so deleted workouts won't
+     leave a phantom Resume card). */
+  const showResumeCard = useMemo(() => {
+    if (!recentFinish?.finished_at || !recentFinish?.workout_id) return false;
+    if (Date.now() - recentFinish.finished_at > RESUME_WINDOW_MS) return false;
+    return workoutHistory.some((w) => w.id === recentFinish.workout_id);
+  }, [recentFinish, workoutHistory]);
+
+  /* Auto-expire the marker so the card disappears without needing
+     the user to dismiss it. We only need one timer ticking because
+     the card is either visible or it isn't. */
+  useEffect(() => {
+    if (!recentFinish?.finished_at) return;
+    const remaining = RESUME_WINDOW_MS - (Date.now() - recentFinish.finished_at);
+    if (remaining <= 0) {
+      clearRecentFinish();
+      return;
+    }
+    const t = setTimeout(clearRecentFinish, remaining);
+    return () => clearTimeout(t);
+  }, [recentFinish, clearRecentFinish]);
 
   const handleConfirmDelete = async () => {
     if (!confirmDelete) return;
@@ -1324,6 +1549,9 @@ export default function WorkoutLogger() {
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.25 }}
                       >
+                        {workout.notes && workout.notes.trim() && (
+                          <p className="wl-history-notes">{workout.notes}</p>
+                        )}
                         {workout.exercises?.map((ex, exIdx) => (
                           <div key={exIdx} className="history-exercise">
                             <h4>{ex.name}</h4>
@@ -1418,6 +1646,40 @@ export default function WorkoutLogger() {
         {/* ── MOBILE HOME ── */}
         {mobileView === 'home' && (
           <div className="wlm-home">
+            {/* Resume last workout (only within 10 min of finishing) */}
+            {showResumeCard && (
+              <motion.div
+                className="wlm-resume-card"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25 }}
+              >
+                <div className="wlm-resume-card__text">
+                  <span className="wlm-resume-card__title">Finished too early?</span>
+                  <span className="wlm-resume-card__sub">
+                    Pick up where you left off — your previous log will be overwritten.
+                  </span>
+                </div>
+                <div className="wlm-resume-card__actions">
+                  <motion.button
+                    className="wlm-resume-card__resume"
+                    onClick={resumeLastWorkout}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    <Play size={14} /> Resume workout
+                  </motion.button>
+                  <button
+                    className="wlm-resume-card__dismiss"
+                    onClick={clearRecentFinish}
+                    aria-label="Dismiss"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
             {/* Quick Start */}
             {atLimit ? (
               <motion.button
@@ -1661,6 +1923,12 @@ export default function WorkoutLogger() {
                     <X size={20} />
                   </button>
                 </div>
+                {workoutDetailSheet.notes && workoutDetailSheet.notes.trim() && (
+                  <div className="wlm-sheet__notes">
+                    <span className="wlm-sheet__notes-label">Notes</span>
+                    <p className="wlm-sheet__notes-body">{workoutDetailSheet.notes}</p>
+                  </div>
+                )}
                 <div className="wlm-sheet__exercises">
                   {(workoutDetailSheet.exercises || []).map((ex, i) => (
                     <div key={i} className="wlm-sheet__exercise-block">
@@ -1681,6 +1949,32 @@ export default function WorkoutLogger() {
                   ))}
                 </div>
                 <div className="wlm-sheet__footer wlm-sheet__footer--multi">
+                  <motion.button
+                    className="wlm-sheet__action-btn wlm-sheet__action-btn--edit"
+                    onClick={() => {
+                      const w = workoutDetailSheet;
+                      setWorkoutDetailSheet(null);
+                      // Deep-clone so edits don't mutate the history state
+                      // until the user presses Save.
+                      setEditWorkoutSheet({
+                        id: w.id,
+                        workout_name: w.workout_name || '',
+                        muscle_group: w.muscle_group || '',
+                        notes: w.notes || '',
+                        exercises: (w.exercises || []).map((ex) => ({
+                          name: ex.name,
+                          sets: (ex.sets || []).map((s) => ({
+                            weight: s.weight || '',
+                            reps: s.reps || '',
+                            notes: s.notes || '',
+                          })),
+                        })),
+                      });
+                    }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    Edit workout
+                  </motion.button>
                   <motion.button
                     className="wlm-sheet__action-btn wlm-sheet__action-btn--save"
                     onClick={() => {
@@ -1731,8 +2025,7 @@ export default function WorkoutLogger() {
               <motion.button
                 type="button"
                 className="wlm-session__finish-btn"
-                onClick={finishSession}
-                onTouchEnd={(e) => { e.preventDefault(); finishSession(); }}
+                onClick={() => setEndWorkoutConfirm(true)}
                 disabled={isFinishing}
                 whileTap={{ scale: 0.97 }}
               >
@@ -1793,15 +2086,54 @@ export default function WorkoutLogger() {
                 <Plus size={18} /> Add Exercise
               </motion.button>
 
-              {/* Bottom Finish button — fires on touchend (before iOS's
-                  focus-blur reflow can cancel the subsequent click) and
-                  also on click for mouse/keyboard users. finishSession
-                  is idempotent via the finishInFlight ref guard. */}
+              {/* ── Session notes ──
+                  Free-text field saved with the workout. Kept at
+                  session level (distinct from per-set notes already
+                  stored inside exercises JSON). scrollIntoView on
+                  focus so the iOS keyboard does not obscure the
+                  textarea on mobile. */}
+              {sessionExercises.length > 0 && (
+                <div className="wlm-session-notes">
+                  <label htmlFor="wlm-session-notes-ta" className="wlm-session-notes__label">
+                    Notes <span className="wlm-session-notes__hint">(optional)</span>
+                  </label>
+                  <textarea
+                    id="wlm-session-notes-ta"
+                    className="wlm-session-notes__input"
+                    value={sessionNotes}
+                    onChange={(e) => {
+                      const next = e.target.value.slice(0, SESSION_NOTES_MAX);
+                      setSessionNotes(next);
+                    }}
+                    onFocus={(e) => {
+                      handleInputFocus();
+                      // Extra insurance on mobile: explicitly scroll the
+                      // textarea into view so iOS reveals it above the
+                      // keyboard even when it's at the bottom of a flex
+                      // column that the default scrollIntoView misses.
+                      const el = e.currentTarget;
+                      setTimeout(() => {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }, 350);
+                    }}
+                    placeholder="How did this workout feel? PRs, form cues, anything worth remembering…"
+                    rows={3}
+                    maxLength={SESSION_NOTES_MAX}
+                  />
+                  <div className="wlm-session-notes__counter">
+                    {sessionNotes.length}/{SESSION_NOTES_MAX}
+                  </div>
+                </div>
+              )}
+
+              {/* Bottom Finish button — routes through an explicit
+                  confirmation sheet to avoid accidental ending from
+                  scroll-gesture touchend events. finishSession itself
+                  is still idempotent via the finishInFlight ref guard. */}
               <motion.button
                 type="button"
                 className="wlm-finish-btn-bottom"
-                onClick={finishSession}
-                onTouchEnd={(e) => { e.preventDefault(); finishSession(); }}
+                onClick={() => setEndWorkoutConfirm(true)}
                 disabled={isFinishing}
                 whileTap={{ scale: 0.97 }}
               >
@@ -2073,6 +2405,345 @@ export default function WorkoutLogger() {
                 >
                   Don't ask again
                 </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── END WORKOUT CONFIRMATION ──
+            Required user-confirmation before finishing a session.
+            Prevents accidental endings from scroll-gesture touchend
+            events that used to fire on the finish button. */}
+        <AnimatePresence>
+          {endWorkoutConfirm && (
+            <motion.div
+              className="wlm-overlay wlm-overlay--confirm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { if (!isFinishing) setEndWorkoutConfirm(false); }}
+            >
+              <motion.div
+                className="wlm-confirm wlm-confirm--end-workout"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h4 className="wlm-confirm__title">End workout?</h4>
+                <p className="wlm-confirm__message">
+                  Are you sure you want to finish this workout? Your progress will be saved.
+                </p>
+                <div className="wlm-confirm__actions">
+                  <motion.button
+                    type="button"
+                    className="wlm-confirm__cancel wlm-confirm__btn--keep-going"
+                    onClick={() => setEndWorkoutConfirm(false)}
+                    disabled={isFinishing}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    Keep going
+                  </motion.button>
+                  <motion.button
+                    type="button"
+                    className="wlm-confirm__primary"
+                    onClick={finishSession}
+                    disabled={isFinishing}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    {isFinishing ? 'Saving…' : 'Finish workout'}
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── SAVE AS TEMPLATE BOTTOM SHEET (mobile) ──
+            The desktop flow renders the popover inline in the history
+            list, but .wl-desktop is display:none on mobile — so on
+            mobile we render a dedicated bottom sheet keyed off the
+            same saveTemplatePopover state. */}
+        <AnimatePresence>
+          {saveTemplatePopover && (() => {
+            const w = workoutHistory.find((x) => x.id === saveTemplatePopover);
+            if (!w) return null;
+            return (
+              <motion.div
+                key="save-template-sheet"
+                className="wlm-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => { setSaveTemplatePopover(null); setTemplateName(''); }}
+              >
+                <motion.div
+                  className="wlm-sheet wlm-sheet--compact"
+                  initial={{ y: '100%' }}
+                  animate={{ y: 0 }}
+                  exit={{ y: '100%' }}
+                  transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="wlm-sheet__handle" />
+                  <div className="wlm-sheet__header">
+                    <div>
+                      <h3 className="wlm-sheet__title">Save as template</h3>
+                      <div className="wlm-sheet__meta">
+                        <span>{w.workout_name}</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="wlm-sheet__close"
+                      onClick={() => { setSaveTemplatePopover(null); setTemplateName(''); }}
+                      aria-label="Close"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                  <div className="wlm-save-template-sheet__body">
+                    <label className="wl-popover__label" htmlFor="wlm-save-template-name">Template name</label>
+                    <input
+                      id="wlm-save-template-name"
+                      type="text"
+                      className="input wl-popover__input"
+                      value={templateName}
+                      onChange={(e) => setTemplateName(e.target.value)}
+                      placeholder={w.workout_name}
+                      autoFocus
+                      onKeyDown={(e) => { if (e.key === 'Enter') saveAsTemplate(w); }}
+                    />
+                  </div>
+                  <div className="wlm-sheet__footer wlm-sheet__footer--multi">
+                    <motion.button
+                      type="button"
+                      className="wlm-sheet__action-btn wlm-sheet__action-btn--save"
+                      onClick={() => saveAsTemplate(w)}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      Save template
+                    </motion.button>
+                    <motion.button
+                      type="button"
+                      className="wlm-confirm__cancel wlm-confirm__btn--keep-going"
+                      onClick={() => { setSaveTemplatePopover(null); setTemplateName(''); }}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      Cancel
+                    </motion.button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            );
+          })()}
+        </AnimatePresence>
+
+        {/* ── EDIT WORKOUT BOTTOM SHEET ──
+            Lets users tweak reps, weights, notes, or delete a set
+            on an already-saved workout without going through the
+            active-session flow. Saves by UPDATING the existing row
+            so there are no duplicate entries in history. */}
+        <AnimatePresence>
+          {editWorkoutSheet && (
+            <motion.div
+              key="edit-workout-sheet"
+              className="wlm-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditWorkoutSheet(null)}
+            >
+              <motion.div
+                className="wlm-sheet wlm-sheet--edit"
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="wlm-sheet__handle" />
+                <div className="wlm-sheet__header">
+                  <div>
+                    <h3 className="wlm-sheet__title">Edit workout</h3>
+                    <div className="wlm-sheet__meta">
+                      <span>{editWorkoutSheet.workout_name || 'Untitled'}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="wlm-sheet__close"
+                    onClick={() => setEditWorkoutSheet(null)}
+                    aria-label="Close"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="wlm-edit-sheet__body">
+                  {/* Workout name */}
+                  <label className="wlm-edit-sheet__field-label" htmlFor="wlm-edit-name">
+                    Workout name
+                  </label>
+                  <input
+                    id="wlm-edit-name"
+                    type="text"
+                    className="wlm-edit-sheet__input"
+                    value={editWorkoutSheet.workout_name}
+                    onChange={(e) => setEditWorkoutSheet((prev) =>
+                      prev ? { ...prev, workout_name: e.target.value } : prev
+                    )}
+                    onFocus={handleInputFocus}
+                    placeholder="Workout name…"
+                  />
+
+                  {/* Notes */}
+                  <label className="wlm-edit-sheet__field-label" htmlFor="wlm-edit-notes">
+                    Notes
+                  </label>
+                  <textarea
+                    id="wlm-edit-notes"
+                    className="wlm-edit-sheet__input wlm-edit-sheet__textarea"
+                    value={editWorkoutSheet.notes}
+                    onChange={(e) => setEditWorkoutSheet((prev) =>
+                      prev
+                        ? { ...prev, notes: e.target.value.slice(0, SESSION_NOTES_MAX) }
+                        : prev
+                    )}
+                    onFocus={(e) => {
+                      handleInputFocus();
+                      const el = e.currentTarget;
+                      setTimeout(() => {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }, 350);
+                    }}
+                    rows={3}
+                    maxLength={SESSION_NOTES_MAX}
+                    placeholder="How did this workout feel?"
+                  />
+
+                  {/* Exercises */}
+                  <div className="wlm-edit-sheet__exercises">
+                    {editWorkoutSheet.exercises.map((ex, exIdx) => (
+                      <div key={exIdx} className="wlm-edit-sheet__exercise">
+                        <div className="wlm-edit-sheet__exercise-header">
+                          <span className="wlm-edit-sheet__exercise-name">{ex.name}</span>
+                        </div>
+                        <div className="wlm-edit-sheet__set-rows">
+                          {ex.sets.map((set, sIdx) => (
+                            <div key={sIdx} className="wlm-edit-sheet__set-row">
+                              <span className="wlm-edit-sheet__set-label">Set {sIdx + 1}</span>
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                className="wlm-edit-sheet__set-input"
+                                value={set.weight}
+                                onFocus={handleInputFocus}
+                                onKeyDown={handleInputKeyDown}
+                                onChange={(e) => setEditWorkoutSheet((prev) => {
+                                  if (!prev) return prev;
+                                  const next = { ...prev, exercises: prev.exercises.map((_ex, i) => {
+                                    if (i !== exIdx) return _ex;
+                                    return {
+                                      ..._ex,
+                                      sets: _ex.sets.map((_s, j) =>
+                                        j === sIdx ? { ..._s, weight: e.target.value } : _s,
+                                      ),
+                                    };
+                                  }) };
+                                  return next;
+                                })}
+                                placeholder="lbs"
+                              />
+                              <span className="wlm-edit-sheet__set-x">×</span>
+                              <input
+                                type="number"
+                                inputMode="numeric"
+                                className="wlm-edit-sheet__set-input"
+                                value={set.reps}
+                                onFocus={handleInputFocus}
+                                onKeyDown={handleInputKeyDown}
+                                onChange={(e) => setEditWorkoutSheet((prev) => {
+                                  if (!prev) return prev;
+                                  return { ...prev, exercises: prev.exercises.map((_ex, i) => {
+                                    if (i !== exIdx) return _ex;
+                                    return {
+                                      ..._ex,
+                                      sets: _ex.sets.map((_s, j) =>
+                                        j === sIdx ? { ..._s, reps: e.target.value } : _s,
+                                      ),
+                                    };
+                                  }) };
+                                })}
+                                placeholder="reps"
+                              />
+                              <button
+                                type="button"
+                                className="wlm-edit-sheet__set-delete"
+                                aria-label={`Delete set ${sIdx + 1}`}
+                                onClick={() => setEditWorkoutSheet((prev) => {
+                                  if (!prev) return prev;
+                                  return { ...prev, exercises: prev.exercises.map((_ex, i) => {
+                                    if (i !== exIdx) return _ex;
+                                    return { ..._ex, sets: _ex.sets.filter((_, j) => j !== sIdx) };
+                                  }) };
+                                })}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="wlm-sheet__footer wlm-sheet__footer--multi">
+                  <motion.button
+                    className="wlm-sheet__action-btn wlm-sheet__action-btn--save"
+                    onClick={async () => {
+                      if (!editWorkoutSheet) return;
+                      const trimmedName = editWorkoutSheet.workout_name.trim();
+                      if (!trimmedName) {
+                        toast.error('Workout name cannot be empty.');
+                        return;
+                      }
+                      const payload = {
+                        workout_name: trimmedName,
+                        muscle_group: editWorkoutSheet.muscle_group || null,
+                        exercises: editWorkoutSheet.exercises.filter(
+                          (ex) => (ex.sets || []).length > 0,
+                        ),
+                        notes: editWorkoutSheet.notes.trim()
+                          ? editWorkoutSheet.notes.trim()
+                          : null,
+                      };
+                      const { error } = await supabase
+                        .from('workouts')
+                        .update(payload)
+                        .eq('id', editWorkoutSheet.id);
+                      if (error) {
+                        toast.error(`Couldn't save changes: ${error.message}`);
+                        return;
+                      }
+                      toast.success('Workout updated');
+                      setEditWorkoutSheet(null);
+                      fetchWorkouts();
+                    }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    Save changes
+                  </motion.button>
+                  <motion.button
+                    className="wlm-confirm__cancel wlm-confirm__btn--keep-going"
+                    onClick={() => setEditWorkoutSheet(null)}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    Cancel
+                  </motion.button>
+                </div>
               </motion.div>
             </motion.div>
           )}

@@ -31,6 +31,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
+import { useActiveWorkout } from '../../hooks/useActiveWorkout';
 import SidebarThemeSwitcher from '../ui/SidebarThemeSwitcher';
 import './Sidebar.css';
 
@@ -157,6 +158,11 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
     try { localStorage.setItem('mv_sidebar_collapsed', collapsed); } catch {}
   }, [collapsed]);
   const { theme, toggle: toggleTheme, isDark, isSpectrum, isXpAqua, isMyspace, isY2kChrome, isRetro, accent, isY2K, uiMode, setAccent, setUiMode } = useTheme();
+
+  /* Live read of the active-workout snapshot so the sidebar can show
+     a pulse/indicator when a session is in progress — same snapshot
+     the recovery banner uses. */
+  const { hasActive: hasActiveWorkout } = useActiveWorkout(session?.user?.id);
 
   const userEmail = session?.user?.email ?? '';
   const emailFallback = userEmail.split('@')[0] || 'User';
@@ -327,6 +333,13 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
                               <Lock size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginLeft: 'auto' }} title="Pro feature" />
                             )
                           )}
+                          {item.to === '/workouts' && hasActiveWorkout && (
+                            <span
+                              className="sidebar__active-workout-dot"
+                              title="Workout in progress"
+                              aria-label="Workout in progress"
+                            />
+                          )}
                           {collapsed && hoveredNav === itemKey && (
                             <div className="sidebar__tooltip">{item.label}</div>
                           )}
@@ -339,6 +352,23 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
             </nav>
           </React.Fragment>
       ))}
+
+      {/* Active workout callout — desktop sidebar, hidden when
+          collapsed because there's no room for the text label. */}
+      {hasActiveWorkout && !collapsed && (
+        <button
+          type="button"
+          className="sidebar__active-workout-card"
+          onClick={() => navigate('/workouts')}
+        >
+          <span className="sidebar__active-workout-card__pulse" aria-hidden="true" />
+          <Dumbbell size={14} />
+          <span className="sidebar__active-workout-card__text">
+            <strong>Workout in progress</strong>
+            <span>Tap to return</span>
+          </span>
+        </button>
+      )}
 
       {/* Spacer */}
       <div className="sidebar__spacer" />
@@ -508,12 +538,16 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
 
         {/* Center Log action button */}
         <motion.button
-          className={`mob-nav-log-btn${location.pathname.startsWith('/workouts') ? ' mob-nav-log-btn--active' : ''}`}
+          className={`mob-nav-log-btn${location.pathname.startsWith('/workouts') ? ' mob-nav-log-btn--active' : ''}${hasActiveWorkout ? ' mob-nav-log-btn--has-active' : ''}`}
           onClick={() => navigate('/workouts')}
           whileTap={{ scale: 0.9 }}
+          aria-label={hasActiveWorkout ? 'Workout in progress — tap to return' : 'Log workout'}
         >
           <Plus size={22} strokeWidth={2.5} />
           <span className="mob-nav-log-btn__label">Log</span>
+          {hasActiveWorkout && (
+            <span className="mob-nav-log-btn__pulse-dot" aria-hidden="true" />
+          )}
         </motion.button>
 
         {MOBILE_TABS_RIGHT.map(({ to, icon: Icon, label }) => {

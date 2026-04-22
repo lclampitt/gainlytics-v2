@@ -1299,3 +1299,106 @@
     flex-shrink: 0;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Active workout indicators
+   ─────────────────────────────────────────────────────────────── */
+
+/* Tiny pulsing dot next to the "Workouts" nav item when a session
+   is in progress. Sits to the right of the label. */
+.sidebar__active-workout-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent, #19c29b);
+  margin-left: auto;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 0 rgba(25, 194, 155, 0.6);
+  animation: sidebarActivePulse 1.8s ease-out infinite;
+}
+
+@keyframes sidebarActivePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(25, 194, 155, 0.55); }
+  70%  { box-shadow: 0 0 0 8px rgba(25, 194, 155, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(25, 194, 155, 0); }
+}
+
+/* Full "Tap to return" card beneath the nav groups. */
+.sidebar__active-workout-card {
+  margin: 4px 10px 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  width: calc(100% - 20px);
+  background: linear-gradient(
+    90deg,
+    rgba(25, 194, 155, 0.22) 0%,
+    rgba(25, 194, 155, 0.08) 100%
+  );
+  border: 1px solid rgba(25, 194, 155, 0.45);
+  border-radius: 10px;
+  color: var(--accent-light, #35d8b1);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  position: relative;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.sidebar__active-workout-card:hover {
+  background: linear-gradient(
+    90deg,
+    rgba(25, 194, 155, 0.3) 0%,
+    rgba(25, 194, 155, 0.14) 100%
+  );
+  border-color: rgba(25, 194, 155, 0.7);
+}
+
+.sidebar__active-workout-card__pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent, #19c29b);
+  flex-shrink: 0;
+  animation: sidebarActivePulse 1.8s ease-out infinite;
+}
+
+.sidebar__active-workout-card__text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar__active-workout-card__text strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-light, #35d8b1);
+  line-height: 1.2;
+}
+
+.sidebar__active-workout-card__text span {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+/* Mobile nav: pulse dot sitting on the Log button corner. */
+.mob-nav-log-btn {
+  position: relative;
+}
+
+.mob-nav-log-btn__pulse-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent, #19c29b);
+  border: 2px solid var(--surface, #0a0f14);
+  box-shadow: 0 0 0 0 rgba(25, 194, 155, 0.55);
+  animation: sidebarActivePulse 1.8s ease-out infinite;
+}
