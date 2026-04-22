@@ -17,6 +17,8 @@ import AuthPage        from './pages/auth';
 import ResetPassword   from './pages/ResetPassword';
 import Contact         from './pages/Contact';
 import About           from './pages/About';
+import Terms           from './pages/Terms';
+import Privacy         from './pages/Privacy';
 import BillingPage   from './pages/billing';
 import SettingsPage  from './pages/settings';
 
@@ -188,6 +190,8 @@ function App() {
       <Route path="/reset-password"  element={<ResetPassword />} />
       <Route path="/about"           element={<About />} />
       <Route path="/help"            element={<Contact />} />
+      <Route path="/terms"           element={<Terms />} />
+      <Route path="/privacy"         element={<Privacy />} />
 
       {/* Protected — all inside AppShell */}
       <Route path="/home"                element={protect(<Dashboard />)} />

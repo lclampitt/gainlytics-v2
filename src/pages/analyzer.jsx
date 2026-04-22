@@ -263,6 +263,23 @@ function AnalyzerContent() {
                 : `${result.bodyfat}%`}
             </div>
 
+            <p
+              style={{
+                fontSize: '12px',
+                color: 'rgba(255,255,255,0.4)',
+                maxWidth: '480px',
+                lineHeight: 1.6,
+                marginTop: '12px',
+                fontStyle: 'italic',
+              }}
+            >
+              Body fat estimates are calculated using standard anthropometric
+              formulas and may vary from clinical measurements by 3 to 8
+              percentage points or more. These figures are intended to help
+              you track general trends over time and are not a substitute for
+              clinical testing or professional medical advice.
+            </p>
+
             <div className="result-item">
               <strong>Body Type:</strong>
               <span className="bodytype-badge">{result.category}</span>
