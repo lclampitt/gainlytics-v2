@@ -157,7 +157,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
   useEffect(() => {
     try { localStorage.setItem('mv_sidebar_collapsed', collapsed); } catch {}
   }, [collapsed]);
-  const { theme, toggle: toggleTheme, isDark, isSpectrum, isXpAqua, isMyspace, isY2kChrome, isRetro, accent, isY2K, uiMode, setAccent, setUiMode } = useTheme();
+  const { theme, toggle: toggleTheme, isDark, isSpectrum, isXpAqua, isMyspace, isY2kChrome, isRetro, accent, setAccent } = useTheme();
 
   /* Live read of the active-workout snapshot so the sidebar can show
      a pulse/indicator when a session is in progress — same snapshot
@@ -402,7 +402,6 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
       {collapsed && (
         <SidebarThemeSwitcher
           accent={accent} setAccent={setAccent}
-          uiMode={uiMode} setUiMode={setUiMode}
           isDark={isDark} toggleTheme={toggleTheme}
           isPro={isPro} collapsed={collapsed}
         />
@@ -466,7 +465,6 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
       {!collapsed && (
         <SidebarThemeSwitcher
           accent={accent} setAccent={setAccent}
-          uiMode={uiMode} setUiMode={setUiMode}
           isDark={isDark} toggleTheme={toggleTheme}
           isPro={isPro} collapsed={collapsed}
         />
@@ -671,7 +669,7 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
                   style={{ background: (QUICK_THEMES.find(t => t.id === accent)?.gradient || QUICK_THEMES.find(t => t.id === accent)?.color || 'var(--accent)') }}
                 />
                 <span className="mob-more-theme-row__text">
-                  {uiMode === 'y2k' ? 'Y2K' : 'Modern'} · {QUICK_THEMES.find(t => t.id === accent)?.label || accent}
+                  {QUICK_THEMES.find(t => t.id === accent)?.label || accent}
                 </span>
                 <Palette size={14} className="mob-more-theme-row__icon" />
               </button>
@@ -703,25 +701,6 @@ export default function Sidebar({ session, onLogout, isPro, isProPlus, usage }) 
               <div className="mob-theme-sheet__header">
                 <span className="mob-theme-sheet__title">Appearance</span>
                 <button className="mob-theme-sheet__done" onClick={() => setThemeSheetOpen(false)}>Done</button>
-              </div>
-
-              {/* UI Mode */}
-              <div className="mob-theme-sheet__section">
-                <span className="mob-theme-sheet__label">UI Mode</span>
-                <div className="mob-theme-sheet__pills">
-                  <button
-                    className={`mob-theme-pill${uiMode === 'modern' ? ' mob-theme-pill--active' : ''}`}
-                    onClick={() => isPro && setUiMode('modern')}
-                  >
-                    Modern
-                  </button>
-                  <button
-                    className={`mob-theme-pill${uiMode === 'y2k' ? ' mob-theme-pill--active' : ''}`}
-                    onClick={() => isPro && setUiMode('y2k')}
-                  >
-                    Y2K
-                  </button>
-                </div>
               </div>
 
               {/* Dark / Light */}

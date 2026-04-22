@@ -147,10 +147,21 @@
     left: 50%;
   }
 
-  /* Content: top pad for mob-topbar (52px) + spacing; bottom pad for bottom nav (56px) */
+  /* Top pad lives on main so ActiveWorkoutBanner (first child of main)
+     renders BELOW the fixed mob-topbar instead of being overlapped by it.
+     Content's own top pad becomes 16px since main already cleared the topbar. */
+  .app-shell__main {
+    padding-top: 52px;
+  }
+
+  /* Grid / glow need to start below the topbar too since main was offset */
+  .app-shell__main::before,
+  .app-shell__main::after {
+    top: 52px;
+  }
+
   .app-shell__content {
     padding: 16px;
-    padding-top: 68px;
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
 }
