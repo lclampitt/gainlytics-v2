@@ -1,0 +1,43 @@
+-- ============================================================
+-- Cardio set fields — optional migration
+-- ============================================================
+-- Context: MacroVault does NOT have a `workout_sets` table.
+-- Sets are stored inside `workouts.exercises` (JSONB). Cardio
+-- fields (duration_seconds, speed_mph, distance_miles) are
+-- written directly into the JSON set object by the frontend
+-- and do not require a schema change.
+--
+-- Run this migration ONLY if you later decide to normalize
+-- sets into their own table. Current behavior works without it.
+-- ============================================================
+
+-- If a flat `workout_sets` table is ever introduced, add these
+-- columns alongside the existing weight/reps:
+--
+-- ALTER TABLE workout_sets ADD COLUMN duration_seconds integer;
+-- ALTER TABLE workout_sets ADD COLUMN speed_mph decimal(5,2);
+-- ALTER TABLE workout_sets ADD COLUMN distance_miles decimal(6,2);
+
+-- ============================================================
+-- Current JSONB shape written by the frontend (per cardio set):
+-- ============================================================
+-- {
+--   "duration_seconds": 1800,
+--   "speed_mph": 6.5,
+--   "distance_miles": 3.1,
+--   "duration": "30",        -- raw user entry, for round-trip editing
+--   "durationUnit": "min",
+--   "speed": "6.5",
+--   "speedUnit": "mph",
+--   "distance": "3.1",
+--   "distanceUnit": "mi",
+--   "distanceShown": true,
+--   "notes": ""
+-- }
+--
+-- Non-cardio sets keep the existing shape:
+-- { "weight": "135", "reps": "10", "notes": "" }
+--
+-- Cardio exercises also carry `isCardio: true` and
+-- `bodyPart: "cardio"` at the exercise level so consumers can
+-- detect cardio without scanning sets.

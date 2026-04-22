@@ -2849,3 +2849,674 @@
 .wlm-sheet__action-btn--edit:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* ==================================================================
+   Cardio sets — Time / Speed / optional Distance
+   Mobile stacks fields top-to-bottom; desktop sits them side-by-side.
+   ================================================================== */
+
+.wlm-ex-block__cardio-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  margin-left: 8px;
+  border-radius: 4px;
+  background: rgba(29, 158, 117, 0.14);
+  border: 1px solid rgba(29, 158, 117, 0.35);
+  color: var(--accent-light, #5dcaa5);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+.wlm-ex-block__cardio-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 14px 4px;
+}
+
+.wlm-cardio-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: opacity 0.15s ease;
+}
+
+.wlm-cardio-row--done {
+  opacity: 0.5;
+}
+
+.wlm-cardio-row__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wlm-cardio-row__set-num {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.wlm-cardio-row__delete {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.wlm-cardio-row__delete:active {
+  color: var(--error, #ef4444);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.wlm-cardio-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wlm-cardio-field__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.wlm-cardio-field__input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wlm-cardio-field__input {
+  flex: 1;
+  min-width: 0;
+  max-width: 140px;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 8px 10px;
+  outline: none;
+  -moz-appearance: textfield;
+  transition: border-color 0.15s ease;
+}
+
+.wlm-cardio-field__input::-webkit-inner-spin-button,
+.wlm-cardio-field__input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.wlm-cardio-field__input:focus {
+  border-color: var(--accent);
+}
+
+.wlm-cardio-unit {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg-base);
+}
+
+.wlm-cardio-unit__pill {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.wlm-cardio-unit__pill--active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.wlm-cardio-distance-toggle {
+  align-self: flex-start;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--accent-light, #5dcaa5);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.wlm-cardio-distance-toggle:active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.wlm-cardio-distance-remove {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.wlm-cardio-distance-remove:active {
+  color: var(--error, #ef4444);
+}
+
+/* Desktop cardio sets — flat flex row (side-by-side) */
+.wl-cardio-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.wl-cardio-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.wl-cardio-row .wl-set-num {
+  flex: 0 0 auto;
+  align-self: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  min-width: 80px;
+}
+
+.wl-cardio-row .wl-cardio-field {
+  flex: 1 1 170px;
+  min-width: 170px;
+  max-width: 260px;
+}
+
+@media (max-width: 767px) {
+  .wl-cardio-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .wl-cardio-row .wl-cardio-field {
+    max-width: none;
+  }
+  .wlm-cardio-field__input {
+    max-width: none;
+  }
+}
+
+@media (min-width: 768px) {
+  /* On desktop inside the mobile session card (rare, but the
+     component is shared) keep inputs side by side. */
+  .wlm-cardio-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .wlm-cardio-row .wlm-cardio-field {
+    flex: 1 1 160px;
+    min-width: 160px;
+  }
+  .wlm-cardio-row__top {
+    flex: 1 0 100%;
+  }
+}
+
+/* Cardio quick-start variant (mobile home) */
+.wlm-quick-start--cardio .wlm-quick-start__icon--cardio {
+  background: rgba(127, 119, 221, 0.15);
+  color: #7F77DD;
+}
+
+/* End-workout confirm cardio summary */
+.wlm-confirm__cardio-summary {
+  margin: 12px 0 16px;
+  padding: 12px 14px;
+  background: rgba(29, 158, 117, 0.06);
+  border: 1px solid rgba(29, 158, 117, 0.22);
+  border-radius: 10px;
+}
+
+.wlm-confirm__cardio-title {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent-light, #5dcaa5);
+}
+
+.wlm-confirm__cardio-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+}
+
+.wlm-confirm__cardio-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wlm-confirm__cardio-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.wlm-confirm__cardio-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   EXERCISE BLOCK — 3-dots menu trigger + note pill
+   ============================================================ */
+
+/* Mobile (≤767px): show 3-dots, hide trash. Desktop: hide 3-dots
+   so the existing trash icon remains in place. */
+.wlm-ex-block__more {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  margin: -6px;
+  border-radius: 8px;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.wlm-ex-block__more:active {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--accent-light);
+}
+
+@media (max-width: 767px) {
+  .wlm-ex-block__more {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .wlm-ex-block__remove {
+    display: none;
+  }
+}
+
+/* Per-exercise note strip. Small muted italic pill that sits under
+   the exercise name and reopens the note sheet on tap. */
+.wlm-ex-block__note-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 14px 0;
+  padding: 6px 10px;
+  background: rgba(var(--accent-rgb), 0.08);
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+  border-radius: 8px;
+  font-size: 12px;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  max-width: calc(100% - 28px);
+}
+.wlm-ex-block__note-pill svg {
+  color: rgba(var(--accent-rgb), 0.7);
+  flex-shrink: 0;
+}
+.wlm-ex-block__note-pill-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.wlm-ex-block__note-pill:active {
+  background: rgba(var(--accent-rgb), 0.14);
+}
+
+/* ============================================================
+   EXERCISE 3-DOTS MENU (bottom sheet on mobile)
+   ============================================================ */
+.wlm-ex-menu-overlay {
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.wlm-ex-menu {
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg-surface, #151820);
+  border-radius: 20px 20px 0 0;
+  padding: 12px 8px calc(16px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wlm-ex-menu__handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 99px;
+  margin: 0 auto 10px;
+  display: block;
+}
+
+.wlm-ex-menu__title {
+  margin: 0 12px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.wlm-ex-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  min-height: 48px;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease;
+}
+
+.wlm-ex-menu__item svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.wlm-ex-menu__item:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Primary "Add Note" — subtle teal-tinted background + left accent bar. */
+.wlm-ex-menu__item--primary {
+  background: rgba(var(--accent-rgb), 0.1);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.wlm-ex-menu__item--primary svg {
+  color: var(--accent);
+}
+.wlm-ex-menu__item--primary:active {
+  background: rgba(var(--accent-rgb), 0.18);
+}
+
+.wlm-ex-menu__item--danger {
+  color: var(--error, #ef4444);
+}
+.wlm-ex-menu__item--danger svg {
+  color: var(--error, #ef4444);
+}
+.wlm-ex-menu__item--danger:active {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* ============================================================
+   NOTE EDITOR SHEET
+   ============================================================ */
+.wlm-note-overlay {
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.wlm-note-sheet {
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg-surface, #151820);
+  border-radius: 20px 20px 0 0;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wlm-note-sheet__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.wlm-note-sheet__textarea {
+  width: 100%;
+  min-height: 96px;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-primary);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.wlm-note-sheet__textarea:focus {
+  border-color: var(--accent);
+}
+
+.wlm-note-sheet__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.wlm-note-sheet__cancel {
+  flex: 1;
+  padding: 12px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.wlm-note-sheet__save {
+  flex: 1;
+  padding: 12px;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* ============================================================
+   REST TIMER — picker sheet + floating pill on exercise card
+   ============================================================ */
+.wlm-timer-overlay {
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.wlm-timer-sheet {
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg-surface, #151820);
+  border-radius: 20px 20px 0 0;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wlm-timer-sheet__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.wlm-timer-sheet__subtitle {
+  margin: -8px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.wlm-timer-sheet__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wlm-timer-sheet__pill {
+  flex: 1 1 70px;
+  padding: 12px;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-primary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.wlm-timer-sheet__pill:active {
+  background: rgba(var(--accent-rgb), 0.12);
+  border-color: var(--accent);
+}
+
+.wlm-timer-sheet__custom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wlm-timer-sheet__custom-label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.wlm-timer-sheet__custom-input {
+  width: 120px;
+  padding: 10px 12px;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.wlm-timer-sheet__custom-input:focus {
+  border-color: var(--accent);
+}
+
+/* Floating pill anchored inside the exercise card. */
+.wlm-ex-block__timer-pill {
+  margin: 8px 14px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-light, var(--accent));
+  align-self: flex-start;
+  width: fit-content;
+}
+.wlm-ex-block__timer-pill svg {
+  color: var(--accent);
+}
+.wlm-ex-block__timer-time {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+.wlm-ex-block__timer-label {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+.wlm-ex-block__timer-cancel {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  border-radius: 6px;
+  -webkit-tap-highlight-color: transparent;
+}
+.wlm-ex-block__timer-cancel:active {
+  color: var(--error, #ef4444);
+}
+
+/* Destructive variant of the confirm-primary button (used by the
+   remove-exercise confirmation modal). */
+.wlm-confirm__primary--destructive {
+  background: var(--error, #ef4444);
+}
+.wlm-confirm__primary--destructive:active {
+  opacity: 0.88;
+}

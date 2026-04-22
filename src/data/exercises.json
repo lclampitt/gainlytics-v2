@@ -2904,5 +2904,197 @@
       "bulking": "3x12 each side",
       "maintenance": "3x12-15 each side"
     }
+  },
+  {
+    "id": "treadmill",
+    "name": "Treadmill",
+    "bodyPart": "cardio",
+    "targetMuscle": "cardiovascular system",
+    "secondaryMuscles": ["quads", "hamstrings", "calves"],
+    "equipment": "treadmill",
+    "difficulty": "beginner",
+    "isCardio": true,
+    "instructions": [
+      "Start the treadmill at a comfortable walking pace.",
+      "Warm up for 3-5 minutes at an easy pace.",
+      "Gradually increase speed or incline to your target effort.",
+      "Maintain an upright posture and relaxed arm swing.",
+      "Cool down for the last 3-5 minutes at a slow pace."
+    ],
+    "formCues": [],
+    "commonMistakes": [],
+    "setsRepsGuidance": {
+      "cutting": "20-40 min at moderate pace",
+      "bulking": "15-20 min easy",
+      "maintenance": "20-30 min moderate"
+    }
+  },
+  {
+    "id": "stationary-bike",
+    "name": "Stationary Bike",
+    "bodyPart": "cardio",
+    "targetMuscle": "cardiovascular system",
+    "secondaryMuscles": ["quads", "glutes", "calves"],
+    "equipment": "stationary bike",
+    "difficulty": "beginner",
+    "isCardio": true,
+    "instructions": [
+      "Adjust the seat so your knee is slightly bent at the bottom of the pedal stroke.",
+      "Warm up at a light resistance for 3-5 minutes.",
+      "Increase resistance or cadence to your target effort.",
+      "Keep your core engaged and back relatively flat.",
+      "Cool down at light resistance for the last few minutes."
+    ],
+    "formCues": [],
+    "commonMistakes": [],
+    "setsRepsGuidance": {
+      "cutting": "20-45 min moderate",
+      "bulking": "15-20 min easy",
+      "maintenance": "20-30 min moderate"
+    }
+  },
+  {
+    "id": "elliptical",
+    "name": "Elliptical",
+    "bodyPart": "cardio",
+    "targetMuscle": "cardiovascular system",
+    "secondaryMuscles": ["quads", "hamstrings", "glutes"],
+    "equipment": "elliptical",
+    "difficulty": "beginner",
+    "isCardio": true,
+    "instructions": [
+      "Step onto the pedals and grasp the handles lightly.",
+      "Begin a smooth, gliding motion.",
+      "Keep an upright posture and engage your core.",
+      "Adjust resistance and incline to your target effort.",
+      "Cool down with an easy 3-5 minute glide."
+    ],
+    "formCues": [],
+    "commonMistakes": [],
+    "setsRepsGuidance": {
+      "cutting": "25-40 min moderate",
+      "bulking": "15-20 min easy",
+      "maintenance": "20-30 min moderate"
+    }
+  },
+  {
+    "id": "rowing-machine",
+    "name": "Rowing Machine",
+    "bodyPart": "cardio",
+    "targetMuscle": "cardiovascular system",
+    "secondaryMuscles": ["back", "legs", "core"],
+    "equipment": "rowing machine",
+    "difficulty": "intermediate",
+    "isCardio": true,
+    "instructions": [
+      "Strap your feet in and grasp the handle with an overhand grip.",
+      "Drive with the legs first, then lean back, then pull the handle to your ribs.",
+      "Reverse the motion under control: arms, torso, legs.",
+      "Keep your back neutral and core engaged throughout.",
+      "Maintain a smooth rhythm rather than jerky pulls."
+    ],
+    "formCues": [],
+    "commonMistakes": [],
+    "setsRepsGuidance": {
+      "cutting": "15-30 min moderate",
+      "bulking": "10-15 min easy",
+      "maintenance": "15-20 min moderate"
+    }
+  },
+  {
+    "id": "stair-climber",
+    "name": "Stair Climber",
+    "bodyPart": "cardio",
+    "targetMuscle": "cardiovascular system",
+    "secondaryMuscles": ["glutes", "quads", "calves"],
+    "equipment": "stair climber",
+    "difficulty": "intermediate",
+    "isCardio": true,
+    "instructions": [
+      "Step on and hold the handrails lightly for balance only.",
+      "Begin at a slow pace and gradually increase speed.",
+      "Take full steps rather than quick shallow ones.",
+      "Keep your torso upright; avoid leaning on the rails.",
+      "Cool down at a slow pace before stepping off."
+    ],
+    "formCues": [],
+    "commonMistakes": [],
+    "setsRepsGuidance": {
+      "cutting": "15-25 min moderate",
+      "bulking": "10 min easy",
+      "maintenance": "15-20 min moderate"
+    }
+  },
+  {
+    "id": "jump-rope",
+    "name": "Jump Rope",
+    "bodyPart": "cardio",
+    "targetMuscle": "cardiovascular system",
+    "secondaryMuscles": ["calves", "shoulders", "core"],
+    "equipment": "jump rope",
+    "difficulty": "intermediate",
+    "isCardio": true,
+    "instructions": [
+      "Adjust rope length so the handles reach your armpits when standing on the middle of the rope.",
+      "Keep elbows close to your body and rotate the rope with your wrists.",
+      "Land softly on the balls of your feet.",
+      "Maintain a relaxed, upright posture.",
+      "Alternate work and rest if doing intervals."
+    ],
+    "formCues": [],
+    "commonMistakes": [],
+    "setsRepsGuidance": {
+      "cutting": "10-20 min intervals",
+      "bulking": "5-10 min warmup",
+      "maintenance": "10-15 min intervals"
+    }
+  },
+  {
+    "id": "running",
+    "name": "Running",
+    "bodyPart": "cardio",
+    "targetMuscle": "cardiovascular system",
+    "secondaryMuscles": ["quads", "hamstrings", "calves", "glutes"],
+    "equipment": "none",
+    "difficulty": "beginner",
+    "isCardio": true,
+    "instructions": [
+      "Warm up with a 3-5 minute easy jog.",
+      "Maintain an upright posture and relaxed shoulders.",
+      "Land with your foot under your hip, not out in front.",
+      "Breathe in a steady rhythm you can sustain.",
+      "Cool down with a slow jog or walk."
+    ],
+    "formCues": [],
+    "commonMistakes": [],
+    "setsRepsGuidance": {
+      "cutting": "20-40 min moderate",
+      "bulking": "15-20 min easy",
+      "maintenance": "25-35 min moderate"
+    }
+  },
+  {
+    "id": "cycling",
+    "name": "Cycling",
+    "bodyPart": "cardio",
+    "targetMuscle": "cardiovascular system",
+    "secondaryMuscles": ["quads", "hamstrings", "glutes", "calves"],
+    "equipment": "bike",
+    "difficulty": "beginner",
+    "isCardio": true,
+    "instructions": [
+      "Ensure the saddle height is adjusted so your knee is slightly bent at the bottom of the pedal stroke.",
+      "Warm up at an easy cadence for 5 minutes.",
+      "Maintain a cadence of 80-100 RPM at moderate effort.",
+      "Keep your core engaged and shoulders relaxed.",
+      "Cool down at easy cadence before finishing."
+    ],
+    "formCues": [],
+    "commonMistakes": [],
+    "setsRepsGuidance": {
+      "cutting": "30-60 min moderate",
+      "bulking": "20-30 min easy",
+      "maintenance": "30-45 min moderate"
+    }
   }
 ]

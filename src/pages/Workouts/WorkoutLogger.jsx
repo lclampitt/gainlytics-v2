@@ -4,7 +4,7 @@ import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion
 import {
   Lock, Trash2, Dumbbell, Bookmark, BookmarkCheck, Copy,
   BookmarkPlus, X, Star, Play, Clock, Search, Check, Plus, ChevronRight, ChevronLeft,
-  GripVertical, Loader2,
+  GripVertical, Loader2, MoreVertical, StickyNote, Timer,
 } from 'lucide-react';
 import posthog from '../../lib/posthog';
 import { supabase } from '../../supabaseClient';
@@ -32,6 +32,132 @@ const newExId = () => `ex-${Date.now()}-${++_exUidCounter}`;
    an active session. */
 const RESUME_WINDOW_MS = 10 * 60 * 1000;
 
+/* ── Cardio detection + canonical fields ──
+   Sets persist in `workouts.exercises` JSONB. Cardio sets carry
+   `duration_seconds`, `speed_mph`, and optional `distance_miles` —
+   presence of any of those fields is the authoritative signal that a
+   set/exercise is cardio. Also matches `isCardio: true` (session flag
+   set when adding from the cardio section of the library) or
+   `bodyPart === 'cardio'` (historical rows saved before that flag). */
+const CARDIO_NAME_SET = new Set([
+  'treadmill', 'stationary bike', 'elliptical', 'rowing machine',
+  'stair climber', 'jump rope', 'running', 'cycling',
+]);
+const isCardioSet = (s) =>
+  s && (s.duration_seconds != null || s.speed_mph != null ||
+        s.distance_miles != null || s.duration != null || s.speed != null);
+const isCardioExercise = (ex) => {
+  if (!ex) return false;
+  if (ex.isCardio) return true;
+  if (ex.bodyPart === 'cardio') return true;
+  const name = (ex.name || '').toLowerCase().trim();
+  if (CARDIO_NAME_SET.has(name)) return true;
+  return Array.isArray(ex.sets) && ex.sets.some(isCardioSet);
+};
+/* km → mi, kmh → mph, min → sec. Kept tiny and pure for reuse. */
+const KM_TO_MI = 0.621371;
+const toMiles = (v, unit) => {
+  const n = parseFloat(v);
+  if (!isFinite(n)) return null;
+  return unit === 'km' ? +(n * KM_TO_MI).toFixed(2) : +n.toFixed(2);
+};
+const toMph = (v, unit) => {
+  const n = parseFloat(v);
+  if (!isFinite(n)) return null;
+  return unit === 'kmh' ? +(n * KM_TO_MI).toFixed(2) : +n.toFixed(2);
+};
+const toSeconds = (v, unit) => {
+  const n = parseFloat(v);
+  if (!isFinite(n)) return null;
+  return unit === 'sec' ? Math.round(n) : Math.round(n * 60);
+};
+/* Render a cardio set for history/detail views. */
+const formatCardioSet = (s) => {
+  if (!s) return '—';
+  const secs = s.duration_seconds ?? null;
+  const mins = secs != null ? Math.round(secs / 60) : null;
+  const mph = s.speed_mph != null ? +Number(s.speed_mph).toFixed(1) : null;
+  const mi  = s.distance_miles != null ? +Number(s.distance_miles).toFixed(2) : null;
+  const parts = [];
+  if (mins != null) parts.push(`${mins} min`);
+  if (mph != null) parts.push(`@ ${mph} mph`);
+  const main = parts.length ? parts.join(' ') : '—';
+  return mi ? `${main} · ${mi} mi` : main;
+};
+
+/**
+ * Auto-scrolls the page while the user drags an exercise block near the
+ * top/bottom of the viewport. Called from the drag-handle's pointerdown.
+ * Ramps speed with depth into a ~100px edge zone and accounts for the
+ * fixed top header + bottom nav + iOS safe-area on mobile.
+ */
+function useAutoScrollOnDrag() {
+  const rafRef = useRef(null);
+  const pointerYRef = useRef(0);
+  const activeRef = useRef(false);
+
+  useEffect(() => () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  const start = (initialEvent) => {
+    if (activeRef.current) return;
+    activeRef.current = true;
+    pointerYRef.current = initialEvent?.clientY ?? 0;
+
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
+    const THRESHOLD = 100;
+    const TOP_OFFSET = isMobile ? 56 : 0;
+    // Mobile bottom nav is 56px + safe-area-inset-bottom. Read the actual
+    // inset via env() by sampling a probe element so we don't hardcode.
+    const safeBottom = (() => {
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none;';
+      document.body.appendChild(probe);
+      const h = probe.offsetHeight || 0;
+      document.body.removeChild(probe);
+      return h;
+    })();
+    const BOTTOM_OFFSET = isMobile ? (56 + safeBottom) : 0;
+
+    const onMove = (e) => { pointerYRef.current = e.clientY; };
+    const onUp = () => {
+      activeRef.current = false;
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+
+    const tick = () => {
+      if (!activeRef.current) return;
+      const y = pointerYRef.current;
+      const h = window.innerHeight;
+      const topEdge = TOP_OFFSET + THRESHOLD;
+      const bottomEdge = h - BOTTOM_OFFSET - THRESHOLD;
+
+      if (y > TOP_OFFSET && y < topEdge) {
+        const depth = Math.min(1, (topEdge - y) / THRESHOLD);
+        window.scrollBy(0, -(2 + depth * 16));
+      } else if (y < (h - BOTTOM_OFFSET) && y > bottomEdge) {
+        const depth = Math.min(1, (y - bottomEdge) / THRESHOLD);
+        window.scrollBy(0, 2 + depth * 16);
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
+    rafRef.current = requestAnimationFrame(tick);
+  };
+
+  return start;
+}
+
 /**
  * One exercise card rendered as a Framer Motion Reorder.Item. Drag is
  * gated to the grip handle via `dragListener={false}` + useDragControls
@@ -45,17 +171,27 @@ function ReorderableExerciseBlock({
   toggleSetComplete,
   addSetToSession,
   removeSessionExercise,
+  removeSessionSet,
   handleInputFocus,
   handleInputKeyDown,
+  handleInputClick,
+  onOpenExerciseMenu,
+  onOpenNoteSheet,
+  restTimerState,
+  onCancelRestTimer,
 }) {
   const controls = useDragControls();
+  const startAutoScroll = useAutoScrollOnDrag();
+  const cardio = isCardioExercise(ex);
+  const hasNote = !!(ex.notes && String(ex.notes).trim().length > 0);
+  const timerActive = restTimerState && restTimerState.exIdx === exIdx;
   return (
     <Reorder.Item
       value={ex}
       dragListener={false}
       dragControls={controls}
       as="div"
-      className="wlm-ex-block"
+      className={`wlm-ex-block ${cardio ? 'wlm-ex-block--cardio' : ''}`}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
@@ -65,72 +201,281 @@ function ReorderableExerciseBlock({
           type="button"
           className="wlm-ex-block__drag"
           aria-label="Drag to reorder"
-          onPointerDown={(e) => controls.start(e)}
+          onPointerDown={(e) => {
+            controls.start(e);
+            startAutoScroll(e);
+          }}
           /* Touch-action none prevents iOS scrolling while the user
              long-presses the handle. */
           style={{ touchAction: 'none' }}
         >
           <GripVertical size={16} />
         </button>
-        <span className="wlm-ex-block__name">{ex.name}</span>
+        <span className="wlm-ex-block__name">
+          {ex.name}
+          {cardio && <span className="wlm-ex-block__cardio-badge">CARDIO</span>}
+        </span>
+        {/* Mobile: 3-dots menu. Desktop: trash icon (≥768px via CSS). */}
+        <button
+          type="button"
+          className="wlm-ex-block__more"
+          onClick={() => onOpenExerciseMenu && onOpenExerciseMenu(exIdx)}
+          aria-label="Exercise options"
+          style={{ touchAction: 'manipulation' }}
+        >
+          <MoreVertical size={16} />
+        </button>
         <button
           type="button"
           className="wlm-ex-block__remove"
           onClick={() => removeSessionExercise(exIdx)}
+          aria-label="Remove exercise"
         >
           <Trash2 size={14} />
         </button>
       </div>
-      <div className="wlm-ex-block__table">
-        <div className="wlm-ex-block__thead">
-          <span className="wlm-ex-col wlm-ex-col--set">SET</span>
-          <span className="wlm-ex-col wlm-ex-col--weight">LBS</span>
-          <span className="wlm-ex-col wlm-ex-col--reps">REPS</span>
-          <span className="wlm-ex-col wlm-ex-col--check" />
-        </div>
-        {ex.sets.map((set, setIdx) => {
-          const isDone = !!completedSets[`${exIdx}-${setIdx}`];
-          return (
-            <div key={setIdx} className={`wlm-ex-row ${isDone ? 'wlm-ex-row--done' : ''}`}>
-              <span className="wlm-ex-col wlm-ex-col--set">{setIdx + 1}</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                className="wlm-ex-input"
-                value={set.weight}
-                onChange={(e) => updateSessionSet(exIdx, setIdx, 'weight', e.target.value)}
-                onFocus={handleInputFocus}
-                onKeyDown={handleInputKeyDown}
-                placeholder="—"
-              />
-              <input
-                type="number"
-                inputMode="numeric"
-                className="wlm-ex-input"
-                value={set.reps}
-                onChange={(e) => updateSessionSet(exIdx, setIdx, 'reps', e.target.value)}
-                onFocus={handleInputFocus}
-                onKeyDown={handleInputKeyDown}
-                placeholder="—"
-              />
-              <button
-                type="button"
-                className={`wlm-check-btn ${isDone ? 'wlm-check-btn--done' : ''}`}
-                onClick={() => toggleSetComplete(exIdx, setIdx)}
+      {hasNote && (
+        <button
+          type="button"
+          className="wlm-ex-block__note-pill"
+          onClick={() => onOpenNoteSheet && onOpenNoteSheet(exIdx)}
+          style={{ touchAction: 'manipulation' }}
+          aria-label="Edit note"
+        >
+          <StickyNote size={12} />
+          <span className="wlm-ex-block__note-pill-text">Note: {ex.notes}</span>
+        </button>
+      )}
+      {cardio ? (
+        <div className="wlm-ex-block__cardio-sets">
+          {ex.sets.map((set, setIdx) => {
+            const isDone = !!completedSets[`${exIdx}-${setIdx}`];
+            const durationUnit = set.durationUnit || 'min';
+            const speedUnit = set.speedUnit || 'mph';
+            const distanceUnit = set.distanceUnit || 'mi';
+            const distanceShown = !!set.distanceShown || (set.distance != null && set.distance !== '');
+            return (
+              <div
+                key={setIdx}
+                className={`wlm-cardio-row ${isDone ? 'wlm-cardio-row--done' : ''}`}
+                style={{ touchAction: 'manipulation' }}
               >
-                <Check size={16} />
-              </button>
-            </div>
-          );
-        })}
-      </div>
+                <div className="wlm-cardio-row__top">
+                  <span className="wlm-cardio-row__set-num">Interval {setIdx + 1}</span>
+                  <button
+                    type="button"
+                    className={`wlm-check-btn ${isDone ? 'wlm-check-btn--done' : ''}`}
+                    onClick={() => toggleSetComplete(exIdx, setIdx)}
+                    aria-label={isDone ? 'Mark incomplete' : 'Mark complete'}
+                    style={{ touchAction: 'manipulation' }}
+                  >
+                    <Check size={16} />
+                  </button>
+                  {ex.sets.length > 1 && (
+                    <button
+                      type="button"
+                      className="wlm-cardio-row__delete"
+                      onClick={() => removeSessionSet(exIdx, setIdx)}
+                      aria-label={`Delete interval ${setIdx + 1}`}
+                      style={{ touchAction: 'manipulation' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+                <div className="wlm-cardio-field">
+                  <label className="wlm-cardio-field__label">Time</label>
+                  <div className="wlm-cardio-field__input-wrap">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      className="wlm-cardio-field__input"
+                      value={set.duration ?? ''}
+                      onChange={(e) => updateSessionSet(exIdx, setIdx, 'duration', e.target.value)}
+                      onFocus={handleInputFocus}
+                      onClick={handleInputClick}
+                      onKeyDown={handleInputKeyDown}
+                      placeholder="30"
+                    />
+                    <div className="wlm-cardio-unit" role="group" aria-label="Duration unit">
+                      <button
+                        type="button"
+                        className={`wlm-cardio-unit__pill ${durationUnit === 'min' ? 'wlm-cardio-unit__pill--active' : ''}`}
+                        onClick={() => updateSessionSet(exIdx, setIdx, 'durationUnit', 'min')}
+                        style={{ touchAction: 'manipulation' }}
+                      >min</button>
+                      <button
+                        type="button"
+                        className={`wlm-cardio-unit__pill ${durationUnit === 'sec' ? 'wlm-cardio-unit__pill--active' : ''}`}
+                        onClick={() => updateSessionSet(exIdx, setIdx, 'durationUnit', 'sec')}
+                        style={{ touchAction: 'manipulation' }}
+                      >sec</button>
+                    </div>
+                  </div>
+                </div>
+                <div className="wlm-cardio-field">
+                  <label className="wlm-cardio-field__label">Speed</label>
+                  <div className="wlm-cardio-field__input-wrap">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.1"
+                      className="wlm-cardio-field__input"
+                      value={set.speed ?? ''}
+                      onChange={(e) => updateSessionSet(exIdx, setIdx, 'speed', e.target.value)}
+                      onFocus={handleInputFocus}
+                      onClick={handleInputClick}
+                      onKeyDown={handleInputKeyDown}
+                      placeholder="6.5"
+                    />
+                    <div className="wlm-cardio-unit" role="group" aria-label="Speed unit">
+                      <button
+                        type="button"
+                        className={`wlm-cardio-unit__pill ${speedUnit === 'mph' ? 'wlm-cardio-unit__pill--active' : ''}`}
+                        onClick={() => updateSessionSet(exIdx, setIdx, 'speedUnit', 'mph')}
+                        style={{ touchAction: 'manipulation' }}
+                      >mph</button>
+                      <button
+                        type="button"
+                        className={`wlm-cardio-unit__pill ${speedUnit === 'kmh' ? 'wlm-cardio-unit__pill--active' : ''}`}
+                        onClick={() => updateSessionSet(exIdx, setIdx, 'speedUnit', 'kmh')}
+                        style={{ touchAction: 'manipulation' }}
+                      >km/h</button>
+                    </div>
+                  </div>
+                </div>
+                {distanceShown ? (
+                  <div className="wlm-cardio-field">
+                    <label className="wlm-cardio-field__label">Distance</label>
+                    <div className="wlm-cardio-field__input-wrap">
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        className="wlm-cardio-field__input"
+                        value={set.distance ?? ''}
+                        onChange={(e) => updateSessionSet(exIdx, setIdx, 'distance', e.target.value)}
+                        onFocus={handleInputFocus}
+                        onClick={handleInputClick}
+                        onKeyDown={handleInputKeyDown}
+                        placeholder="3.1"
+                      />
+                      <div className="wlm-cardio-unit" role="group" aria-label="Distance unit">
+                        <button
+                          type="button"
+                          className={`wlm-cardio-unit__pill ${distanceUnit === 'mi' ? 'wlm-cardio-unit__pill--active' : ''}`}
+                          onClick={() => updateSessionSet(exIdx, setIdx, 'distanceUnit', 'mi')}
+                          style={{ touchAction: 'manipulation' }}
+                        >mi</button>
+                        <button
+                          type="button"
+                          className={`wlm-cardio-unit__pill ${distanceUnit === 'km' ? 'wlm-cardio-unit__pill--active' : ''}`}
+                          onClick={() => updateSessionSet(exIdx, setIdx, 'distanceUnit', 'km')}
+                          style={{ touchAction: 'manipulation' }}
+                        >km</button>
+                      </div>
+                      <button
+                        type="button"
+                        className="wlm-cardio-distance-remove"
+                        onClick={() => {
+                          updateSessionSet(exIdx, setIdx, 'distance', '');
+                          updateSessionSet(exIdx, setIdx, 'distanceShown', false);
+                        }}
+                        aria-label="Remove distance field"
+                        style={{ touchAction: 'manipulation' }}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="wlm-cardio-distance-toggle"
+                    onClick={() => updateSessionSet(exIdx, setIdx, 'distanceShown', true)}
+                    style={{ touchAction: 'manipulation' }}
+                  >
+                    + Add distance
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="wlm-ex-block__table">
+          <div className="wlm-ex-block__thead">
+            <span className="wlm-ex-col wlm-ex-col--set">SET</span>
+            <span className="wlm-ex-col wlm-ex-col--weight">LBS</span>
+            <span className="wlm-ex-col wlm-ex-col--reps">REPS</span>
+            <span className="wlm-ex-col wlm-ex-col--check" />
+          </div>
+          {ex.sets.map((set, setIdx) => {
+            const isDone = !!completedSets[`${exIdx}-${setIdx}`];
+            return (
+              <div key={setIdx} className={`wlm-ex-row ${isDone ? 'wlm-ex-row--done' : ''}`}>
+                <span className="wlm-ex-col wlm-ex-col--set">{setIdx + 1}</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  className="wlm-ex-input"
+                  value={set.weight}
+                  onChange={(e) => updateSessionSet(exIdx, setIdx, 'weight', e.target.value)}
+                  onFocus={handleInputFocus}
+                  onClick={handleInputClick}
+                  onKeyDown={handleInputKeyDown}
+                  placeholder="—"
+                />
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  className="wlm-ex-input"
+                  value={set.reps}
+                  onChange={(e) => updateSessionSet(exIdx, setIdx, 'reps', e.target.value)}
+                  onFocus={handleInputFocus}
+                  onClick={handleInputClick}
+                  onKeyDown={handleInputKeyDown}
+                  placeholder="—"
+                />
+                <button
+                  type="button"
+                  className={`wlm-check-btn ${isDone ? 'wlm-check-btn--done' : ''}`}
+                  onClick={() => toggleSetComplete(exIdx, setIdx)}
+                >
+                  <Check size={16} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
       <button
         type="button"
         className="wlm-ex-block__add-set"
         onClick={() => addSetToSession(exIdx)}
       >
-        + Add Set
+        {cardio ? '+ Add Interval' : '+ Add Set'}
       </button>
+      {timerActive && (
+        <div className="wlm-ex-block__timer-pill" role="status" aria-live="polite">
+          <Timer size={14} />
+          <span className="wlm-ex-block__timer-time">
+            {Math.floor(restTimerState.remaining / 60)}
+            :
+            {String(restTimerState.remaining % 60).padStart(2, '0')}
+          </span>
+          <span className="wlm-ex-block__timer-label">Rest</span>
+          <button
+            type="button"
+            className="wlm-ex-block__timer-cancel"
+            onClick={onCancelRestTimer}
+            aria-label="Cancel rest timer"
+            style={{ touchAction: 'manipulation' }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
     </Reorder.Item>
   );
 }
@@ -162,7 +507,7 @@ const fadeUp = {
 export default function WorkoutLogger() {
   const { triggerUpgrade } = useUpgrade();
   const { plan, isPro } = usePlan();
-  const { isSpectrum, isY2K } = useTheme();
+  const { isSpectrum } = useTheme();
 
   const MUSCLE_GROUPS = ['Upper Body', 'Lower Body', 'Legs', 'Full Body', 'Core', 'Cardio'];
 
@@ -238,6 +583,17 @@ export default function WorkoutLogger() {
   const [saveNewTplError, setSaveNewTplError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [workoutDetailSheet, setWorkoutDetailSheet] = useState(null);
+
+  /* Per-exercise action menu (3-dots popover on mobile exercise block). */
+  const [exerciseMenuIdx, setExerciseMenuIdx] = useState(null);
+  /* Per-exercise note editor sheet. `exIdx` is the exercise we're editing. */
+  const [noteSheet, setNoteSheet] = useState(null); // { exIdx, draft }
+  /* Rest-timer picker sheet opened from the menu. */
+  const [restTimerPicker, setRestTimerPicker] = useState(null); // { exIdx }
+  /* Active rest timer — at most one runs at a time. */
+  const [restTimerState, setRestTimerState] = useState(null); // { exIdx, remaining, endsAt }
+  /* Destructive confirmation for Remove Exercise. */
+  const [confirmRemoveExercise, setConfirmRemoveExercise] = useState(null); // exIdx
 
   // Scroll to top when opening the logger
   useEffect(() => {
@@ -472,9 +828,16 @@ export default function WorkoutLogger() {
   // Add a new exercise row to the current workout
   const addExercise = () => {
     if (!newExercise.trim()) return;
+    const name = newExercise.trim();
+    // Match against known cardio names so desktop-form typed entries
+    // also get cardio inputs without needing a picker.
+    const cardio = CARDIO_NAME_SET.has(name.toLowerCase());
+    const blankSet = cardio
+      ? { duration: '', durationUnit: 'min', speed: '', speedUnit: 'mph', distance: '', distanceUnit: 'mi', distanceShown: false, notes: '' }
+      : { weight: '', reps: '', notes: '' };
     setExercises([
       ...exercises,
-      { name: newExercise.trim(), sets: [{ weight: '', reps: '', notes: '' }] },
+      { name, isCardio: cardio || undefined, sets: [blankSet] },
     ]);
     setNewExercise('');
   };
@@ -482,7 +845,22 @@ export default function WorkoutLogger() {
   // Add an additional set to an existing exercise
   const addSet = (i) => {
     const updated = [...exercises];
-    updated[i].sets.push({ weight: '', reps: '', notes: '' });
+    const ex = updated[i];
+    const cardio = isCardioExercise(ex);
+    const lastSet = (ex.sets && ex.sets[ex.sets.length - 1]) || {};
+    const blankSet = cardio
+      ? {
+          duration: '',
+          durationUnit: lastSet.durationUnit || 'min',
+          speed: '',
+          speedUnit: lastSet.speedUnit || 'mph',
+          distance: '',
+          distanceUnit: lastSet.distanceUnit || 'mi',
+          distanceShown: !!lastSet.distanceShown,
+          notes: '',
+        }
+      : { weight: '', reps: '', notes: '' };
+    updated[i].sets.push(blankSet);
     setExercises(updated);
   };
 
@@ -510,12 +888,32 @@ export default function WorkoutLogger() {
       return;
     }
 
+    const normalizedExercises = exercises.map((ex) => {
+      if (!isCardioExercise(ex)) return ex;
+      return {
+        ...ex,
+        isCardio: true,
+        sets: (ex.sets || []).map((s) => ({
+          duration_seconds: toSeconds(s.duration, s.durationUnit || 'min'),
+          speed_mph: toMph(s.speed, s.speedUnit || 'mph'),
+          distance_miles: s.distanceShown ? toMiles(s.distance, s.distanceUnit || 'mi') : null,
+          duration: s.duration ?? '',
+          durationUnit: s.durationUnit || 'min',
+          speed: s.speed ?? '',
+          speedUnit: s.speedUnit || 'mph',
+          distance: s.distance ?? '',
+          distanceUnit: s.distanceUnit || 'mi',
+          distanceShown: !!s.distanceShown,
+          notes: s.notes || '',
+        })),
+      };
+    });
     const workoutData = {
       user_id: userId,
       workout_date: workoutDate,
       workout_name: workoutName.trim(),
       muscle_group: muscleGroup || null,
-      exercises,
+      exercises: normalizedExercises,
     };
 
     let error;
@@ -669,8 +1067,19 @@ export default function WorkoutLogger() {
     };
   }, []);
 
-  // ── Scroll focused input into view above keyboard ──
-  const handleInputFocus = useCallback(() => {
+  /* Scroll focused input into view above keyboard, and auto-select any
+     existing value so the user can type directly over it rather than
+     manually positioning the caret. iOS sometimes overrides the initial
+     select() with its tap-caret placement, so we re-apply it in a 0ms
+     timeout after the native focus event settles. */
+  const handleInputFocus = useCallback((e) => {
+    const target = e && e.target;
+    if (target && typeof target.select === 'function') {
+      try { target.select(); } catch { /* noop */ }
+      setTimeout(() => {
+        try { target.select(); } catch { /* noop */ }
+      }, 0);
+    }
     setTimeout(() => {
       const el = document.activeElement;
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -705,6 +1114,17 @@ export default function WorkoutLogger() {
     }
   }, []);
 
+  /* iOS fallback: the focus-select is sometimes overwritten by the
+     native tap-caret placement. Re-selecting on click ensures the
+     entire value stays highlighted so the user's next keystroke
+     replaces the digits. */
+  const handleInputClick = useCallback((e) => {
+    const el = e.currentTarget;
+    if (el && typeof el.select === 'function') {
+      try { el.select(); } catch { /* noop */ }
+    }
+  }, []);
+
   // ── Mobile helper functions ───────────────
   const formatDuration = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -730,13 +1150,36 @@ export default function WorkoutLogger() {
   };
 
   const startSessionFromTemplate = (template) => {
-    const exs = (template.exercises || []).map((ex) => ({
-      _id: newExId(),
-      name: ex.name,
-      sets: Array.isArray(ex.sets)
-        ? ex.sets.map((s) => ({ weight: s.weight || '', reps: s.reps || '', notes: '' }))
-        : Array.from({ length: ex.sets || 3 }, () => ({ weight: ex.weight || '', reps: ex.reps || '', notes: '' })),
-    }));
+    const exs = (template.exercises || []).map((ex) => {
+      const cardio = isCardioExercise(ex);
+      const hydrateCardioSet = (s) => ({
+        duration: s.duration ?? (s.duration_seconds != null ? String(Math.round(s.duration_seconds / 60)) : ''),
+        durationUnit: s.durationUnit || 'min',
+        speed: s.speed ?? (s.speed_mph != null ? String(s.speed_mph) : ''),
+        speedUnit: s.speedUnit || 'mph',
+        distance: s.distance ?? (s.distance_miles != null ? String(s.distance_miles) : ''),
+        distanceUnit: s.distanceUnit || 'mi',
+        distanceShown: !!s.distanceShown || s.distance_miles != null,
+        notes: '',
+      });
+      return {
+        _id: newExId(),
+        name: ex.name,
+        isCardio: cardio || undefined,
+        bodyPart: ex.bodyPart,
+        sets: Array.isArray(ex.sets)
+          ? ex.sets.map((s) =>
+              cardio
+                ? hydrateCardioSet(s)
+                : { weight: s.weight || '', reps: s.reps || '', notes: '' },
+            )
+          : Array.from({ length: ex.sets || 3 }, () =>
+              cardio
+                ? { duration: '', durationUnit: 'min', speed: '', speedUnit: 'mph', distance: '', distanceUnit: 'mi', distanceShown: false, notes: '' }
+                : { weight: ex.weight || '', reps: ex.reps || '', notes: '' },
+            ),
+      };
+    });
     setSessionExercises(exs);
     setSessionName(template.name);
     setSessionMuscleGroup(template.muscle_group || '');
@@ -751,12 +1194,26 @@ export default function WorkoutLogger() {
   };
 
   const addExerciseToSession = (exercise) => {
+    const cardio =
+      exercise?.isCardio === true ||
+      exercise?.bodyPart === 'cardio' ||
+      CARDIO_NAME_SET.has((exercise?.name || '').toLowerCase().trim());
+    const blankSet = cardio
+      ? { duration: '', durationUnit: 'min', speed: '', speedUnit: 'mph', distance: '', distanceUnit: 'mi', distanceShown: false, notes: '' }
+      : { weight: '', reps: '', notes: '' };
     setSessionExercises((prev) => [
       ...prev,
-      { _id: newExId(), name: exercise.name, sets: [{ weight: '', reps: '', notes: '' }] },
+      {
+        _id: newExId(),
+        name: exercise.name,
+        isCardio: cardio || undefined,
+        bodyPart: exercise?.bodyPart,
+        sets: [blankSet],
+      },
     ]);
     setExerciseSearchOpen(false);
     setExerciseSearchQuery('');
+    if (cardio) setSessionMuscleGroup((prev) => prev || 'Cardio');
   };
 
   /* Drag-to-reorder handler. Because completedSets is keyed by the
@@ -781,11 +1238,45 @@ export default function WorkoutLogger() {
   const addSetToSession = (exIdx) => {
     setSessionExercises((prev) => {
       const updated = [...prev];
-      updated[exIdx] = {
-        ...updated[exIdx],
-        sets: [...updated[exIdx].sets, { weight: '', reps: '', notes: '' }],
-      };
+      const ex = updated[exIdx];
+      const cardio = isCardioExercise(ex);
+      // Inherit unit preferences from the last set so the user doesn't
+      // have to re-toggle km/h or km for each interval.
+      const lastSet = (ex.sets && ex.sets[ex.sets.length - 1]) || {};
+      const blankSet = cardio
+        ? {
+            duration: '',
+            durationUnit: lastSet.durationUnit || 'min',
+            speed: '',
+            speedUnit: lastSet.speedUnit || 'mph',
+            distance: '',
+            distanceUnit: lastSet.distanceUnit || 'mi',
+            distanceShown: !!lastSet.distanceShown,
+            notes: '',
+          }
+        : { weight: '', reps: '', notes: '' };
+      updated[exIdx] = { ...ex, sets: [...ex.sets, blankSet] };
       return updated;
+    });
+  };
+
+  const removeSessionSet = (exIdx, setIdx) => {
+    setSessionExercises((prev) => {
+      const updated = [...prev];
+      const ex = updated[exIdx];
+      if (!ex) return prev;
+      updated[exIdx] = { ...ex, sets: ex.sets.filter((_, i) => i !== setIdx) };
+      return updated;
+    });
+    setCompletedSets((prev) => {
+      const next = {};
+      Object.keys(prev).forEach((key) => {
+        const [ei, si] = key.split('-').map(Number);
+        if (ei !== exIdx) { next[key] = prev[key]; return; }
+        if (si < setIdx) next[key] = prev[key];
+        else if (si > setIdx) next[`${ei}-${si - 1}`] = prev[key];
+      });
+      return next;
     });
   };
 
@@ -822,6 +1313,56 @@ export default function WorkoutLogger() {
       });
       return next;
     });
+    // If the timer was scoped to this exercise, cancel it.
+    setRestTimerState((prev) => (prev && prev.exIdx === exIdx ? null : prev));
+  };
+
+  /* Writes `notes` onto a specific exercise in the active session.
+     Stored inline in the `workouts.exercises` JSONB object alongside
+     sets, so no schema migration is needed. */
+  const setSessionExerciseNotes = (exIdx, notes) => {
+    setSessionExercises((prev) => {
+      const next = [...prev];
+      if (!next[exIdx]) return prev;
+      const trimmed = (notes || '').toString();
+      next[exIdx] = { ...next[exIdx], notes: trimmed };
+      return next;
+    });
+  };
+
+  /* Rest-timer tick. Runs only while an active timer is present;
+     stops itself when `remaining` hits 0 and fires a soft haptic
+     pulse on iOS if the device supports navigator.vibrate. */
+  useEffect(() => {
+    if (!restTimerState) return;
+    const id = setInterval(() => {
+      setRestTimerState((prev) => {
+        if (!prev) return prev;
+        const remaining = Math.max(0, Math.round((prev.endsAt - Date.now()) / 1000));
+        if (remaining <= 0) {
+          if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+            try { navigator.vibrate(200); } catch { /* noop */ }
+          }
+          try { toast.success('Rest complete'); } catch { /* noop */ }
+          return null;
+        }
+        return { ...prev, remaining };
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [restTimerState]);
+
+  /* Kicks off a rest timer for a specific exercise. Only one timer
+     runs at a time — starting a new one cancels any prior. */
+  const startRestTimer = (exIdx, seconds) => {
+    const secs = Math.max(5, Math.min(60 * 60, Math.round(seconds)));
+    setRestTimerState({
+      exIdx,
+      remaining: secs,
+      endsAt: Date.now() + secs * 1000,
+    });
+    setRestTimerPicker(null);
+    setExerciseMenuIdx(null);
   };
 
   const finishSession = async () => {
@@ -842,12 +1383,45 @@ export default function WorkoutLogger() {
     const name = sessionName.trim() || 'Quick Workout';
     const duration = sessionTimer;
     const trimmedNotes = sessionNotes.trim();
+    /* Normalize sets on save — cardio intervals emit canonical
+       duration_seconds / speed_mph / distance_miles (unit-converted)
+       so downstream consumers (history, progress chart) never have to
+       re-read the unit pills. Non-cardio sets pass through unchanged. */
+    const normalizedExercises = sessionExercises.map((ex) => {
+      if (!isCardioExercise(ex)) return ex;
+      return {
+        ...ex,
+        isCardio: true,
+        sets: (ex.sets || []).map((s) => {
+          const duration_seconds = toSeconds(s.duration, s.durationUnit || 'min');
+          const speed_mph = toMph(s.speed, s.speedUnit || 'mph');
+          const distance_miles = s.distanceShown
+            ? toMiles(s.distance, s.distanceUnit || 'mi')
+            : null;
+          return {
+            duration_seconds,
+            speed_mph,
+            distance_miles,
+            // Preserve the raw user-entered values and unit selections
+            // so editing a saved workout later can restore the pills.
+            duration: s.duration ?? '',
+            durationUnit: s.durationUnit || 'min',
+            speed: s.speed ?? '',
+            speedUnit: s.speedUnit || 'mph',
+            distance: s.distance ?? '',
+            distanceUnit: s.distanceUnit || 'mi',
+            distanceShown: !!s.distanceShown,
+            notes: s.notes || '',
+          };
+        }),
+      };
+    });
     const workoutData = {
       user_id: userId,
       workout_date: getLocalDateString(),
       workout_name: name,
       muscle_group: sessionMuscleGroup || null,
-      exercises: sessionExercises,
+      exercises: normalizedExercises,
       notes: trimmedNotes ? trimmedNotes : null,
     };
     try {
@@ -985,17 +1559,37 @@ export default function WorkoutLogger() {
       return;
     }
     // Attach stable _id so the Reorder.Item keys stay consistent.
-    const exs = (w.exercises || []).map((ex) => ({
-      _id: newExId(),
-      name: ex.name,
-      sets: Array.isArray(ex.sets)
-        ? ex.sets.map((s) => ({
-            weight: s.weight || '',
-            reps: s.reps || '',
-            notes: s.notes || '',
-          }))
-        : [{ weight: '', reps: '', notes: '' }],
-    }));
+    const exs = (w.exercises || []).map((ex) => {
+      const cardio = isCardioExercise(ex);
+      return {
+        _id: newExId(),
+        name: ex.name,
+        isCardio: cardio || undefined,
+        bodyPart: ex.bodyPart,
+        sets: Array.isArray(ex.sets)
+          ? ex.sets.map((s) =>
+              cardio
+                ? {
+                    duration: s.duration ?? (s.duration_seconds != null ? String(Math.round(s.duration_seconds / 60)) : ''),
+                    durationUnit: s.durationUnit || 'min',
+                    speed: s.speed ?? (s.speed_mph != null ? String(s.speed_mph) : ''),
+                    speedUnit: s.speedUnit || 'mph',
+                    distance: s.distance ?? (s.distance_miles != null ? String(s.distance_miles) : ''),
+                    distanceUnit: s.distanceUnit || 'mi',
+                    distanceShown: !!s.distanceShown || s.distance_miles != null,
+                    notes: s.notes || '',
+                  }
+                : {
+                    weight: s.weight || '',
+                    reps: s.reps || '',
+                    notes: s.notes || '',
+                  },
+            )
+          : [cardio
+              ? { duration: '', durationUnit: 'min', speed: '', speedUnit: 'mph', distance: '', distanceUnit: 'mi', distanceShown: false, notes: '' }
+              : { weight: '', reps: '', notes: '' }],
+      };
+    });
     setSessionExercises(exs);
     setSessionName(w.workout_name || '');
     setSessionMuscleGroup(w.muscle_group || '');
@@ -1123,28 +1717,6 @@ export default function WorkoutLogger() {
       {/* ═══════════ DESKTOP ═══════════ */}
       <div className="wl-desktop">
 
-      {/* ── Y2K FREE TIER USAGE COUNTER ── */}
-      {isY2K && !isPro && workoutHistory.length > 0 && (
-        <div className="wl-y2k-usage">
-          <div className="wl-y2k-usage__bar-track">
-            <div
-              className="wl-y2k-usage__bar-fill"
-              style={{
-                width: `${Math.min((workoutHistory.length / WORKOUT_LIMIT) * 100, 100)}%`,
-                background: nearLimit || atLimit
-                  ? 'linear-gradient(180deg, #FFD700, #CC9900)'
-                  : `linear-gradient(180deg, var(--accent-light), var(--accent))`,
-              }}
-            />
-          </div>
-          <span className={`wl-y2k-usage__text ${nearLimit || atLimit ? 'wl-y2k-usage__text--warn' : ''}`}>
-            {nearLimit || atLimit
-              ? `WARNING: [${workoutHistory.length}] / ${WORKOUT_LIMIT} logs used. Upgrade to Pro for unlimited.`
-              : `[${workoutHistory.length}] / ${WORKOUT_LIMIT} free workout logs used`}
-          </span>
-        </div>
-      )}
-
       {/* ── LOG SECTION ── */}
       <motion.div
         className="wl-log-card"
@@ -1152,19 +1724,11 @@ export default function WorkoutLogger() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
       >
-        {/* Y2K gradient title bar */}
-        {isY2K && (
-          <div className="wl-y2k-titlebar">
-            <Dumbbell width={10} height={10} stroke="var(--accent-light)" strokeWidth={2} fill="none" />
-            <span>LOG WORKOUT</span>
-          </div>
-        )}
-
         {/* Header row: title + expand toggle */}
         <div className="wl-log-header">
           <div>
             <p className="wl-section-title">Log a workout</p>
-            {!isPro && !isY2K && workoutHistory.length > 0 && (
+            {!isPro && workoutHistory.length > 0 && (
               <p style={{
                 fontSize: 11,
                 color: nearLimit || atLimit ? '#EF9F27' : 'var(--text-muted)',
@@ -1181,7 +1745,7 @@ export default function WorkoutLogger() {
               whileTap={{ scale: 0.97 }}
               style={isSpectrum ? { border: '1px solid #1D9E75', color: '#5DCAA5', background: '#0a1a0f' } : undefined}
             >
-              {formOpen ? (isY2K ? '[ Cancel ]' : 'Cancel') : (isY2K ? '[ + New workout ]' : '+ New workout')}
+              {formOpen ? 'Cancel' : '+ New workout'}
             </motion.button>
           )}
         </div>
@@ -1216,9 +1780,6 @@ export default function WorkoutLogger() {
               style={{ overflow: 'hidden' }}
             >
               <div className="wl-form-inner" ref={formRef}>
-                {/* Y2K form section label */}
-                {isY2K && <div className="wl-y2k-form-label">NEW WORKOUT ENTRY</div>}
-
                 {/* ── Template picker row ──────────── */}
                 {!editingWorkoutId && (
                   <div className="wl-template-picker">
@@ -1295,51 +1856,118 @@ export default function WorkoutLogger() {
                 </div>
 
                 {/* Exercise blocks */}
-                {exercises.map((ex, i) => (
+                {exercises.map((ex, i) => {
+                  const cardio = isCardioExercise(ex);
+                  return (
                   <motion.div
                     key={i}
-                    className="wl-exercise-block"
+                    className={`wl-exercise-block ${cardio ? 'wl-exercise-block--cardio' : ''}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
                   >
                     <div className="wl-exercise-header">
-                      <span className="wl-exercise-name">{ex.name}</span>
+                      <span className="wl-exercise-name">
+                        {ex.name}
+                        {cardio && <span className="wlm-ex-block__cardio-badge" style={{ marginLeft: 8 }}>CARDIO</span>}
+                      </span>
                       <motion.button
                         className="btn btn-destructive"
                         onClick={() => deleteExercise(i)}
                         whileTap={{ scale: 0.97 }}
                       >
-                        {isY2K ? '[ Remove ]' : 'Remove'}
+                        Remove
                       </motion.button>
                     </div>
 
-                    <table className="wl-sets-table">
-                      <thead>
-                        <tr>
-                          <th>Set</th>
-                          <th>Weight (lbs)</th>
-                          <th>Reps</th>
-                          <th>Notes</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {ex.sets.map((set, j) => (
-                          <tr key={j}>
-                            <td className="wl-set-num">{j + 1}</td>
-                            <td><input type="number" className="input wl-set-input" value={set.weight} onChange={(e) => handleSetChange(i, j, 'weight', e.target.value)} /></td>
-                            <td><input type="number" className="input wl-set-input" value={set.reps}   onChange={(e) => handleSetChange(i, j, 'reps',   e.target.value)} /></td>
-                            <td><input type="text"   className="input wl-set-input" value={set.notes}  onChange={(e) => handleSetChange(i, j, 'notes',  e.target.value)} /></td>
+                    {cardio ? (
+                      <div className="wl-cardio-sets">
+                        {ex.sets.map((set, j) => {
+                          const durationUnit = set.durationUnit || 'min';
+                          const speedUnit = set.speedUnit || 'mph';
+                          const distanceUnit = set.distanceUnit || 'mi';
+                          const distanceShown = !!set.distanceShown || (set.distance != null && set.distance !== '');
+                          return (
+                            <div key={j} className="wl-cardio-row">
+                              <span className="wl-set-num">Interval {j + 1}</span>
+                              <div className="wlm-cardio-field wl-cardio-field">
+                                <label className="wlm-cardio-field__label">Time</label>
+                                <div className="wlm-cardio-field__input-wrap">
+                                  <input type="number" inputMode="decimal" className="wlm-cardio-field__input" value={set.duration ?? ''}
+                                    onFocus={handleInputFocus} onClick={handleInputClick}
+                                    onChange={(e) => handleSetChange(i, j, 'duration', e.target.value)} placeholder="30" />
+                                  <div className="wlm-cardio-unit">
+                                    <button type="button" className={`wlm-cardio-unit__pill ${durationUnit === 'min' ? 'wlm-cardio-unit__pill--active' : ''}`} onClick={() => handleSetChange(i, j, 'durationUnit', 'min')}>min</button>
+                                    <button type="button" className={`wlm-cardio-unit__pill ${durationUnit === 'sec' ? 'wlm-cardio-unit__pill--active' : ''}`} onClick={() => handleSetChange(i, j, 'durationUnit', 'sec')}>sec</button>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="wlm-cardio-field wl-cardio-field">
+                                <label className="wlm-cardio-field__label">Speed</label>
+                                <div className="wlm-cardio-field__input-wrap">
+                                  <input type="number" inputMode="decimal" step="0.1" className="wlm-cardio-field__input" value={set.speed ?? ''}
+                                    onFocus={handleInputFocus} onClick={handleInputClick}
+                                    onChange={(e) => handleSetChange(i, j, 'speed', e.target.value)} placeholder="6.5" />
+                                  <div className="wlm-cardio-unit">
+                                    <button type="button" className={`wlm-cardio-unit__pill ${speedUnit === 'mph' ? 'wlm-cardio-unit__pill--active' : ''}`} onClick={() => handleSetChange(i, j, 'speedUnit', 'mph')}>mph</button>
+                                    <button type="button" className={`wlm-cardio-unit__pill ${speedUnit === 'kmh' ? 'wlm-cardio-unit__pill--active' : ''}`} onClick={() => handleSetChange(i, j, 'speedUnit', 'kmh')}>km/h</button>
+                                  </div>
+                                </div>
+                              </div>
+                              {distanceShown ? (
+                                <div className="wlm-cardio-field wl-cardio-field">
+                                  <label className="wlm-cardio-field__label">Distance</label>
+                                  <div className="wlm-cardio-field__input-wrap">
+                                    <input type="number" inputMode="decimal" step="0.01" className="wlm-cardio-field__input" value={set.distance ?? ''}
+                                      onFocus={handleInputFocus} onClick={handleInputClick}
+                                      onChange={(e) => handleSetChange(i, j, 'distance', e.target.value)} placeholder="3.1" />
+                                    <div className="wlm-cardio-unit">
+                                      <button type="button" className={`wlm-cardio-unit__pill ${distanceUnit === 'mi' ? 'wlm-cardio-unit__pill--active' : ''}`} onClick={() => handleSetChange(i, j, 'distanceUnit', 'mi')}>mi</button>
+                                      <button type="button" className={`wlm-cardio-unit__pill ${distanceUnit === 'km' ? 'wlm-cardio-unit__pill--active' : ''}`} onClick={() => handleSetChange(i, j, 'distanceUnit', 'km')}>km</button>
+                                    </div>
+                                    <button type="button" className="wlm-cardio-distance-remove" onClick={() => { handleSetChange(i, j, 'distance', ''); handleSetChange(i, j, 'distanceShown', false); }} aria-label="Remove distance">
+                                      <X size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <button type="button" className="wlm-cardio-distance-toggle" onClick={() => handleSetChange(i, j, 'distanceShown', true)}>
+                                  + Add distance
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <table className="wl-sets-table">
+                        <thead>
+                          <tr>
+                            <th>Set</th>
+                            <th>Weight (lbs)</th>
+                            <th>Reps</th>
+                            <th>Notes</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {ex.sets.map((set, j) => (
+                            <tr key={j}>
+                              <td className="wl-set-num">{j + 1}</td>
+                              <td><input type="number" inputMode="decimal" className="input wl-set-input" value={set.weight} onFocus={handleInputFocus} onClick={handleInputClick} onChange={(e) => handleSetChange(i, j, 'weight', e.target.value)} /></td>
+                              <td><input type="number" inputMode="numeric" className="input wl-set-input" value={set.reps}   onFocus={handleInputFocus} onClick={handleInputClick} onChange={(e) => handleSetChange(i, j, 'reps',   e.target.value)} /></td>
+                              <td><input type="text"   className="input wl-set-input" value={set.notes}  onChange={(e) => handleSetChange(i, j, 'notes',  e.target.value)} /></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
 
                     <motion.button className="btn btn-primary wl-add-set" onClick={() => addSet(i)} whileTap={{ scale: 0.97 }}>
-                      {isY2K ? '[ + Add Set ]' : '+ Add Set'}
+                      {cardio ? '+ Add Interval' : '+ Add Set'}
                     </motion.button>
                   </motion.div>
-                ))}
+                  );
+                })}
 
                 {/* Add exercise row — placed after exercises so user doesn't scroll back up */}
                 <div className="wl-adder">
@@ -1352,7 +1980,7 @@ export default function WorkoutLogger() {
                     placeholder="Add an exercise…"
                   />
                   <motion.button className="btn btn-primary" onClick={addExercise} whileTap={{ scale: 0.97 }}>
-                    {isY2K ? '[ Add ]' : 'Add'}
+                    Add
                   </motion.button>
                 </div>
 
@@ -1361,19 +1989,8 @@ export default function WorkoutLogger() {
 
                 {/* Save / Cancel row */}
                 <div className="wl-save-row">
-                  {isY2K && (
-                    <motion.button
-                      className="btn wl-y2k-cancel-btn"
-                      onClick={() => { setFormOpen(false); setEditingWorkoutId(null); }}
-                      whileTap={{ scale: 0.97 }}
-                    >
-                      [ Cancel ]
-                    </motion.button>
-                  )}
                   <motion.button className="btn btn-primary" onClick={saveWorkout} whileTap={{ scale: 0.97 }}>
-                    {isY2K
-                      ? (editingWorkoutId ? '[ Update Workout ]' : '[ Save Workout ]')
-                      : (editingWorkoutId ? 'Update Workout' : 'Save Workout')}
+                    {editingWorkoutId ? 'Update Workout' : 'Save Workout'}
                   </motion.button>
                 </div>
               </div>
@@ -1402,40 +2019,24 @@ export default function WorkoutLogger() {
       {historyTab === 'history' && (
         <>
           {workoutHistory.length === 0 && (
-            isY2K ? (
-              <div className="wl-y2k-empty">
-                <div className="wl-y2k-empty__icon">
-                  <Dumbbell size={32} stroke="#334466" strokeWidth={1.5} fill="none" />
-                </div>
-                <span className="wl-y2k-empty__primary">NO WORKOUTS LOGGED</span>
-                <span className="wl-y2k-empty__secondary">Click [ + New workout ] to log your first session.</span>
-                <span className="wl-y2k-empty__deco">--- [ MacroVault Workout Tracker ] ---</span>
-              </div>
-            ) : (
-              <p className="wl-empty">No workouts logged yet.</p>
-            )
+            <p className="wl-empty">No workouts logged yet.</p>
           )}
 
-          <div className={`wl-history-list ${isY2K ? 'wl-history-list--y2k' : ''}`}>
+          <div className="wl-history-list">
             {workoutHistory.map((workout, idx) => {
               const isSavedAsTemplate = !!templateNameMap[workout.workout_name];
 
               return (
                 <React.Fragment key={workout.id}>
                   <motion.div
-                    className={`wl-history-row ${isY2K ? (idx % 2 === 0 ? 'wl-history-row--y2k-odd' : 'wl-history-row--y2k-even') : ''}`}
+                    className="wl-history-row"
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.25, delay: idx * 0.04, ease: 'easeOut' }}
-                    whileHover={isY2K ? undefined : { scale: 1.01 }}
+                    whileHover={{ scale: 1.01 }}
                     onClick={() => toggleExpand(workout.id)}
                   >
                     <div className="wl-history-row__left">
-                      {isY2K && (
-                        <div className="wl-y2k-row-icon">
-                          <Dumbbell size={14} stroke="var(--accent-light)" strokeWidth={1.5} fill="none" />
-                        </div>
-                      )}
                       <div className="wl-history-row__text">
                         <span className="wl-history-name" style={isSpectrum ? { color: '#5DCAA5' } : undefined}>{workout.workout_name}</span>
                         <span className="wl-history-date">{formatDate(workout.workout_date)}</span>
@@ -1443,17 +2044,17 @@ export default function WorkoutLogger() {
                     </div>
                     <div className="wl-history-row__right">
                       {(workout.exercises || []).length > 0 && (
-                        <span className={`wl-exercise-count ${isY2K ? 'wl-exercise-count--y2k' : ''}`}>
-                          {isY2K ? `[${workout.exercises.length}] exercise${workout.exercises.length !== 1 ? 's' : ''}` : `${workout.exercises.length} exercise${workout.exercises.length !== 1 ? 's' : ''}`}
+                        <span className="wl-exercise-count">
+                          {`${workout.exercises.length} exercise${workout.exercises.length !== 1 ? 's' : ''}`}
                         </span>
                       )}
                       <motion.button
-                        className={`btn btn-primary wl-btn-sm ${isY2K ? 'wl-btn-sm--y2k-edit' : ''}`}
+                        className="btn btn-primary wl-btn-sm"
                         onClick={(e) => { e.stopPropagation(); editWorkout(workout); }}
                         whileTap={{ scale: 0.97 }}
                         style={isSpectrum ? { border: '1px solid #1D9E75', color: '#5DCAA5' } : undefined}
                       >
-                        {isY2K ? '[ Edit ]' : 'Edit'}
+                        Edit
                       </motion.button>
 
                       {/* Save / unsave template */}
@@ -1489,7 +2090,7 @@ export default function WorkoutLogger() {
                       </motion.button>
 
                       <motion.button
-                        className={`btn btn-destructive wl-btn-sm wl-btn-icon ${isY2K ? 'wl-btn-sm--y2k-delete' : ''}`}
+                        className="btn btn-destructive wl-btn-sm wl-btn-icon"
                         onClick={(e) => { e.stopPropagation(); deleteWorkout(workout.id); }}
                         whileTap={{ scale: 0.97 }}
                         title="Delete workout"
@@ -1580,21 +2181,48 @@ export default function WorkoutLogger() {
                         {workout.notes && workout.notes.trim() && (
                           <p className="wl-history-notes">{workout.notes}</p>
                         )}
-                        {workout.exercises?.map((ex, exIdx) => (
-                          <div key={exIdx} className="history-exercise">
-                            <h4>{ex.name}</h4>
-                            <table>
-                              <thead><tr><th>Set</th><th>Weight</th><th>Reps</th><th>Notes</th></tr></thead>
-                              <tbody>
-                                {ex.sets.map((set, j) => (
-                                  <tr key={j}>
-                                    <td>{j + 1}</td><td>{set.weight}</td><td>{set.reps}</td><td>{set.notes}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        ))}
+                        {workout.exercises?.map((ex, exIdx) => {
+                          const cardio = isCardioExercise(ex);
+                          return (
+                            <div key={exIdx} className="history-exercise">
+                              <h4>
+                                {ex.name}
+                                {cardio && <span className="wlm-ex-block__cardio-badge" style={{ marginLeft: 8 }}>CARDIO</span>}
+                              </h4>
+                              {cardio ? (
+                                <table>
+                                  <thead><tr><th>Interval</th><th>Time</th><th>Speed</th><th>Distance</th></tr></thead>
+                                  <tbody>
+                                    {ex.sets.map((set, j) => {
+                                      const mins = set.duration_seconds != null ? Math.round(set.duration_seconds / 60) : null;
+                                      const mph = set.speed_mph != null ? +Number(set.speed_mph).toFixed(1) : null;
+                                      const mi = set.distance_miles != null ? +Number(set.distance_miles).toFixed(2) : null;
+                                      return (
+                                        <tr key={j}>
+                                          <td>{j + 1}</td>
+                                          <td>{mins != null ? `${mins} min` : '—'}</td>
+                                          <td>{mph != null ? `${mph} mph` : '—'}</td>
+                                          <td>{mi != null ? `${mi} mi` : '—'}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              ) : (
+                                <table>
+                                  <thead><tr><th>Set</th><th>Weight</th><th>Reps</th><th>Notes</th></tr></thead>
+                                  <tbody>
+                                    {ex.sets.map((set, j) => (
+                                      <tr key={j}>
+                                        <td>{j + 1}</td><td>{set.weight}</td><td>{set.reps}</td><td>{set.notes}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              )}
+                            </div>
+                          );
+                        })}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -1728,21 +2356,47 @@ export default function WorkoutLogger() {
                 <ChevronRight size={18} className="wlm-quick-start__arrow" />
               </motion.button>
             ) : (
-              <motion.button
-                className="wlm-quick-start"
-                onClick={startBlankSession}
-                whileTap={{ scale: 0.97 }}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
-              >
-                <div className="wlm-quick-start__icon"><Play size={20} /></div>
-                <div className="wlm-quick-start__text">
-                  <span className="wlm-quick-start__title">Quick Start</span>
-                  <span className="wlm-quick-start__sub">Start an empty workout</span>
-                </div>
-                <ChevronRight size={18} className="wlm-quick-start__arrow" />
-              </motion.button>
+              <>
+                <motion.button
+                  className="wlm-quick-start"
+                  onClick={startBlankSession}
+                  whileTap={{ scale: 0.97 }}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <div className="wlm-quick-start__icon"><Play size={20} /></div>
+                  <div className="wlm-quick-start__text">
+                    <span className="wlm-quick-start__title">Quick Start</span>
+                    <span className="wlm-quick-start__sub">Start an empty workout</span>
+                  </div>
+                  <ChevronRight size={18} className="wlm-quick-start__arrow" />
+                </motion.button>
+                {/* Cardio shortcut — starts an empty session and opens the
+                    picker pre-filtered to cardio so users reach the
+                    Time/Speed flow in one tap. */}
+                <motion.button
+                  className="wlm-quick-start wlm-quick-start--cardio"
+                  onClick={() => {
+                    startBlankSession();
+                    setSessionMuscleGroup('Cardio');
+                    setExerciseBodyPartFilter('cardio');
+                    setExerciseSearchQuery('');
+                    setExerciseSearchOpen(true);
+                  }}
+                  whileTap={{ scale: 0.97 }}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, delay: 0.04 }}
+                >
+                  <div className="wlm-quick-start__icon wlm-quick-start__icon--cardio"><Clock size={20} /></div>
+                  <div className="wlm-quick-start__text">
+                    <span className="wlm-quick-start__title">Start Cardio</span>
+                    <span className="wlm-quick-start__sub">Treadmill, bike, rowing &amp; more</span>
+                  </div>
+                  <ChevronRight size={18} className="wlm-quick-start__arrow" />
+                </motion.button>
+              </>
             )}
 
             {/* Free tier usage counter */}
@@ -1960,23 +2614,35 @@ export default function WorkoutLogger() {
                   </div>
                 )}
                 <div className="wlm-sheet__exercises">
-                  {(workoutDetailSheet.exercises || []).map((ex, i) => (
-                    <div key={i} className="wlm-sheet__exercise-block">
-                      <span className="wlm-sheet__exercise-name">{ex.name}</span>
-                      <div className="wlm-sheet__sets-list">
-                        {(ex.sets || []).map((s, si) => (
-                          <div key={si} className="wlm-sheet__set-row">
-                            <span className="wlm-sheet__set-num">Set {si + 1}</span>
-                            <span className="wlm-sheet__set-data">
-                              {s.weight ? `${s.weight} lbs` : '—'}
-                              {' × '}
-                              {s.reps || '—'}
-                            </span>
-                          </div>
-                        ))}
+                  {(workoutDetailSheet.exercises || []).map((ex, i) => {
+                    const cardio = isCardioExercise(ex);
+                    return (
+                      <div key={i} className="wlm-sheet__exercise-block">
+                        <span className="wlm-sheet__exercise-name">
+                          {ex.name}
+                          {cardio && <span className="wlm-ex-block__cardio-badge">CARDIO</span>}
+                        </span>
+                        <div className="wlm-sheet__sets-list">
+                          {(ex.sets || []).map((s, si) => (
+                            <div key={si} className="wlm-sheet__set-row">
+                              <span className="wlm-sheet__set-num">
+                                {cardio ? `Interval ${si + 1}` : `Set ${si + 1}`}
+                              </span>
+                              <span className="wlm-sheet__set-data">
+                                {cardio
+                                  ? formatCardioSet(s)
+                                  : (<>
+                                      {s.weight ? `${s.weight} lbs` : '—'}
+                                      {' × '}
+                                      {s.reps || '—'}
+                                    </>)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="wlm-sheet__footer wlm-sheet__footer--multi">
                   <motion.button
@@ -2107,8 +2773,14 @@ export default function WorkoutLogger() {
                     toggleSetComplete={toggleSetComplete}
                     addSetToSession={addSetToSession}
                     removeSessionExercise={removeSessionExercise}
+                    removeSessionSet={removeSessionSet}
                     handleInputFocus={handleInputFocus}
                     handleInputKeyDown={handleInputKeyDown}
+                    handleInputClick={handleInputClick}
+                    onOpenExerciseMenu={setExerciseMenuIdx}
+                    onOpenNoteSheet={(idx) => setNoteSheet({ exIdx: idx, draft: sessionExercises[idx]?.notes || '' })}
+                    restTimerState={restTimerState}
+                    onCancelRestTimer={() => setRestTimerState(null)}
                   />
                 ))}
               </Reorder.Group>
@@ -2480,6 +3152,39 @@ export default function WorkoutLogger() {
             const sheetExit = isMobileViewport
               ? { y: '100%' }
               : { opacity: 0, scale: 0.92 };
+            /* Cardio roll-up — shown only when the session has at
+               least one cardio exercise. Avg speed is duration-weighted
+               so a long slow run dominates a short fast sprint. */
+            const cardioStats = (() => {
+              let totalSeconds = 0;
+              let weightedSpeedSum = 0;
+              let totalMiles = 0;
+              let hasDistance = false;
+              let count = 0;
+              sessionExercises.forEach((ex) => {
+                if (!isCardioExercise(ex)) return;
+                (ex.sets || []).forEach((s) => {
+                  const secs = Number(toSeconds(s.duration, s.durationUnit || 'min')) || 0;
+                  const mph = Number(toMph(s.speed, s.speedUnit || 'mph')) || 0;
+                  const mi = s.distanceShown
+                    ? Number(toMiles(s.distance, s.distanceUnit || 'mi')) || 0
+                    : 0;
+                  if (secs > 0 || mph > 0 || mi > 0) count += 1;
+                  totalSeconds += secs;
+                  if (secs > 0 && mph > 0) weightedSpeedSum += mph * secs;
+                  if (mi > 0) { totalMiles += mi; hasDistance = true; }
+                });
+              });
+              if (count === 0) return null;
+              const totalMin = Math.round(totalSeconds / 60);
+              const avgMph = totalSeconds > 0 ? +(weightedSpeedSum / totalSeconds).toFixed(1) : 0;
+              return {
+                totalMin,
+                avgMph,
+                totalMiles: +totalMiles.toFixed(2),
+                hasDistance,
+              };
+            })();
             return (
             <motion.div
               key="end-workout-confirm"
@@ -2504,6 +3209,27 @@ export default function WorkoutLogger() {
                 <p className="wlm-confirm__message">
                   Are you sure you want to finish? Your progress will be saved.
                 </p>
+                {cardioStats && (
+                  <div className="wlm-confirm__cardio-summary">
+                    <p className="wlm-confirm__cardio-title">Cardio summary</p>
+                    <div className="wlm-confirm__cardio-grid">
+                      <div className="wlm-confirm__cardio-stat">
+                        <span className="wlm-confirm__cardio-label">Total time</span>
+                        <span className="wlm-confirm__cardio-value">{cardioStats.totalMin} min</span>
+                      </div>
+                      <div className="wlm-confirm__cardio-stat">
+                        <span className="wlm-confirm__cardio-label">Avg speed</span>
+                        <span className="wlm-confirm__cardio-value">{cardioStats.avgMph} mph</span>
+                      </div>
+                      {cardioStats.hasDistance && (
+                        <div className="wlm-confirm__cardio-stat">
+                          <span className="wlm-confirm__cardio-label">Total distance</span>
+                          <span className="wlm-confirm__cardio-value">{cardioStats.totalMiles} mi</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div className="wlm-confirm__actions">
                   <motion.button
                     type="button"
@@ -2534,6 +3260,259 @@ export default function WorkoutLogger() {
             </motion.div>
             );
           })()}
+        </AnimatePresence>
+
+        {/* ── PER-EXERCISE 3-DOTS MENU (mobile) ── */}
+        <AnimatePresence>
+          {exerciseMenuIdx != null && sessionExercises[exerciseMenuIdx] && (
+            <motion.div
+              key="wlm-ex-menu-overlay"
+              className="wlm-overlay wlm-ex-menu-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => setExerciseMenuIdx(null)}
+            >
+              <motion.div
+                className="wlm-ex-menu"
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="wlm-ex-menu__handle" aria-hidden="true" />
+                <p className="wlm-ex-menu__title">{sessionExercises[exerciseMenuIdx]?.name}</p>
+                <button
+                  type="button"
+                  className="wlm-ex-menu__item wlm-ex-menu__item--primary"
+                  onClick={() => {
+                    const idx = exerciseMenuIdx;
+                    setExerciseMenuIdx(null);
+                    setNoteSheet({ exIdx: idx, draft: sessionExercises[idx]?.notes || '' });
+                  }}
+                  style={{ touchAction: 'manipulation' }}
+                >
+                  <StickyNote size={16} />
+                  <span>Add Note</span>
+                </button>
+                <button
+                  type="button"
+                  className="wlm-ex-menu__item"
+                  onClick={() => {
+                    const idx = exerciseMenuIdx;
+                    setExerciseMenuIdx(null);
+                    setRestTimerPicker({ exIdx: idx });
+                  }}
+                  style={{ touchAction: 'manipulation' }}
+                >
+                  <Timer size={16} />
+                  <span>Rest Timer</span>
+                </button>
+                <button
+                  type="button"
+                  className="wlm-ex-menu__item wlm-ex-menu__item--danger"
+                  onClick={() => {
+                    const idx = exerciseMenuIdx;
+                    setExerciseMenuIdx(null);
+                    setConfirmRemoveExercise(idx);
+                  }}
+                  style={{ touchAction: 'manipulation' }}
+                >
+                  <Trash2 size={16} />
+                  <span>Remove Exercise</span>
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── PER-EXERCISE NOTE EDITOR (mobile) ── */}
+        <AnimatePresence>
+          {noteSheet && sessionExercises[noteSheet.exIdx] && (
+            <motion.div
+              key="wlm-note-overlay"
+              className="wlm-overlay wlm-note-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => setNoteSheet(null)}
+            >
+              <motion.div
+                className="wlm-note-sheet"
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="wlm-ex-menu__handle" aria-hidden="true" />
+                <p className="wlm-note-sheet__title">
+                  Note · {sessionExercises[noteSheet.exIdx]?.name}
+                </p>
+                <textarea
+                  className="wlm-note-sheet__textarea"
+                  value={noteSheet.draft}
+                  onChange={(e) => setNoteSheet((prev) => (prev ? { ...prev, draft: e.target.value } : prev))}
+                  placeholder="e.g. felt strong on first set"
+                  rows={4}
+                  maxLength={300}
+                  autoFocus
+                />
+                <div className="wlm-note-sheet__actions">
+                  <button
+                    type="button"
+                    className="wlm-note-sheet__cancel"
+                    onClick={() => setNoteSheet(null)}
+                    style={{ touchAction: 'manipulation' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="wlm-note-sheet__save"
+                    onClick={() => {
+                      setSessionExerciseNotes(noteSheet.exIdx, noteSheet.draft);
+                      setNoteSheet(null);
+                    }}
+                    style={{ touchAction: 'manipulation' }}
+                  >
+                    Save note
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── REST TIMER PICKER (mobile) ── */}
+        <AnimatePresence>
+          {restTimerPicker && sessionExercises[restTimerPicker.exIdx] && (
+            <motion.div
+              key="wlm-timer-overlay"
+              className="wlm-overlay wlm-timer-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => setRestTimerPicker(null)}
+            >
+              <motion.div
+                className="wlm-timer-sheet"
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="wlm-ex-menu__handle" aria-hidden="true" />
+                <p className="wlm-timer-sheet__title">Rest timer</p>
+                <p className="wlm-timer-sheet__subtitle">
+                  {sessionExercises[restTimerPicker.exIdx]?.name}
+                </p>
+                <div className="wlm-timer-sheet__pills">
+                  {[30, 60, 90, 120, 180].map((sec) => (
+                    <button
+                      key={sec}
+                      type="button"
+                      className="wlm-timer-sheet__pill"
+                      onClick={() => startRestTimer(restTimerPicker.exIdx, sec)}
+                      style={{ touchAction: 'manipulation' }}
+                    >
+                      {sec < 60 ? `${sec}s` : `${Math.round(sec / 60)}:${String(sec % 60).padStart(2, '0')}`}
+                    </button>
+                  ))}
+                </div>
+                <div className="wlm-timer-sheet__custom">
+                  <label htmlFor="wlm-timer-custom" className="wlm-timer-sheet__custom-label">
+                    Custom (seconds)
+                  </label>
+                  <input
+                    id="wlm-timer-custom"
+                    type="number"
+                    inputMode="numeric"
+                    min={5}
+                    max={3600}
+                    placeholder="e.g. 75"
+                    className="wlm-timer-sheet__custom-input"
+                    onFocus={handleInputFocus}
+                    onClick={handleInputClick}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const secs = parseInt(e.currentTarget.value, 10);
+                        if (isFinite(secs) && secs >= 5) {
+                          startRestTimer(restTimerPicker.exIdx, secs);
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                <div className="wlm-note-sheet__actions">
+                  <button
+                    type="button"
+                    className="wlm-note-sheet__cancel"
+                    onClick={() => setRestTimerPicker(null)}
+                    style={{ touchAction: 'manipulation' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── CONFIRM REMOVE EXERCISE (mobile) ── */}
+        <AnimatePresence>
+          {confirmRemoveExercise != null && sessionExercises[confirmRemoveExercise] && (
+            <motion.div
+              key="wlm-remove-ex-overlay"
+              className="wlm-overlay wlm-overlay--confirm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setConfirmRemoveExercise(null)}
+            >
+              <motion.div
+                className="wlm-confirm"
+                initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 20 }}
+                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="wlm-confirm__handle" aria-hidden="true" />
+                <h4 className="wlm-confirm__title">Remove this exercise?</h4>
+                <p className="wlm-confirm__message">
+                  All sets for {sessionExercises[confirmRemoveExercise]?.name} will be removed.
+                </p>
+                <div className="wlm-confirm__actions">
+                  <motion.button
+                    type="button"
+                    className="wlm-confirm__primary wlm-confirm__primary--destructive"
+                    onClick={() => {
+                      removeSessionExercise(confirmRemoveExercise);
+                      setConfirmRemoveExercise(null);
+                    }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    Remove
+                  </motion.button>
+                  <motion.button
+                    type="button"
+                    className="wlm-confirm__cancel"
+                    onClick={() => setConfirmRemoveExercise(null)}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    Cancel
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* ── SAVE AS TEMPLATE BOTTOM SHEET (mobile) ──
@@ -2716,6 +3695,7 @@ export default function WorkoutLogger() {
                                 className="wlm-edit-sheet__set-input"
                                 value={set.weight}
                                 onFocus={handleInputFocus}
+                                onClick={handleInputClick}
                                 onKeyDown={handleInputKeyDown}
                                 onChange={(e) => setEditWorkoutSheet((prev) => {
                                   if (!prev) return prev;
@@ -2739,6 +3719,7 @@ export default function WorkoutLogger() {
                                 className="wlm-edit-sheet__set-input"
                                 value={set.reps}
                                 onFocus={handleInputFocus}
+                                onClick={handleInputClick}
                                 onKeyDown={handleInputKeyDown}
                                 onChange={(e) => setEditWorkoutSheet((prev) => {
                                   if (!prev) return prev;
