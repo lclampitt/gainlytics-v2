@@ -49,17 +49,16 @@ The onboarding wizard shows only when `onboarding_completed === false` explicitl
 2. **Frontend usage fetch** — `src/hooks/useUsage.js` calls `GET /usage/:user_id`. Returns `{ analyzerUsed, analyzerLimit, workoutCount, workoutLimit, plan }` with `null` limits for paid tiers.
 3. **Upgrade UX** — `src/context/UpgradeContext.jsx` owns a global `UpgradeModal`. Any component catches a 403 and calls `triggerUpgrade('analyzer' | 'workouts' | 'meal_planner')` to open the modal with feature-specific copy. Free-tier limits are currently: 3 analyzer runs/month, 7 total workouts, 0 AI meal suggestions. Pro gets 20 AI workout generations/month. Pro_plus gets 50 AI meal suggestions/month.
 
-### Theming is three orthogonal dimensions (`src/hooks/useTheme.js`)
+### Theming is two orthogonal dimensions (`src/hooks/useTheme.js`)
 - `mode`: `dark` | `light`
 - `accent`: `teal` (default, free) plus Pro-only accents `blue`, `violet`, `orange`, `rose`, `crimson`, `xp-aqua`, `myspace`, `y2k-chrome`, `spectrum`
-- `uiMode`: `modern` | `y2k` (y2k is Pro-only)
 
-Each writes to localStorage **and** to `document.documentElement` as a `data-*` attribute — all CSS reads `[data-theme]`, `[data-accent]`, `[data-ui-mode]` selectors in `src/styles/theme.css`. Values are also persisted to `profiles` so they follow the user across devices.
+Each writes to localStorage **and** to `document.documentElement` as a `data-*` attribute — all CSS reads `[data-theme]` and `[data-accent]` selectors in `src/styles/theme.css`. Values are also persisted to `profiles` so they follow the user across devices.
 
-Cross-component sync uses custom events (`macrovault-mode-change`, `macrovault-accent-change`, `macrovault-ui-mode-change`) because `storage` events don't fire in the originating tab. Free users who land in with a Pro-only accent or Y2K UI are **silently reset to teal/modern** on load, both in state and in Supabase.
+Cross-component sync uses custom events (`macrovault-mode-change`, `macrovault-accent-change`) because `storage` events don't fire in the originating tab. Free users who land in with a Pro-only accent are **silently reset to teal** on load, both in state and in Supabase. Legacy `ui_mode='y2k'` values on the `profiles` row are silently migrated to `'modern'` on load — the column is otherwise unused.
 
 ### Toasts must go through the wrapper (`src/utils/toast.js`)
-Do **not** import Sonner's `toast` directly. Import `appToast` from `src/utils/toast.js`. The wrapper checks whether Y2K mode is active (via `[data-ui-mode]` or localStorage) and routes to `Y2KToast` instead of Sonner so the toast style matches the UI chrome.
+Do **not** import Sonner's `toast` directly. Import `appToast` from `src/utils/toast.js`. The wrapper normalizes toast options across the app so every call site stays consistent.
 
 ### Active workout persistence (`src/hooks/useActiveWorkout.js`)
 In-progress workouts survive navigation and tab switches via localStorage at key `macrovault_active_workout`. A 4-hour `RECOVERY_WINDOW_MS` auto-clears stale snapshots on read. Subscribers use both the native `storage` event (cross-tab) and a custom `macrovault:active-workout` event (same-tab). `ActiveWorkoutBanner` (rendered in `AppShell`) surfaces the snapshot on every route except `/workouts`, and the sidebar log icon shows a pulsing dot when `hasActive` is true.

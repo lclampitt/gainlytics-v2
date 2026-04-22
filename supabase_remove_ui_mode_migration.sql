@@ -1,0 +1,19 @@
+-- supabase_remove_ui_mode_migration.sql
+--
+-- Context:
+--   The Y2K UI mode has been removed from the app. `profiles.ui_mode` is no
+--   longer read or written by the frontend. Legacy values of 'y2k' are
+--   silently migrated to 'modern' on load by src/hooks/useTheme.js.
+--
+-- Intent:
+--   This file is a NOTE ONLY. We are deliberately NOT dropping the column
+--   here — keeping the column avoids any risk of an older client build or
+--   cached bundle erroring on a missing column during the rollout window.
+--
+-- Optional cleanup (run ONLY after every client is on the new build):
+--
+--   UPDATE profiles SET ui_mode = 'modern' WHERE ui_mode = 'y2k';
+--   ALTER TABLE profiles DROP COLUMN ui_mode;
+--
+-- Do not execute this file automatically. Apply manually in the Supabase
+-- SQL editor if/when the column is confirmed unused across all deployments.

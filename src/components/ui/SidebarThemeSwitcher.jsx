@@ -26,7 +26,7 @@ const ALL_COLORS = [
 const RETRO = new Set(['xp-aqua', 'myspace', 'y2k-chrome']);
 
 export default function SidebarThemeSwitcher({
-  accent, setAccent, uiMode, setUiMode,
+  accent, setAccent,
   isDark, toggleTheme, isPro, collapsed,
 }) {
   const [popOpen, setPopOpen] = useState(false);
@@ -140,12 +140,6 @@ export default function SidebarThemeSwitcher({
                 <span className="sbt-pop__sub">Each macro gets a color</span>
               </span>
             </button>
-            <div className="sbt-pop__hr" />
-            <div className="sbt-pop__label">Interface</div>
-            <div className="sbt-pop__pills">
-              <button className={`sbt-pop__pill${uiMode === 'modern' ? ' sbt-pop__pill--on' : ''}`} onClick={() => isPro && setUiMode('modern')}>Modern</button>
-              <button className={`sbt-pop__pill${uiMode === 'y2k' ? ' sbt-pop__pill--on' : ''}`} onClick={() => isPro && setUiMode('y2k')}>Y2K</button>
-            </div>
           </div>
         </motion.div>
       )}

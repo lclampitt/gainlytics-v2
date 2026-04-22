@@ -16,12 +16,6 @@ export function useTheme() {
     return localStorage.getItem(ACCENT_KEY) || 'teal';
   });
 
-  const [uiMode, setUiModeState] = useState(() => {
-    if (typeof window === 'undefined') return 'modern';
-    return localStorage.getItem(UI_MODE_KEY) || 'modern';
-  });
-
-  // Track whether initial Supabase load is done to avoid writing defaults back
   const initialLoadDone = useRef(false);
 
   /* Apply mode to DOM + localStorage */
@@ -36,36 +30,33 @@ export function useTheme() {
     localStorage.setItem(ACCENT_KEY, accent);
   }, [accent]);
 
-  /* Apply UI mode to DOM + localStorage */
+  /* One-time: strip the legacy ui-mode attribute + localStorage key.
+     Y2K UI was removed; treat any stored 'y2k' as 'modern'. */
   useEffect(() => {
-    document.documentElement.setAttribute('data-ui-mode', uiMode);
-    localStorage.setItem(UI_MODE_KEY, uiMode);
-  }, [uiMode]);
+    document.documentElement.removeAttribute('data-ui-mode');
+    try { localStorage.removeItem(UI_MODE_KEY); } catch {}
+  }, []);
 
   /* Sync across components: listen for changes from other useTheme instances */
   useEffect(() => {
     const onModeChange = (e) => setMode(e.detail);
     const onAccentChange = (e) => setAccentState(e.detail);
-    const onUiModeChange = (e) => setUiModeState(e.detail);
     window.addEventListener('macrovault-mode-change', onModeChange);
     window.addEventListener('macrovault-accent-change', onAccentChange);
-    window.addEventListener('macrovault-ui-mode-change', onUiModeChange);
     return () => {
       window.removeEventListener('macrovault-mode-change', onModeChange);
       window.removeEventListener('macrovault-accent-change', onAccentChange);
-      window.removeEventListener('macrovault-ui-mode-change', onUiModeChange);
     };
   }, []);
 
-  // Accents that require a Pro subscription — free users get reset to 'teal'
   const PRO_ONLY_ACCENTS = new Set([
     'blue', 'violet', 'orange', 'rose', 'crimson',
     'xp-aqua', 'myspace', 'y2k-chrome', 'spectrum',
   ]);
 
-  /* On mount: load ALL theme settings from Supabase profile (overrides localStorage).
-     Also enforces free-tier defaults: if the user is on the free plan and has a
-     Pro-only accent or Y2K UI mode, reset them to 'teal' / 'modern'. */
+  /* On mount: load theme settings from Supabase profile (overrides localStorage).
+     Also enforces free-tier defaults: free users with a Pro-only accent are
+     silently reset to 'teal'. Legacy ui_mode='y2k' is silently migrated to 'modern'. */
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -84,17 +75,13 @@ export function useTheme() {
       const tier = profile?.subscription_tier || 'free';
       const isFree = tier === 'free';
 
-      // Determine which values to apply — enforce defaults for free users
       let resolvedAccent = profile?.accent_theme || accent;
       let resolvedMode = profile?.theme_mode || mode;
-      let resolvedUiMode = profile?.ui_mode || uiMode;
 
-      if (isFree) {
-        if (PRO_ONLY_ACCENTS.has(resolvedAccent)) resolvedAccent = 'teal';
-        if (resolvedUiMode === 'y2k') resolvedUiMode = 'modern';
+      if (isFree && PRO_ONLY_ACCENTS.has(resolvedAccent)) {
+        resolvedAccent = 'teal';
       }
 
-      // Override local state with resolved values
       if (resolvedAccent !== accent) {
         setAccentState(resolvedAccent);
         window.dispatchEvent(new CustomEvent('macrovault-accent-change', { detail: resolvedAccent }));
@@ -103,19 +90,17 @@ export function useTheme() {
         setMode(resolvedMode);
         window.dispatchEvent(new CustomEvent('macrovault-mode-change', { detail: resolvedMode }));
       }
-      if (resolvedUiMode !== uiMode) {
-        setUiModeState(resolvedUiMode);
-        window.dispatchEvent(new CustomEvent('macrovault-ui-mode-change', { detail: resolvedUiMode }));
-      }
 
-      // Persist the reset back to Supabase so it sticks
-      if (isFree) {
-        const updates = {};
-        if (profile?.accent_theme && PRO_ONLY_ACCENTS.has(profile.accent_theme)) updates.accent_theme = 'teal';
-        if (profile?.ui_mode === 'y2k') updates.ui_mode = 'modern';
-        if (Object.keys(updates).length > 0) {
-          supabase.from('profiles').update(updates).eq('id', userId).then(() => {});
-        }
+      // Persist free-tier accent reset + legacy ui_mode='y2k' migration back to Supabase
+      const updates = {};
+      if (isFree && profile?.accent_theme && PRO_ONLY_ACCENTS.has(profile.accent_theme)) {
+        updates.accent_theme = 'teal';
+      }
+      if (profile?.ui_mode === 'y2k') {
+        updates.ui_mode = 'modern';
+      }
+      if (Object.keys(updates).length > 0) {
+        supabase.from('profiles').update(updates).eq('id', userId).then(() => {});
       }
 
       initialLoadDone.current = true;
@@ -124,7 +109,6 @@ export function useTheme() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** Helper: persist a partial update to Supabase profiles (fire-and-forget) */
   const persistToSupabase = useCallback(async (fields) => {
     const { data } = await supabase.auth.getSession();
     const userId = data?.session?.user?.id;
@@ -144,21 +128,12 @@ export function useTheme() {
     });
   }, [persistToSupabase]);
 
-  /* Set accent: update state + broadcast + persist to Supabase */
   const setAccent = useCallback((a) => {
     setAccentState(a);
     window.dispatchEvent(new CustomEvent('macrovault-accent-change', { detail: a }));
     persistToSupabase({ accent_theme: a });
   }, [persistToSupabase]);
 
-  /* Set UI mode: update state + broadcast + persist to Supabase */
-  const setUiMode = useCallback((m) => {
-    setUiModeState(m);
-    window.dispatchEvent(new CustomEvent('macrovault-ui-mode-change', { detail: m }));
-    persistToSupabase({ ui_mode: m });
-  }, [persistToSupabase]);
-
-  const isY2K = uiMode === 'y2k';
   const isSpectrum = accent === 'spectrum';
   const isXpAqua = accent === 'xp-aqua';
   const isMyspace = accent === 'myspace';
@@ -168,18 +143,14 @@ export function useTheme() {
   return {
     mode,
     accent,
-    uiMode,
     toggleMode,
     setAccent,
-    setUiMode,
     isDark: mode === 'dark',
-    isY2K,
     isSpectrum,
     isXpAqua,
     isMyspace,
     isY2kChrome,
     isRetro,
-    // backward compat aliases
     theme: mode,
     toggle: toggleMode,
   };

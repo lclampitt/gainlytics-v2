@@ -13,7 +13,7 @@ import { motion } from 'framer-motion';
  *   href        string      — react-router navigation target
  *   index       number      — stagger delay index (0, 1, 2)
  */
-export default function CalculatorCard({ title, subtitle, description, icon: Icon, href, index = 0, spectrumIconBg, spectrumIconBorder, spectrumIconStroke, isY2K }) {
+export default function CalculatorCard({ title, subtitle, description, icon: Icon, href, index = 0, spectrumIconBg, spectrumIconBorder, spectrumIconStroke }) {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
 
@@ -86,7 +86,7 @@ export default function CalculatorCard({ title, subtitle, description, icon: Ico
         textAlign: 'center',
         transition: 'border-color 0.15s ease, color 0.15s ease',
       }}>
-        {isY2K ? '[ Open Calculator → ]' : 'Open calculator →'}
+        Open calculator →
       </div>
     </motion.div>
   );

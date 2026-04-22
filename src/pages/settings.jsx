@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Sliders, CreditCard, AlertTriangle, Crown, Sun, Moon, Palette, Lock } from 'lucide-react';
+import { User, Sliders, CreditCard, AlertTriangle, Crown, Sun, Lock } from 'lucide-react';
 import { appToast as toast } from '../utils/toast';
 import { supabase } from '../supabaseClient';
 import { usePlan } from '../hooks/usePlan';
@@ -150,7 +150,7 @@ function DeleteModal({ onClose }) {
 export default function SettingsPage() {
   const { plan, isPro, isProPlus, stripeCustomerId, isLoading: planLoading } = usePlan();
   const { triggerUpgrade } = useUpgrade();
-  const { theme, toggle: toggleTheme, accent, setAccent, isDark, isRetro, toggleMode, uiMode, setUiMode, isY2K } = useTheme();
+  const { theme, toggle: toggleTheme, accent, setAccent, isDark, isRetro } = useTheme();
 
   const [session,     setSession]     = useState(null);
   const [displayName, setDisplayName] = useState('');
@@ -372,33 +372,6 @@ export default function SettingsPage() {
                 </div>
               </button>
             ))}
-            </div>
-          </div>
-
-          <div className="settings-divider" />
-
-          <div className="settings-row">
-            <div className="settings-row__left">
-              <span className="settings-row__label">UI Mode</span>
-              <span className="settings-row__sub">Change the overall interface style</span>
-            </div>
-            <div className="settings-row__control">
-              <div className="settings-toggle">
-                <button
-                  type="button"
-                  className={`settings-toggle__opt${uiMode === 'modern' ? ' settings-toggle__opt--active' : ''}`}
-                  onClick={() => isPro && setUiMode('modern')}
-                >
-                  Modern
-                </button>
-                <button
-                  type="button"
-                  className={`settings-toggle__opt${uiMode === 'y2k' ? ' settings-toggle__opt--active' : ''}`}
-                  onClick={() => isPro && setUiMode('y2k')}
-                >
-                  Y2K
-                </button>
-              </div>
             </div>
           </div>
 

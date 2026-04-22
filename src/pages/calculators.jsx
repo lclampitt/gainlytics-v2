@@ -1,6 +1,6 @@
 // src/pages/calculators.jsx
 import React, { useState, useEffect } from 'react';
-import { ChartPie, Trophy, Calculator } from 'lucide-react';
+import { ChartPie, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import '../styles/CalculatorsPage.css';
 import CalculatorCard from '../components/ui/CalculatorCard';
@@ -89,7 +89,7 @@ function formatDate(iso) {
 }
 
 function CalculatorsPage() {
-  const { isSpectrum, isY2K } = useTheme();
+  const { isSpectrum } = useTheme();
   const [saved, setSaved] = useState({ macro: null, orm: null });
 
   useEffect(() => {
@@ -128,7 +128,6 @@ function CalculatorsPage() {
             spectrumIconBg={isSpectrum ? calc.spectrumIconBg : undefined}
             spectrumIconBorder={isSpectrum ? calc.spectrumIconBorder : undefined}
             spectrumIconStroke={isSpectrum ? calc.spectrumIconStroke : undefined}
-            isY2K={isY2K}
           />
         ))}
       </div>
@@ -174,7 +173,7 @@ function CalculatorsPage() {
             </>
           ) : (
             <div className="calc-empty-msg" style={{ textAlign: 'center', padding: '20px 0', fontSize: 12, color: 'var(--text-muted)' }}>
-              {isY2K ? '[ No results yet \u2014 run a calculator above ]' : 'Run a calculator to see your results here'}
+              Run a calculator to see your results here
             </div>
           )}
         </motion.div>

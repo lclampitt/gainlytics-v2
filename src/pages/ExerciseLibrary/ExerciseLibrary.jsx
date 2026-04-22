@@ -133,7 +133,7 @@ function Dropdown({ label, options, value, onChange, isSpectrum, spectrumColorMa
 }
 
 /* ── Exercise Card ────────────────────────────────────────── */
-function ExerciseCard({ exercise, isFavorited, onFavorite, onView, onAdd, index, isSpectrum, isY2K }) {
+function ExerciseCard({ exercise, isFavorited, onFavorite, onView, onAdd, index, isSpectrum }) {
   const { bg, text } = difficultyStyle(exercise.difficulty);
   const muscleColor = isSpectrum ? spectrumColorForBodyPart(exercise.body_part) : null;
   return (
@@ -166,7 +166,7 @@ function ExerciseCard({ exercise, isFavorited, onFavorite, onView, onAdd, index,
           <span className="el-tag" style={{ background: bg, color: text }}>{exercise.difficulty}</span>
         </div>
         <div className="el-card__actions" onClick={(e) => e.stopPropagation()}>
-          <button className="el-card__view-btn" onClick={() => onView(exercise)}>{isY2K ? '[ View Details ]' : 'View Details'}</button>
+          <button className="el-card__view-btn" onClick={() => onView(exercise)}>View Details</button>
           <button
             className={`el-card__icon-btn ${isFavorited ? 'el-card__icon-btn--favorited' : ''}`}
             onClick={() => onFavorite(exercise.id)}
@@ -607,7 +607,7 @@ function AddWorkoutSheet({ exercise, userId, onClose, onToast }) {
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════════ */
 export default function ExerciseLibrary() {
-  const { isSpectrum, isY2K } = useTheme();
+  const { isSpectrum } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Filter state from URL
@@ -822,7 +822,7 @@ export default function ExerciseLibrary() {
 
       {/* Results count */}
       {tab === 'all' && (
-        <p className="el-count">{isY2K ? `[${Math.min(paginated.length, displayList.length)}] of [${displayList.length}] exercises` : `Showing ${Math.min(paginated.length, displayList.length)} of ${displayList.length} exercises`}</p>
+        <p className="el-count">{`Showing ${Math.min(paginated.length, displayList.length)} of ${displayList.length} exercises`}</p>
       )}
 
       {/* Empty state */}
@@ -849,7 +849,6 @@ export default function ExerciseLibrary() {
               onView={setSelectedExercise}
               onAdd={setAddingExercise}
               isSpectrum={isSpectrum}
-              isY2K={isY2K}
             />
           ))}
         </AnimatePresence>
@@ -859,7 +858,7 @@ export default function ExerciseLibrary() {
       {hasMore && (
         <div className="el-load-more">
           <button className="el-load-more__btn" onClick={() => setPage((p) => p + 1)}>
-            {isY2K ? '[ Load More ]' : 'Load more'}
+            Load more
           </button>
         </div>
       )}

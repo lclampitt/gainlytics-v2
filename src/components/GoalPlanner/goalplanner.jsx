@@ -7,7 +7,6 @@ import posthog from '../../lib/posthog';
 import { supabase } from '../../supabaseClient';
 import { useUpgrade } from '../../context/UpgradeContext';
 import { useTheme } from '../../hooks/useTheme';
-import Y2KDialog from '../ui/Y2KDialog';
 import FoodSearch from '../FoodSearch/FoodSearch';
 import '../../styles/goalplanner.css';
 
@@ -332,7 +331,7 @@ function GoalPlannerGate() {
 }
 
 function GoalPlannerContent({ compact = false }) {
-  const { isSpectrum, isRetro, isY2K } = useTheme();
+  const { isSpectrum, isRetro } = useTheme();
 
   // Spotlight via query param or navigation state
   const [searchParams, setSearchParams] = useSearchParams();
@@ -653,7 +652,7 @@ function GoalPlannerContent({ compact = false }) {
           </motion.div>
 
           {/* Confirm delete */}
-          {confirmDelete && !isY2K && (
+          {confirmDelete && (
             <motion.div
               className="gp-confirm"
               initial={{ opacity: 0, y: 6 }}
@@ -679,16 +678,6 @@ function GoalPlannerContent({ compact = false }) {
               </div>
             </motion.div>
           )}
-          <Y2KDialog
-            isOpen={confirmDelete && isY2K}
-            onClose={() => setConfirmDelete(false)}
-            onConfirm={handleDelete}
-            title="MacroVault — Warning"
-            message="Delete your current goal permanently? This cannot be undone."
-            confirmLabel="Delete"
-            cancelLabel="Cancel"
-            type="warning"
-          />
         </motion.div>
       )}
 

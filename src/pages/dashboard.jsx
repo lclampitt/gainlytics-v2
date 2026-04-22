@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  TrendingUp, CalendarDays, ChevronLeft, ChevronRight,
-  UtensilsCrossed, Dumbbell, Check, PieChart as PieChartIcon,
+  TrendingUp, ChevronLeft, ChevronRight,
+  UtensilsCrossed, Dumbbell, Check,
 } from 'lucide-react';
 import posthog from '../lib/posthog';
 import { getStreak, invalidateStreakCache } from '../lib/streak';
@@ -74,16 +74,11 @@ const itemVariants = {
 /* ============================================================
    STAT CARD
    ============================================================ */
-function StatCard({ label, rawValue, formatted, delta, deltaColor, isY2K, y2kLabel }) {
+function StatCard({ label, rawValue, formatted, delta, deltaColor }) {
   const animVal = useCountUp(rawValue);
   const display = typeof formatted === 'function' ? formatted(animVal) : `${animVal.toLocaleString()}`;
   return (
     <motion.div className="hd-stat" variants={itemVariants}>
-      {isY2K && y2kLabel && (
-        <div className="hd-y2k-chip-bar">
-          <span>{y2kLabel}</span>
-        </div>
-      )}
       <div className="hd-stat__label">
         <span className="hd-stat__dot" />
         <span>{label}</span>
@@ -122,7 +117,7 @@ function TimePills({ options, active, onChange }) {
    ============================================================ */
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'];
 
-function TodayMealPlan({ userId, onLogged, isY2K }) {
+function TodayMealPlan({ userId, onLogged }) {
   const navigate = useNavigate();
   const [meals, setMeals] = useState(null); // null = loading, [] = empty
   const [logged, setLogged] = useState(new Set()); // set of meal_types already logged
@@ -287,12 +282,6 @@ function TodayMealPlan({ userId, onLogged, isY2K }) {
 
   return (
     <motion.div className="hd-card" variants={itemVariants}>
-      {isY2K && (
-        <div className="hd-y2k-titlebar">
-          <UtensilsCrossed width={10} height={10} stroke="var(--accent-light)" strokeWidth={2} fill="none" />
-          <span>TODAY'S MEAL PLAN</span>
-        </div>
-      )}
       <div className="hd-card__head">
         <span className="hd-card__title">Today's Meal Plan</span>
         <button className="hd-link-btn" onClick={() => navigate('/meal-planner')}>
@@ -360,7 +349,7 @@ const MACRO_RANGES = [
   { key: '30d', label: '30D' },
 ];
 
-function MacroDonut({ userId, todayNutrition, goalPlan, isY2K }) {
+function MacroDonut({ userId, todayNutrition, goalPlan }) {
   const navigate = useNavigate();
   const [range, setRange] = useState('today');
   const [avgData, setAvgData] = useState(null);
@@ -497,12 +486,6 @@ function MacroDonut({ userId, todayNutrition, goalPlan, isY2K }) {
 
   return (
     <motion.div className="hd-card" variants={itemVariants}>
-      {isY2K && (
-        <div className="hd-y2k-titlebar">
-          <PieChartIcon width={10} height={10} stroke="var(--accent-light)" strokeWidth={2} fill="none" />
-          <span>MACRO SPLIT</span>
-        </div>
-      )}
       <div className="hd-card__head">
         <span className="hd-card__title">Macro split</span>
         <div className="hd-pills">
@@ -627,7 +610,7 @@ function MacroDonut({ userId, todayNutrition, goalPlan, isY2K }) {
 /* ============================================================
    CONSISTENCY CARD (bottom row)
    ============================================================ */
-function ConsistencyCard({ userId, streak, isY2K }) {
+function ConsistencyCard({ userId, streak }) {
   const today = new Date();
   const todayKey = fmtDate(today);
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -740,12 +723,6 @@ function ConsistencyCard({ userId, streak, isY2K }) {
   return (
     <>
       <motion.div className="hd-card" variants={itemVariants}>
-        {isY2K && (
-          <div className="hd-y2k-titlebar">
-            <CalendarDays width={10} height={10} stroke="var(--accent-light)" strokeWidth={2} fill="none" />
-            <span>CONSISTENCY</span>
-          </div>
-        )}
         <div className="hd-card__head">
           <span className="hd-card__title">Consistency</span>
           <div className="cw__nav">
@@ -805,7 +782,7 @@ function ConsistencyCard({ userId, streak, isY2K }) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { plan, isPro } = usePlan();
-  const { isSpectrum, isRetro, isY2K } = useTheme();
+  const { isSpectrum, isRetro } = useTheme();
   const now = new Date();
   const hour = now.getHours();
   const todayStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -936,8 +913,6 @@ export default function Dashboard() {
               formatted={(v) => v.toLocaleString()}
               delta={calDelta?.text}
               deltaColor={calDelta?.color}
-              isY2K={isY2K}
-              y2kLabel="CALORIES:"
             />
             <StatCard
               label="Protein"
@@ -945,16 +920,12 @@ export default function Dashboard() {
               formatted={(v) => `${v}g`}
               delta={proDelta?.text}
               deltaColor={proDelta?.color}
-              isY2K={isY2K}
-              y2kLabel="PROTEIN:"
             />
             <StatCard
               label="Workouts"
               rawValue={weekWorkouts}
               formatted={(v) => `${v}`}
               delta="this week"
-              isY2K={isY2K}
-              y2kLabel="WORKOUTS:"
             />
             <StatCard
               label="Streak"
@@ -962,18 +933,16 @@ export default function Dashboard() {
               formatted={(v) => `${v}d`}
               delta={streak >= 7 ? 'keep it going' : 'day streak'}
               deltaColor={streak >= 7 ? '--accent-light' : '--text-muted'}
-              isY2K={isY2K}
-              y2kLabel="STREAK:"
             />
           </div>
 
           {/* Bottom row: left column (macro + meal plan) + right column (consistency) */}
           <div className="hd-bottom-row">
             <div className="hd-bottom-col">
-              <MacroDonut userId={userId} todayNutrition={todayNutrition} goalPlan={goalPlan} isY2K={isY2K} />
-              <TodayMealPlan userId={userId} isY2K={isY2K} />
+              <MacroDonut userId={userId} todayNutrition={todayNutrition} goalPlan={goalPlan} />
+              <TodayMealPlan userId={userId} />
             </div>
-            <ConsistencyCard userId={userId} streak={streak} isY2K={isY2K} />
+            <ConsistencyCard userId={userId} streak={streak} />
           </div>
 
       </motion.div>

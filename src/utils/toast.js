@@ -1,30 +1,14 @@
 /**
  * Universal toast utility.
- * When Y2K mode is active, routes to Y2K-styled toasts.
- * Otherwise, routes to Sonner.
+ * Pass-through wrapper around Sonner so existing imports remain stable
+ * and we have a single choke-point if we ever change the toast engine.
+ * Per CLAUDE.md, callers MUST import this wrapper — never Sonner directly.
  */
 import { toast as sonnerToast } from 'sonner';
-import { y2kToast } from '../components/ui/Y2KToast';
-
-const UI_MODE_KEY = 'macrovault-ui-mode';
-
-function isY2KActive() {
-  return document.documentElement.getAttribute('data-ui-mode') === 'y2k'
-    || localStorage.getItem(UI_MODE_KEY) === 'y2k';
-}
 
 function show(type, message, opts = {}) {
-  if (isY2KActive()) {
-    y2kToast({
-      type,
-      title: opts.title || (type === 'success' ? 'Success' : type === 'error' ? 'Error' : type === 'warning' ? 'Warning' : 'Information'),
-      message: message || '',
-      duration: opts.duration,
-    });
-  } else {
-    const fn = sonnerToast[type] || sonnerToast;
-    fn(message, opts);
-  }
+  const fn = sonnerToast[type] || sonnerToast;
+  fn(message, opts);
 }
 
 export const appToast = Object.assign(
