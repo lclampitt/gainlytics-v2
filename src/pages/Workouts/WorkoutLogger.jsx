@@ -605,6 +605,11 @@ export default function WorkoutLogger() {
   const [isFinishing, setIsFinishing] = useState(false);
   const finishInFlight = useRef(false);
   const [endWorkoutConfirm, setEndWorkoutConfirm] = useState(false);
+  /* Mirror of endWorkoutConfirm for the Discard flow. Kept as a plain
+     boolean (not a discriminated union) because the two modals have
+     different body copy + action colors — see the AnimatePresence
+     block below for the destructive variant. */
+  const [discardConfirm, setDiscardConfirm] = useState(false);
   /* When the user resumes a just-finished workout, finishSession
      updates the existing row instead of inserting a new one — so the
      "Resume" flow never leaves duplicates in the history list. */
@@ -1579,8 +1584,9 @@ export default function WorkoutLogger() {
     }
   };
 
-  const discardSession = () => {
-    if (sessionExercises.length > 0 && !window.confirm('Discard this workout?')) return;
+  /* Actually clear the in-progress session. Called directly for the
+     no-exercises fast-path and from the discard-confirm modal. */
+  const performDiscard = () => {
     setMobileView('home');
     setSessionStartTime(null);
     setSessionExercises([]);
@@ -1589,6 +1595,17 @@ export default function WorkoutLogger() {
     setSessionNotes('');
     setResumedFromWorkoutId(null);
     clearActiveWorkout();
+    setDiscardConfirm(false);
+  };
+
+  const discardSession = () => {
+    /* No exercises yet = nothing to lose; skip the confirm entirely so
+       the user isn't nagged after tapping "New workout" by mistake. */
+    if (sessionExercises.length === 0) {
+      performDiscard();
+      return;
+    }
+    setDiscardConfirm(true);
   };
 
   /* Dismiss the 10-minute Resume card without resuming. */
@@ -3312,6 +3329,56 @@ export default function WorkoutLogger() {
             </motion.div>
             );
           })()}
+        </AnimatePresence>
+
+        {/* ── DISCARD WORKOUT CONFIRM ──
+            Same layout as end-workout (stacked buttons on mobile,
+            centered modal on both viewports) but with a destructive
+            red primary since discard is irreversible. */}
+        <AnimatePresence>
+          {discardConfirm && (
+            <motion.div
+              key="discard-confirm"
+              className="wlm-overlay wlm-overlay--confirm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              onClick={() => setDiscardConfirm(false)}
+            >
+              <motion.div
+                className="wlm-confirm wlm-confirm--discard-workout"
+                initial={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.92 }}
+                transition={{ duration: 0.15 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h4 className="wlm-confirm__title">Discard this workout?</h4>
+                <p className="wlm-confirm__message">
+                  This will clear all sets you&apos;ve logged in this session. This can&apos;t be undone.
+                </p>
+                <div className="wlm-confirm__actions">
+                  <motion.button
+                    type="button"
+                    className="wlm-confirm__primary wlm-confirm__primary--destructive"
+                    onClick={performDiscard}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    Discard
+                  </motion.button>
+                  <motion.button
+                    type="button"
+                    className="wlm-confirm__cancel wlm-confirm__btn--keep-going"
+                    onClick={() => setDiscardConfirm(false)}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    Keep editing
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* ── PER-EXERCISE 3-DOTS MENU (mobile) ──

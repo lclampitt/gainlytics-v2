@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Dumbbell, X, ChevronRight } from 'lucide-react';
 import {
   useActiveWorkout,
   clearActiveWorkout,
 } from '../../hooks/useActiveWorkout';
+import ConfirmDialog from '../common/ConfirmDialog';
 import './ActiveWorkoutBanner.css';
 
 /**
@@ -38,6 +39,7 @@ export default function ActiveWorkoutBanner({ userId }) {
   const { snapshot } = useActiveWorkout(userId);
   const location = useLocation();
   const navigate = useNavigate();
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   const elapsedLabel = useMemo(
     () => formatElapsed(snapshot?.session_start_time),
@@ -57,55 +59,72 @@ export default function ActiveWorkoutBanner({ userId }) {
     navigate('/workouts');
   };
 
-  const handleDiscard = (e) => {
+  /* Open the themed confirm modal instead of the native window.confirm
+     so the discard flow stays on-brand and respects the user's accent. */
+  const openDiscard = (e) => {
     e.stopPropagation();
-    // eslint-disable-next-line no-alert
-    if (!window.confirm('Discard the workout in progress? This cannot be undone.')) return;
+    setDiscardOpen(true);
+  };
+
+  const confirmDiscard = () => {
     clearActiveWorkout();
+    setDiscardOpen(false);
   };
 
   return (
-    <button
-      type="button"
-      className="active-workout-banner"
-      onClick={handleContinue}
-      aria-label="Continue workout in progress"
-    >
-      <div className="active-workout-banner__left">
-        <div className="active-workout-banner__icon">
-          <span className="active-workout-banner__pulse" aria-hidden="true" />
-          <Dumbbell size={16} />
+    <>
+      <button
+        type="button"
+        className="active-workout-banner"
+        onClick={handleContinue}
+        aria-label="Continue workout in progress"
+      >
+        <div className="active-workout-banner__left">
+          <div className="active-workout-banner__icon">
+            <span className="active-workout-banner__pulse" aria-hidden="true" />
+            <Dumbbell size={16} />
+          </div>
+          <div className="active-workout-banner__text">
+            <span className="active-workout-banner__title">
+              Workout in progress
+              {snapshot.session_name ? ` — ${snapshot.session_name}` : ''}
+            </span>
+            <span className="active-workout-banner__meta">
+              {elapsedLabel}
+              {exerciseCount > 0
+                ? ` · ${exerciseCount} exercise${exerciseCount === 1 ? '' : 's'}`
+                : ''}
+            </span>
+          </div>
         </div>
-        <div className="active-workout-banner__text">
-          <span className="active-workout-banner__title">
-            Workout in progress
-            {snapshot.session_name ? ` — ${snapshot.session_name}` : ''}
+        <div className="active-workout-banner__actions">
+          <span className="active-workout-banner__continue">
+            Continue <ChevronRight size={14} />
           </span>
-          <span className="active-workout-banner__meta">
-            {elapsedLabel}
-            {exerciseCount > 0
-              ? ` · ${exerciseCount} exercise${exerciseCount === 1 ? '' : 's'}`
-              : ''}
+          <span
+            role="button"
+            tabIndex={0}
+            className="active-workout-banner__discard"
+            onClick={openDiscard}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') openDiscard(e);
+            }}
+            aria-label="Discard workout"
+          >
+            <X size={14} />
           </span>
         </div>
-      </div>
-      <div className="active-workout-banner__actions">
-        <span className="active-workout-banner__continue">
-          Continue <ChevronRight size={14} />
-        </span>
-        <span
-          role="button"
-          tabIndex={0}
-          className="active-workout-banner__discard"
-          onClick={handleDiscard}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') handleDiscard(e);
-          }}
-          aria-label="Discard workout"
-        >
-          <X size={14} />
-        </span>
-      </div>
-    </button>
+      </button>
+      <ConfirmDialog
+        open={discardOpen}
+        title="Discard this workout?"
+        body="This will clear all sets you've logged in this session. This can't be undone."
+        primaryLabel="Discard"
+        secondaryLabel="Keep editing"
+        onPrimary={confirmDiscard}
+        onSecondary={() => setDiscardOpen(false)}
+        destructive
+      />
+    </>
   );
 }

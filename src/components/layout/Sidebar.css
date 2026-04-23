@@ -934,13 +934,16 @@
   }
 
   .mob-more-item:active {
-    border-color: var(--accent);
-    background: #0a2a1e;
+    background: var(--bg-hover);
+    border-color: var(--border);
   }
 
+  /* Selected (currently-on-this-page) card. Neutral off-white surface
+     tint so it reads as "current" without adopting the accent color —
+     the tinted icon still carries the accent cue. */
   .mob-more-item--active {
-    border-color: var(--accent);
-    background: #0a2a1e;
+    background: var(--bg-hover);
+    border-color: var(--border);
   }
 
   .mob-more-item__icon {

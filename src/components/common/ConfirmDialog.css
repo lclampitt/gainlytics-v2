@@ -1,0 +1,110 @@
+/* Shared confirmation dialog. Centered card on all viewports,
+   stacked full-width buttons on mobile. Used for destructive or
+   primary confirmations across the app; mirrors the workout-logger
+   discard modal's layout but lives outside that feature scope. */
+.cd-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.cd-dialog {
+  width: 100%;
+  max-width: 360px;
+  background: var(--bg-surface, #151820);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 20px 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cd-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cd-body {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.cd-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.cd-primary,
+.cd-secondary {
+  flex: 1;
+  min-height: 48px;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.cd-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+}
+.cd-primary:active {
+  background: color-mix(in oklab, var(--accent) 88%, #000);
+}
+
+.cd-primary--destructive {
+  background: var(--error, #ef4444);
+}
+.cd-primary--destructive:active {
+  background: color-mix(in oklab, var(--error, #ef4444) 88%, #000);
+}
+
+.cd-secondary {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--border);
+  font-weight: 500;
+}
+.cd-secondary:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Light-mode secondary — neutral grey instead of translucent white. */
+[data-theme="light"] .cd-secondary {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+[data-theme="light"] .cd-secondary:active {
+  background: var(--border);
+}
+
+/* Stack buttons vertically on mobile so the primary is more
+   tappable and the cancel doesn't steal weight from the destructive
+   action. Matches the workout logger's end/discard confirm layout. */
+@media (max-width: 767px) {
+  .cd-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .cd-primary,
+  .cd-secondary {
+    width: 100%;
+  }
+}
