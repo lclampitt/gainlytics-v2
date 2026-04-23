@@ -176,15 +176,35 @@ function ReorderableExerciseBlock({
   handleInputKeyDown,
   handleInputClick,
   onOpenExerciseMenu,
-  onOpenNoteSheet,
+  isEditingNote,
+  noteDraft,
+  onStartEditNote,
+  onChangeNoteDraft,
+  onCommitNoteDraft,
   restTimerState,
   onCancelRestTimer,
 }) {
   const controls = useDragControls();
   const startAutoScroll = useAutoScrollOnDrag();
   const cardio = isCardioExercise(ex);
-  const hasNote = !!(ex.notes && String(ex.notes).trim().length > 0);
+  const rawNote = ex.notes && String(ex.notes).trim();
+  const hasNote = !!rawNote;
+  const displayNote = hasNote && rawNote.length > 60 ? `${rawNote.slice(0, 60)}…` : rawNote;
   const timerActive = restTimerState && restTimerState.exIdx === exIdx;
+
+  /* Expanded inline note input: on open, focus and scroll the card into
+     view so the iOS keyboard doesn't hide it. Mirrors the pattern used
+     for the numeric weight/reps inputs. */
+  const noteInputRef = useRef(null);
+  useEffect(() => {
+    if (isEditingNote && noteInputRef.current) {
+      const el = noteInputRef.current;
+      try { el.focus(); } catch { /* noop */ }
+      setTimeout(() => {
+        try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch { /* noop */ }
+      }, 150);
+    }
+  }, [isEditingNote]);
   return (
     <Reorder.Item
       value={ex}
@@ -238,18 +258,39 @@ function ReorderableExerciseBlock({
           <Trash2 size={14} />
         </button>
       </div>
-      {hasNote && (
+      {isEditingNote ? (
+        <div className="wlm-ex-block__note-row wlm-ex-block__note-row--editing">
+          <StickyNote size={12} className="wlm-ex-block__note-row-icon" />
+          <textarea
+            ref={noteInputRef}
+            className="wlm-ex-block__note-input"
+            value={noteDraft ?? ''}
+            onChange={(e) => onChangeNoteDraft(e.target.value)}
+            onBlur={onCommitNoteDraft}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                e.currentTarget.blur();
+              }
+            }}
+            placeholder="e.g. felt strong on first set"
+            rows={2}
+            maxLength={300}
+            style={{ touchAction: 'manipulation' }}
+          />
+        </div>
+      ) : hasNote ? (
         <button
           type="button"
-          className="wlm-ex-block__note-pill"
-          onClick={() => onOpenNoteSheet && onOpenNoteSheet(exIdx)}
+          className="wlm-ex-block__note-row wlm-ex-block__note-row--collapsed"
+          onClick={() => onStartEditNote && onStartEditNote(exIdx)}
           style={{ touchAction: 'manipulation' }}
           aria-label="Edit note"
         >
-          <StickyNote size={12} />
-          <span className="wlm-ex-block__note-pill-text">Note: {ex.notes}</span>
+          <StickyNote size={12} className="wlm-ex-block__note-row-icon" />
+          <span className="wlm-ex-block__note-row-text">Note: {displayNote}</span>
         </button>
-      )}
+      ) : null}
       {cardio ? (
         <div className="wlm-ex-block__cardio-sets">
           {ex.sets.map((set, setIdx) => {
@@ -593,7 +634,9 @@ export default function WorkoutLogger() {
      directly under the 3-dots button instead of using a full-width
      bottom sheet (which was clipped by the fixed bottom nav). */
   const [exerciseMenu, setExerciseMenu] = useState(null);
-  /* Per-exercise note editor sheet. `exIdx` is the exercise we're editing. */
+  /* Per-exercise inline note editor. `exIdx` marks which card is in the
+     expanded-editing state; `draft` is the in-progress textarea value.
+     Committed to the exercise on blur via setSessionExerciseNotes. */
   const [noteSheet, setNoteSheet] = useState(null); // { exIdx, draft }
   /* Rest-timer picker sheet opened from the menu. */
   const [restTimerPicker, setRestTimerPicker] = useState(null); // { exIdx }
@@ -2785,7 +2828,17 @@ export default function WorkoutLogger() {
                     handleInputKeyDown={handleInputKeyDown}
                     handleInputClick={handleInputClick}
                     onOpenExerciseMenu={(idx, anchorRect) => setExerciseMenu({ idx, anchorRect })}
-                    onOpenNoteSheet={(idx) => setNoteSheet({ exIdx: idx, draft: sessionExercises[idx]?.notes || '' })}
+                    isEditingNote={noteSheet?.exIdx === exIdx}
+                    noteDraft={noteSheet?.exIdx === exIdx ? noteSheet.draft : ''}
+                    onStartEditNote={(idx) => setNoteSheet({ exIdx: idx, draft: sessionExercises[idx]?.notes || '' })}
+                    onChangeNoteDraft={(v) =>
+                      setNoteSheet((prev) => (prev ? { ...prev, draft: v } : prev))
+                    }
+                    onCommitNoteDraft={() => {
+                      if (!noteSheet) return;
+                      setSessionExerciseNotes(noteSheet.exIdx, noteSheet.draft);
+                      setNoteSheet(null);
+                    }}
                     restTimerState={restTimerState}
                     onCancelRestTimer={() => setRestTimerState(null)}
                   />
@@ -3319,7 +3372,7 @@ export default function WorkoutLogger() {
                     style={{ touchAction: 'manipulation' }}
                   >
                     <StickyNote size={16} />
-                    <span>Add Note</span>
+                    <span>{sessionExercises[exerciseMenu.idx]?.notes ? 'Edit Note' : 'Add Note'}</span>
                   </button>
                   <button
                     type="button"
@@ -3351,65 +3404,6 @@ export default function WorkoutLogger() {
               </motion.div>
             );
           })()}
-        </AnimatePresence>
-
-        {/* ── PER-EXERCISE NOTE EDITOR (mobile) ── */}
-        <AnimatePresence>
-          {noteSheet && sessionExercises[noteSheet.exIdx] && (
-            <motion.div
-              key="wlm-note-overlay"
-              className="wlm-overlay wlm-note-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              onClick={() => setNoteSheet(null)}
-            >
-              <motion.div
-                className="wlm-note-sheet"
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <span className="wlm-ex-menu__handle" aria-hidden="true" />
-                <p className="wlm-note-sheet__title">
-                  Note · {sessionExercises[noteSheet.exIdx]?.name}
-                </p>
-                <textarea
-                  className="wlm-note-sheet__textarea"
-                  value={noteSheet.draft}
-                  onChange={(e) => setNoteSheet((prev) => (prev ? { ...prev, draft: e.target.value } : prev))}
-                  placeholder="e.g. felt strong on first set"
-                  rows={4}
-                  maxLength={300}
-                  autoFocus
-                />
-                <div className="wlm-note-sheet__actions">
-                  <button
-                    type="button"
-                    className="wlm-note-sheet__cancel"
-                    onClick={() => setNoteSheet(null)}
-                    style={{ touchAction: 'manipulation' }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className="wlm-note-sheet__save"
-                    onClick={() => {
-                      setSessionExerciseNotes(noteSheet.exIdx, noteSheet.draft);
-                      setNoteSheet(null);
-                    }}
-                    style={{ touchAction: 'manipulation' }}
-                  >
-                    Save note
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
         </AnimatePresence>
 
         {/* ── REST TIMER PICKER (mobile) ── */}
@@ -3474,10 +3468,10 @@ export default function WorkoutLogger() {
                     }}
                   />
                 </div>
-                <div className="wlm-note-sheet__actions">
+                <div className="wlm-timer-sheet__actions">
                   <button
                     type="button"
-                    className="wlm-note-sheet__cancel"
+                    className="wlm-timer-sheet__cancel"
                     onClick={() => setRestTimerPicker(null)}
                     style={{ touchAction: 'manipulation' }}
                   >

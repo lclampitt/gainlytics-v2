@@ -3173,37 +3173,65 @@
   }
 }
 
-/* Per-exercise note strip. Small muted italic pill that sits under
-   the exercise name and reopens the note sheet on tap. */
-.wlm-ex-block__note-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 4px 14px 0;
-  padding: 6px 10px;
-  background: rgba(var(--accent-rgb), 0.08);
-  border: 1px solid rgba(var(--accent-rgb), 0.18);
+/* Per-exercise inline note row. Sits below the exercise name and
+   above the SET|LBS|REPS header. Two modes:
+   - --editing: accent-tinted card wrapping a compact textarea
+   - --collapsed: tappable read-only "Note: xxx" row (truncated > 60 chars)
+   Both share the accent tint so the row reads as part of the card,
+   not a floating pill. */
+.wlm-ex-block__note-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 6px 14px 8px;
+  padding: 8px 10px;
+  background: color-mix(in oklab, var(--accent) 10%, var(--bg-surface));
+  border: 1px solid color-mix(in oklab, var(--accent) 28%, transparent);
+  border-left: 3px solid var(--accent);
   border-radius: 8px;
   font-size: 12px;
-  font-style: italic;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--text-primary);
   text-align: left;
-  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  max-width: calc(100% - 28px);
 }
-.wlm-ex-block__note-pill svg {
-  color: rgba(var(--accent-rgb), 0.7);
+.wlm-ex-block__note-row-icon {
+  color: var(--accent);
   flex-shrink: 0;
+  margin-top: 2px;
 }
-.wlm-ex-block__note-pill-text {
+.wlm-ex-block__note-row--collapsed {
+  width: calc(100% - 28px);
+  cursor: pointer;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.7);
+  align-items: center;
+}
+.wlm-ex-block__note-row--collapsed:active {
+  background: color-mix(in oklab, var(--accent) 16%, var(--bg-surface));
+}
+.wlm-ex-block__note-row-text {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  min-width: 0;
 }
-.wlm-ex-block__note-pill:active {
-  background: rgba(var(--accent-rgb), 0.14);
+.wlm-ex-block__note-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.4;
+  padding: 0;
+}
+.wlm-ex-block__note-input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 /* ============================================================
@@ -3322,86 +3350,6 @@
 }
 
 /* ============================================================
-   NOTE EDITOR SHEET
-   ============================================================ */
-.wlm-note-overlay {
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.wlm-note-sheet {
-  width: 100%;
-  max-width: 480px;
-  background: var(--bg-surface, #151820);
-  border-radius: 20px 20px 0 0;
-  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.wlm-note-sheet__title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.wlm-note-sheet__textarea {
-  width: 100%;
-  min-height: 96px;
-  background: var(--bg-base);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px;
-  font-size: 14px;
-  font-family: inherit;
-  color: var(--text-primary);
-  resize: vertical;
-  outline: none;
-  transition: border-color 0.15s ease;
-}
-.wlm-note-sheet__textarea:focus {
-  border-color: var(--accent);
-}
-
-.wlm-note-sheet__actions {
-  display: flex;
-  gap: 8px;
-}
-
-.wlm-note-sheet__cancel {
-  flex: 1;
-  padding: 12px;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: inherit;
-  color: var(--text-muted);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-.wlm-note-sheet__save {
-  flex: 1;
-  padding: 12px;
-  background: var(--accent);
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: inherit;
-  color: #fff;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-/* ============================================================
    REST TIMER — picker sheet + floating pill on exercise card
    ============================================================ */
 .wlm-timer-overlay {
@@ -3485,6 +3433,25 @@
 }
 .wlm-timer-sheet__custom-input:focus {
   border-color: var(--accent);
+}
+
+.wlm-timer-sheet__actions {
+  display: flex;
+  gap: 8px;
+}
+.wlm-timer-sheet__cancel {
+  flex: 1;
+  padding: 12px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 /* Floating pill anchored inside the exercise card. */
