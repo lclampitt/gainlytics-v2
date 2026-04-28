@@ -639,8 +639,14 @@ function ConsistencyCard({ userId, streak }) {
         nMap[f.logged_date].calories += Number(f.calories) || 0;
       });
       setNutritionDays(nMap);
+      // Multiple workouts can share a date (e.g. cardio + lift). Keep all of
+      // them so the tooltip lists each one instead of silently overwriting.
       const wMap = {};
-      (workouts || []).forEach((w) => { wMap[w.workout_date] = w.workout_name || 'Workout'; });
+      (workouts || []).forEach((w) => {
+        const name = w.workout_name || 'Workout';
+        if (!wMap[w.workout_date]) wMap[w.workout_date] = [];
+        wMap[w.workout_date].push(name);
+      });
       setWorkoutDays(wMap);
     })();
   }, [userId, viewMonth, viewYear]);
@@ -765,8 +771,10 @@ function ConsistencyCard({ userId, streak }) {
           ) : (
             <div className="cw__tooltip-row cw__tooltip-row--muted">Not logged</div>
           )}
-          {tooltip.workout ? (
-            <div className="cw__tooltip-row"><Dumbbell size={10} /> {tooltip.workout}</div>
+          {Array.isArray(tooltip.workout) && tooltip.workout.length > 0 ? (
+            tooltip.workout.map((name, i) => (
+              <div key={i} className="cw__tooltip-row"><Dumbbell size={10} /> {name}</div>
+            ))
           ) : (
             <div className="cw__tooltip-row cw__tooltip-row--muted">Not logged</div>
           )}
