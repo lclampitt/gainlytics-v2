@@ -11,3 +11,4 @@ supabase
 python-dotenv
 posthog
 anthropic
+slowapi

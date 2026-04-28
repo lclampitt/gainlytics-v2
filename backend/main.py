@@ -68,6 +68,21 @@ anthropic_client = _anthropic_mod.Anthropic(api_key=_anthropic_key) if _anthropi
 app = FastAPI(title="AI Body Analyzer")
 
 # -------------------------------------------------
+# Rate limiting (slowapi)
+# -------------------------------------------------
+# Per-IP rate limits on AI / analyzer / contact endpoints to
+# blunt abuse / runaway-cost scenarios. Stripe webhook is NOT
+# rate limited (Stripe retries must always succeed). Per-user
+# usage gating in can_use_*() runs on top of this layer.
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# -------------------------------------------------
 # CORS – allow browser clients (React frontend) to call API
 # -------------------------------------------------
 app.add_middleware(
@@ -172,7 +187,8 @@ class MeasurementRequest(BaseModel):
 # -------------------------------------------------
 
 @app.post("/contact")
-async def contact(req: ContactRequest):
+@limiter.limit("5/minute")
+async def contact(request: Request, req: ContactRequest):
     if not CONTACT_SMTP_USER or not CONTACT_SMTP_PASSWORD:
         raise HTTPException(status_code=503, detail="Email service not configured.")
 
@@ -778,7 +794,8 @@ def apply_bf_correction(predicted_bf: float, age: float, gender: int) -> float:
 # ============ FUNCTIONAL REQUIREMENT: FR-5 / FR-6 ============
 # System shall accept measurement inputs and return an ML-based body fat estimate.
 @app.post("/analyze-measurements", response_model=AnalysisResponse)
-async def analyze_measurements(data: MeasurementRequest):
+@limiter.limit("5/minute")
+async def analyze_measurements(request: Request, data: MeasurementRequest):
     """
     Main endpoint used by the frontend.
 
@@ -898,7 +915,8 @@ async def analyze_measurements(data: MeasurementRequest):
 # ============ FUNCTIONAL REQUIREMENT: FR-8 / FR-9 ============
 # System shall process an uploaded image in-memory and not permanently store it.
 @app.post("/analyze-image", response_model=AnalysisResponse)
-async def analyze_image(file: UploadFile = File(...), user_id: Optional[str] = Form(None)):
+@limiter.limit("5/minute")
+async def analyze_image(request: Request, file: UploadFile = File(...), user_id: Optional[str] = Form(None)):
     """
     Experimental endpoint that:
       - accepts a JPG/PNG upload,
@@ -1188,7 +1206,8 @@ class MealSuggestRequest(BaseModel):
     diet_preference: str = "standard"
 
 @app.post("/meal-planner/suggest")
-async def suggest_meal(body: MealSuggestRequest):
+@limiter.limit("10/minute")
+async def suggest_meal(request: Request, body: MealSuggestRequest):
     """Generate 5 AI meal suggestions using Claude."""
     # Pro+ check
     plan = _get_plan(body.user_id)
@@ -1338,7 +1357,8 @@ class WeekSuggestRequest(BaseModel):
     daily_targets: Optional[dict] = None  # {calories, protein, carbs, fat}
 
 @app.post("/meal-planner/suggest-week")
-async def suggest_week(body: WeekSuggestRequest):
+@limiter.limit("10/minute")
+async def suggest_week(request: Request, body: WeekSuggestRequest):
     """Generate a full Mon-Fri meal plan (15 meals) using Claude."""
     plan = _get_plan(body.user_id)
     if plan != "pro_plus":
